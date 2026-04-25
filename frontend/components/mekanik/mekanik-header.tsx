@@ -18,9 +18,6 @@ export function MekanikHeader({ title, description }: MekanikHeaderProps) {
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 border-b bg-white/80 backdrop-blur-md px-6 shadow-sm">
       <div className="flex items-center gap-4">
-        <SidebarTrigger className="-ml-1 hover:bg-slate-100 p-2 rounded-lg transition-colors" />
-        <Separator orientation="vertical" className="h-6 bg-slate-200" />
-
         {title && (
           <div className="flex flex-col">
             <h1 className="text-lg font-bold text-slate-900 tracking-tight">{title}</h1>

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -183,7 +183,7 @@ model WorkOrder {
   taxPercent          Decimal              @default(11) @map("tax_percent") @db.Decimal(5, 2)
   taxAmount           Decimal              @default(0) @map("tax_amount") @db.Decimal(15, 2)
   grandTotal          Decimal              @default(0) @map("grand_total") @db.Decimal(15, 2)
-  photos              Json                 @default("[]")
+  photos              Json?
   createdById         String?              @map("created_by")
   updatedById         String?              @map("updated_by")
   createdAt           DateTime             @default(now()) @map("created_at")
@@ -282,7 +282,7 @@ model Invoice {
   grandTotal     Decimal       @map("grand_total") @db.Decimal(15, 2)
   amountPaid     Decimal       @default(0) @map("amount_paid") @db.Decimal(15, 2)
   amountDue      Decimal       @map("amount_due") @db.Decimal(15, 2)
-  invoiceDate    DateTime      @default(now()) @map("invoice_date") @db.Date
+  invoiceDate    DateTime      @default(now()) @map("invoice_date")
   dueDate        DateTime      @map("due_date") @db.Date
   paidDate       DateTime?     @map("paid_date") @db.Date
   notes          String?
