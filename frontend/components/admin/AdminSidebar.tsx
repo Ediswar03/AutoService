@@ -119,14 +119,8 @@ export function AdminSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-            <Wrench className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">AutoServis</span>
-            <span className="text-xs text-muted-foreground">Admin Panel</span>
-          </div>
+        <div className="flex items-center justify-center px-2 py-2 w-full">
+          <img src="/Logo1.png" alt="AutoService Logo" className="h-8 w-auto object-contain" />
         </div>
       </SidebarHeader>
 

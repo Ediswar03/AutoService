@@ -73,6 +73,31 @@ export class AuthController {
       next(error);
     }
   }
+
+  async updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { name, phone, address } = req.body;
+      let photoUrl: string | undefined;
+
+      // If photo file was uploaded, save it
+      if (req.file) {
+        const { uploadService } = await import('../services/upload.service');
+        const fileKey = await uploadService.uploadImage(req.file, 'avatars');
+        photoUrl = fileKey; // Save the raw key instead of the presigned URL
+      }
+
+      const updated = await authService.updateProfile(req.user!.userId, {
+        name,
+        phone,
+        address,
+        ...(photoUrl !== undefined && { photoUrl }),
+      });
+
+      sendSuccess(res, updated, 'Profile updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const authController = new AuthController();

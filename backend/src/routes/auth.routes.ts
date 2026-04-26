@@ -5,6 +5,16 @@ import { authController } from '../controllers/auth.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { roleMiddleware } from '../middleware/role.middleware';
 import { authLimiter } from '../middleware/rate-limit.middleware';
+import multer from 'multer';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files allowed'));
+  },
+});
 
 const router = Router();
 
@@ -35,6 +45,14 @@ router.get('/me', authMiddleware, (req, res, next) =>
 
 router.put('/change-password', authMiddleware, (req, res, next) =>
   authController.changePassword(req, res, next)
+);
+
+// Update profile (name, phone, address) + optional photo
+router.put(
+  '/profile',
+  authMiddleware,
+  upload.single('photo'),
+  (req, res, next) => authController.updateProfile(req, res, next)
 );
 
 export default router;

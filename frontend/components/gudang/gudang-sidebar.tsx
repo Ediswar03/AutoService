@@ -43,18 +43,9 @@ export function GudangSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border overflow-x-hidden">
       <SidebarHeader className="p-4">
-        <Link href="/gudang" className="flex items-center gap-3">
-          <div className="relative flex items-center justify-center size-8 shrink-0">
-            <Settings className="absolute size-8 text-[#FFC107]" />
-            <Wrench className="absolute size-[14px] text-white -rotate-45" />
-          </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-[17px] font-bold leading-tight">
-              <span className="text-white">AUTO </span>
-              <span className="text-[#FFC107]">SERVICE</span>
-            </span>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase leading-none mt-0.5">Gudang</span>
-          </div>
+        <Link href="/gudang" className="flex items-center justify-center py-2">
+          <img src="/Logo1.png" alt="AutoService Logo" className="h-10 w-auto object-contain group-data-[collapsible=icon]:hidden" />
+          <img src="/Logo1.png" alt="AutoService Logo" className="h-8 w-auto object-contain hidden group-data-[collapsible=icon]:block" />
         </Link>
       </SidebarHeader>
 

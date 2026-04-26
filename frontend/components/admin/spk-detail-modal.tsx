@@ -12,14 +12,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
-import {
-  getCustomerById,
-  getVehicleById,
-  getMechanicById,
-  formatCurrency,
-  formatDate,
-  formatDateTime,
-} from "@/lib/mock-data"
+import useSWR from "swr"
+import { fetcher } from "@/lib/api-client"
+import { Loader2 } from "lucide-react"
 import type { SPK, SPKStatus } from "@/lib/types"
 
 interface SPKDetailModalProps {
@@ -30,10 +25,13 @@ interface SPKDetailModalProps {
 }
 
 const statusConfig: Record<SPKStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  draft: { label: "Draft", variant: "secondary" },
-  in_progress: { label: "Dikerjakan", variant: "default" },
-  completed: { label: "Selesai", variant: "outline" },
-  cancelled: { label: "Dibatalkan", variant: "destructive" },
+  PENDING: { label: "Pending", variant: "secondary" },
+  IN_PROGRESS: { label: "Dikerjakan", variant: "default" },
+  WAITING_PARTS: { label: "Tunggu Parts", variant: "outline" },
+  QUALITY_CHECK: { label: "Cek Kualitas", variant: "secondary" },
+  COMPLETED: { label: "Selesai", variant: "outline" },
+  INVOICED: { label: "Ditagihkan", variant: "outline" },
+  CANCELLED: { label: "Dibatalkan", variant: "destructive" },
 }
 
 export function SPKDetailModal({
@@ -42,16 +40,23 @@ export function SPKDetailModal({
   spk,
   onUpdateStatus,
 }: SPKDetailModalProps) {
-  if (!spk) return null
+  const { data: detailData, isLoading } = useSWR(open && spk ? `/work-orders/${spk.id}` : null, fetcher)
+  const fullSpk = detailData?.data || spk
+  
+  if (!fullSpk) return null
 
-  const customer = getCustomerById(spk.customerId)
-  const vehicle = getVehicleById(spk.vehicleId)
-  const mechanic = spk.mechanicId ? getMechanicById(spk.mechanicId) : null
-  const status = statusConfig[spk.status]
+  const customer = fullSpk.customer || {}
+  const vehicle = fullSpk.vehicle || {}
+  const mechanic = fullSpk.assignedMechanic || {}
+  const status = statusConfig[fullSpk.status as SPKStatus] || { label: fullSpk.status, variant: "outline" }
 
-  const servicesTotal = spk.services.reduce((sum, s) => sum + s.price * s.quantity, 0)
-  const partsTotal = spk.parts.reduce((sum, p) => sum + p.price * p.quantity, 0)
-  const total = servicesTotal + partsTotal
+  const services = fullSpk.services || fullSpk.servicesList || []
+  const parts = fullSpk.spareparts || fullSpk.parts || []
+
+  const servicesTotal = services.reduce((sum: number, s: any) => sum + (s.totalPrice || (s.price * s.quantity)) || 0, 0)
+  const partsTotal = parts.reduce((sum: number, p: any) => sum + (p.totalPrice || (p.price * p.quantity)) || 0, 0)
+  const total = fullSpk.grandTotal || (servicesTotal + partsTotal)
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -59,9 +64,9 @@ export function SPKDetailModal({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-xl">{spk.spkNumber}</DialogTitle>
+              <DialogTitle className="text-xl">{fullSpk.orderNumber || fullSpk.spkNumber}</DialogTitle>
               <DialogDescription>
-                Dibuat: {formatDateTime(spk.createdAt)}
+                Dibuat: {fullSpk.createdAt ? new Date(fullSpk.createdAt).toLocaleString('id-ID') : '-'}
               </DialogDescription>
             </div>
             <Badge variant={status.variant} className="text-sm">
@@ -78,7 +83,7 @@ export function SPKDetailModal({
                 <User className="size-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Pelanggan</span>
               </div>
-              {customer && (
+              {(customer.name || customer.id) && (
                 <>
                   <p className="font-medium">{customer.name}</p>
                   <p className="text-sm text-muted-foreground">{customer.phone}</p>
@@ -92,11 +97,11 @@ export function SPKDetailModal({
                 <Car className="size-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Kendaraan</span>
               </div>
-              {vehicle && (
+              {(vehicle.licensePlate || vehicle.plateNumber) && (
                 <>
-                  <p className="font-medium font-mono">{vehicle.plateNumber}</p>
+                  <p className="font-medium font-mono">{vehicle.licensePlate || vehicle.plateNumber}</p>
                   <p className="text-sm text-muted-foreground">
-                    {vehicle.brand} {vehicle.model} ({vehicle.year})
+                    {vehicle.brand} {vehicle.model} {vehicle.year ? `(${vehicle.year})` : ''}
                   </p>
                   <p className="text-sm text-muted-foreground">{vehicle.color}</p>
                 </>
@@ -111,10 +116,10 @@ export function SPKDetailModal({
                 <Wrench className="size-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Mekanik</span>
               </div>
-              {mechanic ? (
+              {mechanic.name ? (
                 <>
                   <p className="font-medium">{mechanic.name}</p>
-                  <p className="text-sm text-muted-foreground">{mechanic.specialization}</p>
+                  <p className="text-sm text-muted-foreground">{mechanic.specialization || "Mekanik"}</p>
                 </>
               ) : (
                 <p className="text-muted-foreground">Belum ditugaskan</p>
@@ -127,18 +132,18 @@ export function SPKDetailModal({
                 <span className="text-sm font-medium text-muted-foreground">Tanggal</span>
               </div>
               <p className="text-sm">
-                <span className="text-muted-foreground">Mulai:</span> {formatDate(spk.startDate)}
+                <span className="text-muted-foreground">Mulai:</span> {fullSpk.createdAt ? new Date(fullSpk.createdAt).toLocaleDateString('id-ID') : '-'}
               </p>
-              {spk.estimatedEndDate && (
+              {fullSpk.estimatedCompletion && (
                 <p className="text-sm">
                   <span className="text-muted-foreground">Est. Selesai:</span>{" "}
-                  {formatDate(spk.estimatedEndDate)}
+                  {new Date(fullSpk.estimatedCompletion).toLocaleDateString('id-ID')}
                 </p>
               )}
-              {spk.completedDate && (
+              {fullSpk.actualCompletion && (
                 <p className="text-sm">
                   <span className="text-muted-foreground">Selesai:</span>{" "}
-                  {formatDate(spk.completedDate)}
+                  {new Date(fullSpk.actualCompletion).toLocaleDateString('id-ID')}
                 </p>
               )}
             </div>
@@ -149,29 +154,29 @@ export function SPKDetailModal({
           {/* Services */}
           <div>
             <h4 className="font-medium mb-3">Layanan Servis</h4>
-            {spk.services.length === 0 ? (
+            {isLoading ? <p className="text-sm text-muted-foreground"><Loader2 className="animate-spin w-4 h-4 inline mr-2" /> Memuat data...</p> : services.length === 0 ? (
               <p className="text-sm text-muted-foreground">Tidak ada layanan</p>
             ) : (
               <div className="space-y-2">
-                {spk.services.map((service) => (
+                {services.map((service: any, idx: number) => (
                   <div
-                    key={service.id}
+                    key={service.id || idx}
                     className="flex items-center justify-between p-3 rounded-lg border"
                   >
                     <div>
-                      <p className="font-medium">{service.name}</p>
+                      <p className="font-medium">{service.service?.name || service.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatCurrency(service.price)} x {service.quantity}
+                        Rp {(service.unitPrice || service.price || 0).toLocaleString('id-ID')} x {service.quantity}
                       </p>
                     </div>
                     <p className="font-medium">
-                      {formatCurrency(service.price * service.quantity)}
+                      Rp {(service.totalPrice || ((service.unitPrice || service.price || 0) * service.quantity)).toLocaleString('id-ID')}
                     </p>
                   </div>
                 ))}
                 <div className="flex justify-between p-3 bg-muted/30 rounded-lg">
                   <span className="text-muted-foreground">Subtotal Layanan</span>
-                  <span className="font-medium">{formatCurrency(servicesTotal)}</span>
+                  <span className="font-medium">Rp {servicesTotal.toLocaleString('id-ID')}</span>
                 </div>
               </div>
             )}
@@ -180,45 +185,45 @@ export function SPKDetailModal({
           {/* Parts */}
           <div>
             <h4 className="font-medium mb-3">Spare Parts</h4>
-            {spk.parts.length === 0 ? (
+            {isLoading ? <p className="text-sm text-muted-foreground"><Loader2 className="animate-spin w-4 h-4 inline mr-2" /> Memuat data...</p> : parts.length === 0 ? (
               <p className="text-sm text-muted-foreground">Tidak ada spare parts</p>
             ) : (
               <div className="space-y-2">
-                {spk.parts.map((part) => (
+                {parts.map((part: any, idx: number) => (
                   <div
-                    key={part.id}
+                    key={part.id || idx}
                     className="flex items-center justify-between p-3 rounded-lg border"
                   >
                     <div>
-                      <p className="font-medium">{part.name}</p>
+                      <p className="font-medium">{part.sparepart?.name || part.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatCurrency(part.price)} x {part.quantity}
+                        Rp {(part.unitPrice || part.price || 0).toLocaleString('id-ID')} x {part.quantity}
                       </p>
                     </div>
                     <p className="font-medium">
-                      {formatCurrency(part.price * part.quantity)}
+                      Rp {(part.totalPrice || ((part.unitPrice || part.price || 0) * part.quantity)).toLocaleString('id-ID')}
                     </p>
                   </div>
                 ))}
                 <div className="flex justify-between p-3 bg-muted/30 rounded-lg">
                   <span className="text-muted-foreground">Subtotal Parts</span>
-                  <span className="font-medium">{formatCurrency(partsTotal)}</span>
+                  <span className="font-medium">Rp {partsTotal.toLocaleString('id-ID')}</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Notes */}
-          {spk.notes && (
+          {fullSpk.customerComplaints && (
             <>
               <Separator />
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="size-4 text-muted-foreground" />
-                  <span className="font-medium">Catatan</span>
+                  <span className="font-medium">Keluhan Pelanggan / Catatan</span>
                 </div>
                 <p className="text-sm text-muted-foreground p-3 rounded-lg bg-muted/30">
-                  {spk.notes}
+                  {fullSpk.customerComplaints || fullSpk.notes}
                 </p>
               </div>
             </>
@@ -230,31 +235,31 @@ export function SPKDetailModal({
           <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10 border border-primary/20">
             <span className="font-medium text-lg">Total</span>
             <span className="text-2xl font-bold text-primary">
-              {formatCurrency(spk.actualCost || total)}
+              Rp {total.toLocaleString('id-ID')}
             </span>
           </div>
         </div>
 
         <DialogFooter className="flex-wrap gap-2">
-          {spk.status === "draft" && onUpdateStatus && (
+          {fullSpk.status === "PENDING" && onUpdateStatus && (
             <Button
-              onClick={() => onUpdateStatus(spk.id, "in_progress")}
+              onClick={() => onUpdateStatus(fullSpk.id, "IN_PROGRESS")}
               variant="default"
             >
               Mulai Kerjakan
             </Button>
           )}
-          {spk.status === "in_progress" && onUpdateStatus && (
+          {(fullSpk.status === "IN_PROGRESS" || fullSpk.status === "QUALITY_CHECK") && onUpdateStatus && (
             <Button
-              onClick={() => onUpdateStatus(spk.id, "completed")}
+              onClick={() => onUpdateStatus(fullSpk.id, "COMPLETED")}
               variant="default"
             >
               Tandai Selesai
             </Button>
           )}
-          {spk.status === "completed" && (
+          {fullSpk.status === "COMPLETED" && (
             <Button variant="default" asChild>
-              <a href={`/admin/invoices?spk=${spk.id}`}>Buat Invoice</a>
+              <a href={`/admin/invoices?spk=${fullSpk.id}`}>Buat Invoice</a>
             </Button>
           )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>

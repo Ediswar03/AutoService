@@ -27,6 +27,21 @@ export async function ensureBucket(): Promise<void> {
   if (!exists) {
     await client.makeBucket(S3_BUCKET);
     console.log(`✅ S3 bucket "${S3_BUCKET}" created`);
+    
+    // Set bucket policy to public read
+    const policy = {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Principal: { AWS: ['*'] },
+          Action: ['s3:GetObject'],
+          Resource: [`arn:aws:s3:::${S3_BUCKET}/*`],
+        },
+      ],
+    };
+    await client.setBucketPolicy(S3_BUCKET, JSON.stringify(policy));
+    console.log(`✅ S3 bucket "${S3_BUCKET}" policy set to public read`);
   }
 }
 

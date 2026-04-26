@@ -51,10 +51,9 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-          <Wrench className="h-6 w-6 text-primary-foreground" />
+        <div className="mx-auto mb-6 flex justify-center">
+          <img src="/Logo1.png" alt="AutoService Logo" className="h-16 w-auto object-contain" />
         </div>
-        <CardTitle className="text-2xl font-bold">AutoServis System</CardTitle>
         <CardDescription>
           Masuk ke akun Anda untuk melanjutkan
         </CardDescription>
@@ -137,10 +136,9 @@ function LoginLoading() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-          <Wrench className="h-6 w-6 text-primary-foreground" />
+        <div className="mx-auto mb-6 flex justify-center">
+          <img src="/Logo1.png" alt="AutoService Logo" className="h-16 w-auto object-contain" />
         </div>
-        <CardTitle className="text-2xl font-bold">AutoServis System</CardTitle>
         <CardDescription>Memuat...</CardDescription>
       </CardHeader>
       <CardContent className="flex justify-center py-8">

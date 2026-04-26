@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Plus, Search, Edit, Trash2, MoreHorizontal, User } from "lucide-react"
+import { Plus, Search, Edit, Trash2, MoreHorizontal, User, Loader2 } from "lucide-react"
 import { AdminHeader } from "@/components/admin/admin-header"
-import { VehicleForm } from "@/components/admin/vehicle-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,62 +39,55 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { mockVehicles, mockCustomers, getCustomerById, formatDate } from "@/lib/mock-data"
-import type { Vehicle, VehicleFormData } from "@/lib/types"
+import { toast } from "sonner"
+import useSWR from "swr"
+import { fetcher, api } from "@/lib/api-client"
 import Link from "next/link"
 
 export default function VehiclesPage() {
   const searchParams = useSearchParams()
   const customerIdParam = searchParams.get("customer")
 
-  const [vehicles, setVehicles] = useState<Vehicle[]>(mockVehicles)
   const [searchQuery, setSearchQuery] = useState("")
   const [customerFilter, setCustomerFilter] = useState<string>(customerIdParam || "all")
   const [brandFilter, setBrandFilter] = useState<string>("all")
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingVehicle, setEditingVehicle] = useState<Vehicle | undefined>()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null)
+  const [vehicleToDelete, setVehicleToDelete] = useState<any | null>(null)
 
-  const uniqueBrands = [...new Set(vehicles.map((v) => v.brand))].sort()
+  const { data: vehiclesRaw, isLoading, mutate } = useSWR(
+    "/vehicles?limit=500&sortBy=createdAt&sortOrder=desc",
+    fetcher
+  )
+  const { data: customersRaw } = useSWR("/customers?limit=500", fetcher)
 
-  const filteredVehicles = vehicles.filter((vehicle) => {
+  const vehicles: any[] = Array.isArray(vehiclesRaw?.data) ? vehiclesRaw.data : []
+  const customers: any[] = Array.isArray(customersRaw?.data) ? customersRaw.data : []
+
+  const uniqueBrands = [...new Set(vehicles.map((v: any) => v.brand))].sort() as string[]
+
+  const filteredVehicles = vehicles.filter((vehicle: any) => {
+    const plate = vehicle.licensePlate || vehicle.plateNumber || ""
     const matchesSearch =
-      vehicle.plateNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.model.toLowerCase().includes(searchQuery.toLowerCase())
+      plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vehicle.brand || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vehicle.model || "").toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCustomer = customerFilter === "all" || vehicle.customerId === customerFilter
     const matchesBrand = brandFilter === "all" || vehicle.brand === brandFilter
     return matchesSearch && matchesCustomer && matchesBrand
   })
 
-  const handleAddVehicle = async (data: VehicleFormData) => {
-    const newVehicle: Vehicle = {
-      id: `veh-${Date.now()}`,
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-    setVehicles([...vehicles, newVehicle])
-  }
-
-  const handleEditVehicle = async (data: VehicleFormData) => {
-    if (!editingVehicle) return
-    setVehicles(
-      vehicles.map((v) =>
-        v.id === editingVehicle.id
-          ? { ...v, ...data, updatedAt: new Date() }
-          : v
-      )
-    )
-    setEditingVehicle(undefined)
-  }
-
-  const handleDeleteVehicle = () => {
+  const handleDelete = async () => {
     if (!vehicleToDelete) return
-    setVehicles(vehicles.filter((v) => v.id !== vehicleToDelete.id))
-    setVehicleToDelete(null)
-    setDeleteDialogOpen(false)
+    try {
+      await api.delete(`/vehicles/${vehicleToDelete.id}`)
+      await mutate()
+      toast.success("Kendaraan berhasil dihapus")
+    } catch {
+      toast.error("Gagal menghapus kendaraan")
+    } finally {
+      setVehicleToDelete(null)
+      setDeleteDialogOpen(false)
+    }
   }
 
   return (
@@ -110,10 +102,10 @@ export default function VehiclesPage() {
                 <div>
                   <CardTitle>Daftar Kendaraan</CardTitle>
                   <CardDescription>
-                    Total {filteredVehicles.length} kendaraan terdaftar
+                    Total {isLoading ? "..." : filteredVehicles.length} kendaraan terdaftar
                   </CardDescription>
                 </div>
-                <Button onClick={() => setFormOpen(true)}>
+                <Button onClick={() => toast.info("Form tambah kendaraan segera hadir")}>
                   <Plus className="mr-2 size-4" />
                   Tambah Kendaraan
                 </Button>
@@ -131,26 +123,20 @@ export default function VehiclesPage() {
                     className="pl-9"
                   />
                 </div>
-                <Select
-                  value={customerFilter}
-                  onValueChange={setCustomerFilter}
-                >
+                <Select value={customerFilter} onValueChange={setCustomerFilter}>
                   <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Pemilik" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Pemilik</SelectItem>
-                    {mockCustomers.map((customer) => (
+                    {customers.map((customer: any) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select
-                  value={brandFilter}
-                  onValueChange={setBrandFilter}
-                >
+                <Select value={brandFilter} onValueChange={setBrandFilter}>
                   <SelectTrigger className="w-full sm:w-36">
                     <SelectValue placeholder="Merk" />
                   </SelectTrigger>
@@ -179,51 +165,60 @@ export default function VehiclesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredVehicles.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Memuat data kendaraan...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredVehicles.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         Tidak ada kendaraan ditemukan
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredVehicles.map((vehicle) => {
-                      const owner = getCustomerById(vehicle.customerId)
+                    filteredVehicles.map((vehicle: any) => {
+                      const plate = vehicle.licensePlate || vehicle.plateNumber || "-"
+                      const ownerName = vehicle.customer?.name || "-"
                       return (
                         <TableRow key={vehicle.id}>
-                          <TableCell className="font-medium font-mono">
-                            {vehicle.plateNumber}
-                          </TableCell>
+                          <TableCell className="font-medium font-mono">{plate}</TableCell>
                           <TableCell>
                             <div>
                               <p className="font-medium">
                                 {vehicle.brand} {vehicle.model}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {vehicle.year} {vehicle.color && `- ${vehicle.color}`}
+                                {vehicle.year}{vehicle.color ? ` - ${vehicle.color}` : ""}
                               </p>
                             </div>
                           </TableCell>
                           <TableCell>
-                            {owner ? (
+                            {ownerName !== "-" ? (
                               <Link
                                 href={`/admin/customers`}
                                 className="flex items-center gap-1 hover:underline text-primary"
                               >
                                 <User className="size-3" />
-                                {owner.name}
+                                {ownerName}
                               </Link>
                             ) : (
-                              "-"
+                              <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
                           <TableCell className="text-sm font-mono text-muted-foreground">
-                            {vehicle.chassisNumber}
+                            {vehicle.chassisNumber || vehicle.vin || "-"}
                           </TableCell>
                           <TableCell className="text-sm font-mono text-muted-foreground">
-                            {vehicle.engineNumber}
+                            {vehicle.engineNumber || "-"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(vehicle.createdAt)}
+                            {vehicle.createdAt
+                              ? new Date(vehicle.createdAt).toLocaleDateString("id-ID", {
+                                  day: "2-digit", month: "short", year: "numeric",
+                                })
+                              : "-"}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -234,12 +229,7 @@ export default function VehiclesPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setEditingVehicle(vehicle)
-                                    setFormOpen(true)
-                                  }}
-                                >
+                                <DropdownMenuItem onClick={() => toast.info("Form edit kendaraan segera hadir")}>
                                   <Edit className="mr-2 size-4" />
                                   Edit
                                 </DropdownMenuItem>
@@ -268,33 +258,20 @@ export default function VehiclesPage() {
         </div>
       </div>
 
-      {/* Vehicle Form Dialog */}
-      <VehicleForm
-        open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open)
-          if (!open) setEditingVehicle(undefined)
-        }}
-        vehicle={editingVehicle}
-        customers={mockCustomers}
-        defaultCustomerId={customerIdParam || undefined}
-        onSubmit={editingVehicle ? handleEditVehicle : handleAddVehicle}
-      />
-
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Kendaraan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Anda yakin ingin menghapus kendaraan &quot;{vehicleToDelete?.plateNumber}&quot;? 
+              Anda yakin ingin menghapus kendaraan &quot;{vehicleToDelete?.licensePlate || vehicleToDelete?.plateNumber}&quot;?
               Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteVehicle}
+              onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Hapus

@@ -15,8 +15,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
+import { api, fetcher } from "@/lib/api-client"
+import useSWR from "swr"
+import { toast } from "sonner"
+import { Loader2 } from "lucide-react"
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:3001"
+
+function resolvePhotoUrl(photoUrl?: string | null): string | undefined {
+  if (!photoUrl) return undefined
+  if (photoUrl.startsWith("http")) return photoUrl
+  if (photoUrl.startsWith("local:")) {
+    const key = photoUrl.replace("local:", "")
+    return `${BACKEND_URL}/api/v1/uploads/${key}`
+  }
+  try {
+    const url = new URL(BACKEND_URL || "http://localhost:3001")
+    return `http://${url.hostname}:9000/autoservis/${photoUrl}`
+  } catch {
+    return `http://localhost:9000/autoservis/${photoUrl}`
+  }
+}
 
 interface AdminHeaderProps {
   title?: string
@@ -26,13 +48,18 @@ interface AdminHeaderProps {
 export function AdminHeader({ title, description }: AdminHeaderProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
+  const { user, logout, refreshUser } = useAuth()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Profile State
-  const [profileName, setProfileName] = useState("Budi Santoso")
-  const [profilePhoto, setProfilePhoto] = useState("https://i.pravatar.cc/150?u=a042581f4e29026704d")
+  // Real Profile State
+  const { data: profileData, mutate: mutateProfile } = useSWR(user ? "/auth/me" : null, fetcher)
+  const profile = profileData?.data || profileData || user
   
-  // Search State
+  const [isUploading, setIsUploading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const displayPhoto = resolvePhotoUrl(profile?.photoUrl || user?.photoUrl)
+  const displayName = profile?.name || user?.name || "Admin"
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,22 +68,36 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
     }
   }
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setProfilePhoto(event.target.result as string)
-        }
-      }
-      reader.readAsDataURL(e.target.files[0])
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("photo", file)
+      await api.put("/auth/profile", formData, { headers: { "Content-Type": "multipart/form-data" } })
+      await refreshUser()
+      await mutateProfile()
+      toast.success("Foto profil berhasil diperbarui!")
+    } catch {
+      toast.error("Gagal mengupload foto")
+    } finally {
+      setIsUploading(false)
+      e.target.value = ""
     }
   }
 
-  const handleEditName = () => {
-    const newName = window.prompt("Masukkan nama profil baru:", profileName)
-    if (newName && newName.trim() !== "") {
-      setProfileName(newName.trim())
+  const handleEditName = async () => {
+    const newName = window.prompt("Masukkan nama profil baru:", displayName)
+    if (newName && newName.trim() !== "" && newName !== displayName) {
+      try {
+        await api.put("/auth/profile", { name: newName.trim() })
+        await refreshUser()
+        await mutateProfile()
+        toast.success("Nama profil diperbarui")
+      } catch {
+        toast.error("Gagal memperbarui nama profil")
+      }
     }
   }
 
@@ -87,10 +128,10 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
           />
         </form>
 
-        {/* Date Picker Button (Mock) */}
+        {/* Date Picker Button */}
         <Button variant="outline" className="hidden md:flex gap-2 text-slate-600 dark:text-slate-300 font-normal rounded-full">
           <Calendar className="size-4" />
-          20 Mei 2024
+          {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
           <ChevronDown className="size-4 text-slate-400" />
         </Button>
 
@@ -113,7 +154,7 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
               <Badge
                 className="absolute -top-1 -right-1 size-4 rounded-full p-0 flex items-center justify-center bg-[#FFC107] text-slate-900 border-2 border-white dark:border-slate-900"
               >
-                3
+                0
               </Badge>
               <span className="sr-only">Notifikasi</span>
             </Button>
@@ -152,12 +193,20 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
           <DropdownMenuTrigger asChild>
             <div className="flex items-center gap-3 cursor-pointer select-none hover:bg-slate-50 dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors">
               <Avatar className="size-9 border border-border">
-                <AvatarImage src={profilePhoto} alt={profileName} />
-                <AvatarFallback>{profileName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                {isUploading ? (
+                  <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-full">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <>
+                    <AvatarImage src={displayPhoto} alt={displayName} />
+                    <AvatarFallback>{displayName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                  </>
+                )}
               </Avatar>
               <div className="hidden md:flex flex-col">
-                <span className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none">{profileName}</span>
-                <span className="text-xs text-slate-500 mt-1">Owner</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none">{displayName}</span>
+                <span className="text-xs text-slate-500 mt-1 uppercase">{user?.role || "Admin"}</span>
               </div>
               <ChevronDown className="size-4 text-slate-400 hidden md:block" />
             </div>
@@ -165,15 +214,15 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => document.getElementById('photo-upload')?.click()} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
               Ubah Foto Profil
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleEditName} className="cursor-pointer">
               Edit Nama Profil
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-red-500 hover:text-red-600 focus:text-red-600">
-              Keluar Keluar
+            <DropdownMenuItem onClick={() => logout()} className="cursor-pointer text-red-500 hover:text-red-600 focus:text-red-600">
+              Keluar
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -181,7 +230,7 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
         {/* Hidden file input for photo upload */}
         <input 
           type="file" 
-          id="photo-upload" 
+          ref={fileInputRef} 
           className="hidden" 
           accept="image/*" 
           onChange={handlePhotoUpload} 

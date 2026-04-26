@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Search, Edit, Trash2, Car, MoreHorizontal } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Car, MoreHorizontal, Loader2 } from "lucide-react"
 import { AdminHeader } from "@/components/admin/admin-header"
-import { CustomerForm } from "@/components/admin/customer-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -40,59 +39,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { mockCustomers, mockVehicles, formatDate } from "@/lib/mock-data"
-import type { Customer, CustomerFormData, CustomerType } from "@/lib/types"
+import { toast } from "sonner"
+import useSWR from "swr"
+import { fetcher, api } from "@/lib/api-client"
 import Link from "next/link"
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers)
   const [searchQuery, setSearchQuery] = useState("")
-  const [typeFilter, setTypeFilter] = useState<CustomerType | "all">("all")
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingCustomer, setEditingCustomer] = useState<Customer | undefined>()
+  const [typeFilter, setTypeFilter] = useState<string>("all")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null)
+  const [customerToDelete, setCustomerToDelete] = useState<any | null>(null)
 
-  const filteredCustomers = customers.filter((customer) => {
+  const { data: rawData, isLoading, mutate } = useSWR("/customers?limit=200&sortBy=createdAt&sortOrder=desc", fetcher)
+  const customers: any[] = Array.isArray(rawData?.data) ? rawData.data : []
+
+  const filteredCustomers = customers.filter((customer: any) => {
     const matchesSearch =
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.phone.includes(searchQuery)
-    const matchesType = typeFilter === "all" || customer.type === typeFilter
+      (customer.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (customer.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (customer.phone || "").includes(searchQuery)
+    const matchesType =
+      typeFilter === "all" ||
+      (typeFilter === "pribadi" && customer.customerType === "PRIBADI") ||
+      (typeFilter === "korporat" && customer.customerType === "KORPORAT")
     return matchesSearch && matchesType
   })
 
-  const handleAddCustomer = async (data: CustomerFormData) => {
-    const newCustomer: Customer = {
-      id: `cust-${Date.now()}`,
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-    setCustomers([...customers, newCustomer])
-  }
-
-  const handleEditCustomer = async (data: CustomerFormData) => {
-    if (!editingCustomer) return
-    setCustomers(
-      customers.map((c) =>
-        c.id === editingCustomer.id
-          ? { ...c, ...data, updatedAt: new Date() }
-          : c
-      )
-    )
-    setEditingCustomer(undefined)
-  }
-
-  const handleDeleteCustomer = () => {
+  const handleDeleteCustomer = async () => {
     if (!customerToDelete) return
-    setCustomers(customers.filter((c) => c.id !== customerToDelete.id))
-    setCustomerToDelete(null)
-    setDeleteDialogOpen(false)
-  }
-
-  const getVehicleCount = (customerId: string) => {
-    return mockVehicles.filter((v) => v.customerId === customerId).length
+    try {
+      await api.delete(`/customers/${customerToDelete.id}`)
+      await mutate()
+      toast.success("Pelanggan berhasil dihapus")
+    } catch {
+      toast.error("Gagal menghapus pelanggan")
+    } finally {
+      setCustomerToDelete(null)
+      setDeleteDialogOpen(false)
+    }
   }
 
   return (
@@ -107,13 +91,15 @@ export default function CustomersPage() {
                 <div>
                   <CardTitle>Daftar Pelanggan</CardTitle>
                   <CardDescription>
-                    Total {filteredCustomers.length} pelanggan terdaftar
+                    Total {isLoading ? "..." : filteredCustomers.length} pelanggan terdaftar
                   </CardDescription>
                 </div>
-                <Button onClick={() => setFormOpen(true)}>
-                  <Plus className="mr-2 size-4" />
-                  Tambah Pelanggan
-                </Button>
+                <Link href="/admin/customers/create">
+                  <Button>
+                    <Plus className="mr-2 size-4" />
+                    Tambah Pelanggan
+                  </Button>
+                </Link>
               </div>
             </CardHeader>
             <CardContent>
@@ -128,10 +114,7 @@ export default function CustomersPage() {
                     className="pl-9"
                   />
                 </div>
-                <Select
-                  value={typeFilter}
-                  onValueChange={(value: CustomerType | "all") => setTypeFilter(value)}
-                >
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
                   <SelectTrigger className="w-full sm:w-40">
                     <SelectValue placeholder="Tipe" />
                   </SelectTrigger>
@@ -156,32 +139,38 @@ export default function CustomersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCustomers.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Memuat data pelanggan...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredCustomers.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         Tidak ada pelanggan ditemukan
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredCustomers.map((customer) => (
+                    filteredCustomers.map((customer: any) => (
                       <TableRow key={customer.id}>
                         <TableCell>
                           <div>
                             <p className="font-medium">{customer.name}</p>
                             <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                              {customer.address}
+                              {customer.address || "-"}
                             </p>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <p>{customer.email}</p>
+                            <p>{customer.email || "-"}</p>
                             <p className="text-muted-foreground">{customer.phone}</p>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={customer.type === "korporat" ? "default" : "secondary"}>
-                            {customer.type === "korporat" ? "Korporat" : "Pribadi"}
+                          <Badge variant={customer.customerType === "KORPORAT" ? "default" : "secondary"}>
+                            {customer.customerType === "KORPORAT" ? "Korporat" : "Pribadi"}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -190,11 +179,17 @@ export default function CustomersPage() {
                             className="flex items-center gap-1 text-sm hover:underline text-primary"
                           >
                             <Car className="size-4" />
-                            {getVehicleCount(customer.id)} unit
+                            {customer._count?.vehicles ?? customer.vehicleCount ?? "-"} unit
                           </Link>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(customer.createdAt)}
+                          {customer.createdAt
+                            ? new Date(customer.createdAt).toLocaleDateString("id-ID", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -205,14 +200,11 @@ export default function CustomersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setEditingCustomer(customer)
-                                  setFormOpen(true)
-                                }}
-                              >
-                                <Edit className="mr-2 size-4" />
-                                Edit
+                              <DropdownMenuItem asChild>
+                                <Link href={`/admin/customers/create?edit=${customer.id}`} className="flex items-center w-full">
+                                  <Edit className="mr-2 size-4" />
+                                  Edit
+                                </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -238,24 +230,13 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* Customer Form Dialog */}
-      <CustomerForm
-        open={formOpen}
-        onOpenChange={(open) => {
-          setFormOpen(open)
-          if (!open) setEditingCustomer(undefined)
-        }}
-        customer={editingCustomer}
-        onSubmit={editingCustomer ? handleEditCustomer : handleAddCustomer}
-      />
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Pelanggan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Anda yakin ingin menghapus pelanggan &quot;{customerToDelete?.name}&quot;? 
+              Anda yakin ingin menghapus pelanggan &quot;{customerToDelete?.name}&quot;?
               Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>

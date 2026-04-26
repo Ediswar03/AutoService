@@ -32,26 +32,26 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  mockSPKs,
-  mockMechanics,
-  getCustomerById,
-  getVehicleById,
-  getMechanicById,
   formatCurrency,
   formatDate,
   generateSPKNumber,
 } from "@/lib/mock-data"
 import type { SPK, SPKStatus, SPKFormData } from "@/lib/types"
+import useSWR from "swr"
+import { fetcher, api } from "@/lib/api-client"
+import { Loader2 } from "lucide-react"
 
 const statusConfig: Record<SPKStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  draft: { label: "Draft", variant: "secondary" },
-  in_progress: { label: "Dikerjakan", variant: "default" },
-  completed: { label: "Selesai", variant: "outline" },
-  cancelled: { label: "Dibatalkan", variant: "destructive" },
+  PENDING: { label: "Pending", variant: "secondary" },
+  IN_PROGRESS: { label: "Dikerjakan", variant: "default" },
+  WAITING_PARTS: { label: "Tunggu Parts", variant: "outline" },
+  QUALITY_CHECK: { label: "Cek Kualitas", variant: "secondary" },
+  COMPLETED: { label: "Selesai", variant: "outline" },
+  INVOICED: { label: "Ditagihkan", variant: "outline" },
+  CANCELLED: { label: "Dibatalkan", variant: "destructive" },
 }
 
 export default function SPKPage() {
-  const [spkList, setSPKList] = useState<SPK[]>(mockSPKs)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<SPKStatus | "all">("all")
   const [mechanicFilter, setMechanicFilter] = useState<string>("all")
@@ -59,60 +59,44 @@ export default function SPKPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedSPK, setSelectedSPK] = useState<SPK | null>(null)
 
-  const filteredSPKs = spkList.filter((spk) => {
-    const customer = getCustomerById(spk.customerId)
-    const vehicle = getVehicleById(spk.vehicleId)
+  const { data: woData, mutate: mutateWO, isLoading } = useSWR('/work-orders?limit=100&sortBy=createdAt&sortOrder=desc', fetcher)
+  const spkList = Array.isArray(woData?.data) ? woData.data : []
+  
+  const { data: mechanicsData } = useSWR('/reports/mechanics?startDate=2024-01-01&endDate=2025-12-31', fetcher)
+  const mechanics = Array.isArray(mechanicsData) ? mechanicsData : []
+
+  const filteredSPKs = spkList.filter((spk: any) => {
+    const customerName = spk.customer?.name || ""
+    const plateNumber = spk.vehicle?.licensePlate || spk.vehicle?.plateNumber || ""
     const matchesSearch =
-      spk.spkNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle?.plateNumber.toLowerCase().includes(searchQuery.toLowerCase())
+      (spk.orderNumber || spk.spkNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      plateNumber.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === "all" || spk.status === statusFilter
     const matchesMechanic =
       mechanicFilter === "all" ||
-      (mechanicFilter === "unassigned" && !spk.mechanicId) ||
-      spk.mechanicId === mechanicFilter
+      (mechanicFilter === "unassigned" && !spk.assignedMechanicId) ||
+      spk.assignedMechanicId === mechanicFilter
     return matchesSearch && matchesStatus && matchesMechanic
   })
 
   const handleCreateSPK = async (data: SPKFormData) => {
-    const servicesTotal = data.services.reduce((sum, s) => sum + s.price * s.quantity, 0)
-    const partsTotal = data.parts.reduce((sum, p) => sum + p.price * p.quantity, 0)
-
-    const newSPK: SPK = {
-      id: `spk-${Date.now()}`,
-      spkNumber: generateSPKNumber(),
-      customerId: data.customerId,
-      vehicleId: data.vehicleId,
-      mechanicId: data.mechanicId || undefined,
-      status: "draft",
-      services: data.services,
-      parts: data.parts,
-      notes: data.notes,
-      estimatedCost: servicesTotal + partsTotal,
-      startDate: new Date(),
-      estimatedEndDate: data.estimatedEndDate,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    try {
+      await api.post("/work-orders", data)
+      await mutateWO()
+    } catch (error) {
+      console.error("Gagal membuat SPK:", error)
     }
-    setSPKList([newSPK, ...spkList])
   }
 
-  const handleUpdateStatus = (spkId: string, newStatus: SPKStatus) => {
-    setSPKList(
-      spkList.map((spk) => {
-        if (spk.id === spkId) {
-          return {
-            ...spk,
-            status: newStatus,
-            completedDate: newStatus === "completed" ? new Date() : spk.completedDate,
-            actualCost: newStatus === "completed" ? spk.estimatedCost : spk.actualCost,
-            updatedAt: new Date(),
-          }
-        }
-        return spk
-      })
-    )
-    setDetailModalOpen(false)
+  const handleUpdateStatus = async (spkId: string, newStatus: SPKStatus) => {
+    try {
+      await api.put(`/work-orders/${spkId}/status`, { status: newStatus })
+      await mutateWO()
+      setDetailModalOpen(false)
+    } catch (error) {
+      console.error("Gagal update status SPK:", error)
+    }
   }
 
   const viewSPKDetail = (spk: SPK) => {
@@ -134,14 +118,14 @@ export default function SPKPage() {
             <Card>
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Total SPK</p>
-                <p className="text-2xl font-bold">{spkList.length}</p>
+                <p className="text-2xl font-bold">{isLoading ? "..." : spkList.length}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground">Draft</p>
+                <p className="text-sm text-muted-foreground">Pending</p>
                 <p className="text-2xl font-bold">
-                  {spkList.filter((s) => s.status === "draft").length}
+                  {isLoading ? "..." : spkList.filter((s: any) => s.status === "PENDING").length}
                 </p>
               </CardContent>
             </Card>
@@ -149,7 +133,7 @@ export default function SPKPage() {
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Dikerjakan</p>
                 <p className="text-2xl font-bold">
-                  {spkList.filter((s) => s.status === "in_progress").length}
+                  {isLoading ? "..." : spkList.filter((s: any) => s.status === "IN_PROGRESS").length}
                 </p>
               </CardContent>
             </Card>
@@ -157,7 +141,7 @@ export default function SPKPage() {
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Selesai</p>
                 <p className="text-2xl font-bold">
-                  {spkList.filter((s) => s.status === "completed").length}
+                  {isLoading ? "..." : spkList.filter((s: any) => s.status === "COMPLETED" || s.status === "INVOICED").length}
                 </p>
               </CardContent>
             </Card>
@@ -200,10 +184,11 @@ export default function SPKPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Status</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="in_progress">Dikerjakan</SelectItem>
-                    <SelectItem value="completed">Selesai</SelectItem>
-                    <SelectItem value="cancelled">Dibatalkan</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="IN_PROGRESS">Dikerjakan</SelectItem>
+                    <SelectItem value="WAITING_PARTS">Tunggu Parts</SelectItem>
+                    <SelectItem value="COMPLETED">Selesai</SelectItem>
+                    <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={mechanicFilter} onValueChange={setMechanicFilter}>
@@ -213,9 +198,9 @@ export default function SPKPage() {
                   <SelectContent>
                     <SelectItem value="all">Semua Mekanik</SelectItem>
                     <SelectItem value="unassigned">Belum Ditugaskan</SelectItem>
-                    {mockMechanics.map((mechanic) => (
+                    {mechanics.map((mechanic: any) => (
                       <SelectItem key={mechanic.id} value={mechanic.id}>
-                        {mechanic.name}
+                        {mechanic.name || mechanic.mechanicName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -237,18 +222,24 @@ export default function SPKPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSPKs.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Memuat data SPK...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredSPKs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         Tidak ada SPK ditemukan
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredSPKs.map((spk) => {
-                      const customer = getCustomerById(spk.customerId)
-                      const vehicle = getVehicleById(spk.vehicleId)
-                      const mechanic = spk.mechanicId ? getMechanicById(spk.mechanicId) : null
-                      const status = statusConfig[spk.status]
+                    filteredSPKs.map((spk: any) => {
+                      const customerName = spk.customer?.name || "-"
+                      const vehicle = spk.vehicle
+                      const mechanicName = spk.assignedMechanic?.name || "-"
+                      const status = statusConfig[spk.status as SPKStatus] || { label: spk.status, variant: "outline" }
 
                       return (
                         <TableRow key={spk.id}>
@@ -257,14 +248,14 @@ export default function SPKPage() {
                               onClick={() => viewSPKDetail(spk)}
                               className="font-medium text-primary hover:underline"
                             >
-                              {spk.spkNumber}
+                              {spk.orderNumber || spk.spkNumber}
                             </button>
                           </TableCell>
-                          <TableCell>{customer?.name || "-"}</TableCell>
+                          <TableCell>{customerName}</TableCell>
                           <TableCell>
                             {vehicle ? (
                               <div>
-                                <p className="font-mono text-sm">{vehicle.plateNumber}</p>
+                                <p className="font-mono text-sm">{vehicle.licensePlate || vehicle.plateNumber}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {vehicle.brand} {vehicle.model}
                                 </p>
@@ -274,18 +265,18 @@ export default function SPKPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            {mechanic ? mechanic.name : (
+                            {mechanicName !== "-" ? mechanicName : (
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={status.variant}>{status.label}</Badge>
+                            <Badge variant={status.variant as any}>{status.label}</Badge>
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatCurrency(spk.estimatedCost)}
+                            {formatCurrency(spk.grandTotal || spk.estimatedCost || 0)}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(spk.startDate)}
+                            {formatDate(new Date(spk.createdAt || spk.startDate))}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -300,27 +291,27 @@ export default function SPKPage() {
                                   <Eye className="mr-2 size-4" />
                                   Lihat Detail
                                 </DropdownMenuItem>
-                                {spk.status === "draft" && (
+                                {spk.status === "PENDING" && (
                                   <DropdownMenuItem
-                                    onClick={() => handleUpdateStatus(spk.id, "in_progress")}
+                                    onClick={() => handleUpdateStatus(spk.id, "IN_PROGRESS")}
                                   >
                                     <Play className="mr-2 size-4" />
                                     Mulai Kerjakan
                                   </DropdownMenuItem>
                                 )}
-                                {spk.status === "in_progress" && (
+                                {(spk.status === "IN_PROGRESS" || spk.status === "QUALITY_CHECK") && (
                                   <DropdownMenuItem
-                                    onClick={() => handleUpdateStatus(spk.id, "completed")}
+                                    onClick={() => handleUpdateStatus(spk.id, "COMPLETED")}
                                   >
                                     <CheckCircle className="mr-2 size-4" />
                                     Tandai Selesai
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
-                                {spk.status !== "cancelled" && spk.status !== "completed" && (
+                                {spk.status !== "CANCELLED" && spk.status !== "COMPLETED" && spk.status !== "INVOICED" && (
                                   <DropdownMenuItem
                                     className="text-destructive"
-                                    onClick={() => handleUpdateStatus(spk.id, "cancelled")}
+                                    onClick={() => handleUpdateStatus(spk.id, "CANCELLED")}
                                   >
                                     <XCircle className="mr-2 size-4" />
                                     Batalkan

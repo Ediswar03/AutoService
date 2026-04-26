@@ -57,6 +57,9 @@ app.use(process.env.API_PREFIX || '/api/v1', apiLimiter);
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
+// Serve local uploads folder as fallback when Minio is not used
+app.use(`${process.env.API_PREFIX || '/api/v1'}/uploads`, express.static('uploads'));
+
 // Health check
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });

@@ -15,35 +15,71 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { AlertTriangle, Info, Plus, Search, Filter, Pencil, Trash2, Package, Receipt } from "lucide-react"
+import { AlertTriangle, Plus, Search, Filter, Pencil, Trash2, Package, Receipt, Loader2 } from "lucide-react"
 import { StatsCard } from "@/components/admin/stats-card"
+import useSWR from "swr"
+import { fetcher } from "@/lib/api-client"
 
-const inventoryData = [
-  { id: "PRT-001", name: "Oli Mesin Shell AX7", category: "Oli", price: 55000, stock: 45, status: "Aman" },
-  { id: "PRT-002", name: "Kampas Rem Depan NMAX", category: "Sparepart", price: 85000, stock: 2, status: "Kritis" },
-  { id: "PRT-003", name: "Filter Udara Beat", category: "Sparepart", price: 45000, stock: 6, status: "Mendekati Minimum" },
-  { id: "PRT-004", name: "Busi NGK CPR7EA-9", category: "Sparepart", price: 25000, stock: 120, status: "Aman" },
-  { id: "PRT-005", name: "V-Belt PCX 150", category: "Sparepart", price: 150000, stock: 1, status: "Kritis" },
-]
-
-export default function InventoryPage() {
+export default function AdminInventoryPage() {
   const [search, setSearch] = useState("")
 
-  const getStockBadge = (status: string, stock: number) => {
-    if (status === "Aman") return <Badge className="bg-emerald-100 text-emerald-800 border-none px-3 font-semibold shadow-none">{stock} Pcs (Aman)</Badge>;
-    if (status === "Mendekati Minimum") return <Badge className="bg-amber-100 text-amber-800 border-none px-3 font-semibold shadow-none">{stock} Pcs (Warning)</Badge>;
-    return <Badge className="bg-red-100 text-red-800 border-none animate-pulse px-3 font-bold shadow-none">{stock} Pcs (Kritis)</Badge>;
+  const { data: rawData, isLoading } = useSWR(
+    "/inventory/spareparts?limit=500&sortBy=name&sortOrder=asc",
+    fetcher
+  )
+  const inventoryData: any[] = Array.isArray(rawData?.data) ? rawData.data : []
+
+  const getStatus = (stock: number, minStock: number) => {
+    if (stock <= 0) return "Kritis"
+    if (stock <= minStock) return "Mendekati Minimum"
+    return "Aman"
   }
 
-  const criticalCount = inventoryData.filter(i => i.status === "Kritis").length
+  const getStockBadge = (status: string, stock: number) => {
+    if (status === "Aman")
+      return (
+        <Badge className="bg-emerald-100 text-emerald-800 border-none px-3 font-semibold shadow-none">
+          {stock} Pcs (Aman)
+        </Badge>
+      )
+    if (status === "Mendekati Minimum")
+      return (
+        <Badge className="bg-amber-100 text-amber-800 border-none px-3 font-semibold shadow-none">
+          {stock} Pcs (Warning)
+        </Badge>
+      )
+    return (
+      <Badge className="bg-red-100 text-red-800 border-none animate-pulse px-3 font-bold shadow-none">
+        {stock} Pcs (Kritis)
+      </Badge>
+    )
+  }
+
+  const enriched = inventoryData.map((item: any) => ({
+    ...item,
+    status: getStatus(item.stockQuantity, item.minStock ?? 5),
+    stock: item.stockQuantity,
+  }))
+
+  const criticalCount = enriched.filter((i) => i.status === "Kritis").length
+  const totalValue = enriched.reduce(
+    (sum, i) => sum + Number(i.sellPrice || 0) * (i.stockQuantity || 0),
+    0
+  )
+
+  const filtered = enriched.filter(
+    (item) =>
+      (item.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (item.code || "").toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <>
       <AdminHeader title="Stok Barang" description="Manajemen inventori suku cadang dan sparepart bengkel." />
       <div className="p-6 space-y-6">
-        
-        {/* Critical Stock Alert */}
-        {criticalCount > 0 && (
+
+        {/* Critical Alert */}
+        {!isLoading && criticalCount > 0 && (
           <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-900 shadow-sm flex items-center gap-2">
             <div className="bg-red-100 p-2 rounded-full self-start">
               <AlertTriangle className="h-5 w-5 text-red-600" />
@@ -51,7 +87,8 @@ export default function InventoryPage() {
             <div>
               <AlertTitle className="text-red-800 font-bold text-base mb-1">Peringatan Stok Kritis!</AlertTitle>
               <AlertDescription className="text-red-700">
-                Terdapat <strong>{criticalCount}</strong> jenis barang yang stoknya habis atau di bawah batas. Segera lakukan restock agar tidak mengganggu operasional bengkel.
+                Terdapat <strong>{criticalCount}</strong> jenis barang yang stoknya habis atau di bawah batas minimum.
+                Segera lakukan restock agar tidak mengganggu operasional bengkel.
               </AlertDescription>
             </div>
           </Alert>
@@ -59,9 +96,21 @@ export default function InventoryPage() {
 
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatsCard title="Total Kemasan (Item)" value="5 Macam" icon={Package} />
-          <StatsCard title="Parts Status Kritis" value={criticalCount.toString()} icon={AlertTriangle} />
-          <StatsCard title="Total Nilai Kapital" value="Rp 8.540.000" icon={Receipt} />
+          <StatsCard
+            title="Total Item Suku Cadang"
+            value={isLoading ? "..." : `${enriched.length} Item`}
+            icon={Package}
+          />
+          <StatsCard
+            title="Parts Status Kritis"
+            value={isLoading ? "..." : criticalCount.toString()}
+            icon={AlertTriangle}
+          />
+          <StatsCard
+            title="Total Nilai Stok"
+            value={isLoading ? "..." : `Rp ${(totalValue / 1_000_000).toFixed(1)}jt`}
+            icon={Receipt}
+          />
         </div>
 
         {/* Toolbar */}
@@ -69,11 +118,11 @@ export default function InventoryPage() {
           <div className="flex gap-2 w-full sm:w-auto">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-2.5 top-2.5 size-4 text-slate-500" />
-              <Input 
-                placeholder="Cari kode atau nama part..." 
-                className="pl-9 bg-white" 
+              <Input
+                placeholder="Cari kode atau nama part..."
+                className="pl-9 bg-white"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <Button variant="outline" className="bg-white font-medium">
@@ -100,28 +149,52 @@ export default function InventoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inventoryData.filter(item => 
-                  item.name.toLowerCase().includes(search.toLowerCase()) || 
-                  item.id.toLowerCase().includes(search.toLowerCase())
-                ).map((item) => (
-                  <TableRow key={item.id} className={item.status === 'Kritis' ? "bg-red-50/50" : ""}>
-                    <TableCell className="font-semibold text-slate-700 pl-4">{item.id}</TableCell>
-                    <TableCell className="font-bold text-slate-900 dark:text-slate-100">{item.name}</TableCell>
-                    <TableCell className="font-medium text-slate-600">{item.category}</TableCell>
-                    <TableCell className="text-right font-bold text-slate-800">Rp {item.price.toLocaleString('id-ID')}</TableCell>
-                    <TableCell className="px-6">{getStockBadge(item.status, item.stock)}</TableCell>
-                    <TableCell className="text-center pr-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button variant="outline" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200">
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Memuat data inventori...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Tidak ada item ditemukan
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filtered.map((item: any) => (
+                    <TableRow
+                      key={item.id}
+                      className={item.status === "Kritis" ? "bg-red-50/50" : ""}
+                    >
+                      <TableCell className="font-semibold text-slate-700 pl-4 font-mono">{item.code || item.id.slice(0, 8)}</TableCell>
+                      <TableCell className="font-bold text-slate-900 dark:text-slate-100">{item.name}</TableCell>
+                      <TableCell className="font-medium text-slate-600">{item.category || "-"}</TableCell>
+                      <TableCell className="text-right font-bold text-slate-800">
+                        Rp {Number(item.sellPrice || 0).toLocaleString("id-ID")}
+                      </TableCell>
+                      <TableCell className="px-6">{getStockBadge(item.status, item.stock)}</TableCell>
+                      <TableCell className="text-center pr-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200"
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

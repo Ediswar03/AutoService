@@ -27,7 +27,7 @@ export interface Vehicle {
   updatedAt: Date
 }
 
-export type SPKStatus = "draft" | "in_progress" | "completed" | "cancelled"
+export type SPKStatus = "PENDING" | "IN_PROGRESS" | "WAITING_PARTS" | "QUALITY_CHECK" | "COMPLETED" | "INVOICED" | "CANCELLED"
 export type PaymentStatus = "unpaid" | "partial" | "paid"
 
 export interface ServiceItem {
@@ -87,8 +87,12 @@ export interface User {
   id: string
   name: string
   email: string
-  role: "admin" | "kasir" | "mechanic"
-  avatar?: string
+  role: string
+  photoUrl?: string
+  rating?: number
+  address?: string
+  createdAt?: string
+  isActive?: boolean
 }
 
 // API Response types

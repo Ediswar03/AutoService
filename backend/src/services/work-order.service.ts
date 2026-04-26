@@ -33,12 +33,15 @@ export class WorkOrderService {
   }
 
   // List work orders with pagination
-  async findAll(query: PaginationQuery & { status?: string }) {
+  async findAll(query: PaginationQuery & { status?: string, assignedMechanicId?: string }) {
     const { page, limit, skip, sortBy, sortOrder } = parsePagination(query);
 
     const where: any = {};
     if (query.status) {
       where.status = query.status;
+    }
+    if (query.assignedMechanicId) {
+      where.assignedMechanicId = query.assignedMechanicId;
     }
     if (query.search) {
       where.OR = [

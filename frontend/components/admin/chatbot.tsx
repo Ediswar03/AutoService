@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 export function ChatBot() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([
-    { id: 1, text: "Halo! Ada yang bisa saya bantu terkait layanan AutoServis?", isUser: false }
+    { id: 1, text: "Halo! Ada yang bisa saya bantu terkait layanan AutoService?", isUser: false }
   ])
   const [inputVal, setInputVal] = useState("")
 
@@ -44,7 +44,7 @@ export function ChatBot() {
           <CardHeader className="bg-slate-900 text-white p-4 flex flex-row items-center justify-between shadow-sm">
             <div className="flex items-center gap-2">
               <Bot className="size-5 text-[#FFC107]" />
-              <CardTitle className="text-md font-semibold">AutoServis AI</CardTitle>
+              <CardTitle className="text-md font-semibold">AutoService AI</CardTitle>
             </div>
             <Button variant="ghost" size="icon" className="text-slate-300 hover:text-white hover:bg-slate-800 size-8 rounded-full" onClick={() => setIsOpen(false)}>
               <X className="size-4" />

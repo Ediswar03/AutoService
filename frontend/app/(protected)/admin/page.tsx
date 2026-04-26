@@ -38,6 +38,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
+import useSWR from 'swr'
+import { fetcher, formatCurrency } from '@/lib/api-client'
+import { Loader2 } from "lucide-react"
 
 const chartData = [
   { date: "14/05", value: 5000000 },
@@ -50,6 +53,24 @@ const chartData = [
 ]
 
 export default function AdminDashboard() {
+  const { data: dashboardData, isLoading: isDashboardLoading } = useSWR('/reports/dashboard', fetcher)
+  const { data: recentOrdersData, isLoading: isOrdersLoading } = useSWR('/work-orders?limit=5&sortBy=createdAt&sortOrder=desc', fetcher)
+  const { data: lowStockData, isLoading: isLowStockLoading } = useSWR('/inventory/spareparts/low-stock', fetcher)
+  const { data: mechanicsData, isLoading: isMechanicsLoading } = useSWR('/reports/mechanics?startDate=2024-01-01&endDate=2025-12-31', fetcher)
+
+  const stats = dashboardData || {
+    todayWorkOrders: 0,
+    activeWorkOrders: 0,
+    monthlyRevenue: 0,
+    totalCustomers: 0,
+    lowStockCount: 0,
+    pendingInvoices: 0
+  }
+
+  const recentOrders = recentOrdersData?.data || []
+  const topMechanics = mechanicsData ? mechanicsData.slice(0, 3) : []
+  const lowStockItems = Array.isArray(lowStockData) ? lowStockData.slice(0, 5) : []
+
   return (
     <>
       <AdminHeader title="Dashboard" description="Ringkasan aktivitas bengkel" />
@@ -60,27 +81,26 @@ export default function AdminDashboard() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatsCard
               title="Total Order Servis"
-              value="28"
-              trend={{ value: 16, isPositive: true }}
+              value={isDashboardLoading ? "..." : stats.todayWorkOrders.toString()}
+              description="Hari Ini"
               icon={ClipboardList}
             />
             <StatsCard
-              title="Pendapatan Hari Ini"
-              value="Rp 12.450.000"
-              trend={{ value: 10, isPositive: true }}
+              title="Pendapatan Bulan Ini"
+              value={isDashboardLoading ? "..." : formatCurrency(stats.monthlyRevenue)}
+              trend={{ value: 0, isPositive: true }}
               icon={Receipt}
             />
             <StatsCard
               title="Order Dalam Proses"
-              value="12"
-              description="Lihat detail"
+              value={isDashboardLoading ? "..." : stats.activeWorkOrders.toString()}
+              description="Lihat detail di SPK"
               icon={Wrench}
             />
             <StatsCard
-              title="Order Selesai"
-              value="16"
-              description="Lihat detail"
-              icon={CheckCircle}
+              title="Total Pelanggan"
+              value={isDashboardLoading ? "..." : stats.totalCustomers.toString()}
+              icon={Users}
             />
           </div>
 
@@ -94,7 +114,7 @@ export default function AdminDashboard() {
                 <Card className="lg:col-span-2 shadow-sm border-slate-200">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg">Order Servis Terbaru</CardTitle>
-                <Link href="#" className="flex text-sm text-blue-600 hover:underline">
+                <Link href="/admin/spk" className="flex text-sm text-blue-600 hover:underline">
                   Lihat Semua
                 </Link>
               </CardHeader>
@@ -112,46 +132,38 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow>
-                        <TableCell className="font-medium text-slate-700">#SRV-240520-001</TableCell>
-                        <TableCell>Budi Santoso</TableCell>
-                        <TableCell>Honda Brio 2020</TableCell>
-                        <TableCell>Ganti Oli</TableCell>
-                        <TableCell>Andi</TableCell>
-                        <TableCell><Badge className="bg-amber-400 hover:bg-amber-500 text-slate-900 border-none shadow-none font-medium">Dalam Proses</Badge></TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium text-slate-700">#SRV-240520-002</TableCell>
-                        <TableCell>Dewi Lestari</TableCell>
-                        <TableCell>Yamaha NMAX 2021</TableCell>
-                        <TableCell>Servis CVT</TableCell>
-                        <TableCell>Rudi</TableCell>
-                        <TableCell><Badge className="bg-amber-400 hover:bg-amber-500 text-slate-900 border-none shadow-none font-medium">Dalam Proses</Badge></TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium text-slate-700">#SRV-240520-003</TableCell>
-                        <TableCell>Arif Setiawan</TableCell>
-                        <TableCell>Toyota Avanza 2018</TableCell>
-                        <TableCell>Tune Up</TableCell>
-                        <TableCell>Andi</TableCell>
-                        <TableCell><Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-none font-medium">Selesai</Badge></TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium text-slate-700">#SRV-240520-004</TableCell>
-                        <TableCell>Fajar Nugroho</TableCell>
-                        <TableCell>Honda Vario 2019</TableCell>
-                        <TableCell>Ganti Oli</TableCell>
-                        <TableCell>Rudi</TableCell>
-                        <TableCell><Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-none font-medium">Selesai</Badge></TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium text-slate-700">#SRV-240520-005</TableCell>
-                        <TableCell>Siti Aminah</TableCell>
-                        <TableCell>Yamaha Aerox 2022</TableCell>
-                        <TableCell>Ganti Ban</TableCell>
-                        <TableCell>Doni</TableCell>
-                        <TableCell><Badge className="bg-slate-200 hover:bg-slate-300 text-slate-700 border-none shadow-none font-medium">Menunggu</Badge></TableCell>
-                      </TableRow>
+                      {isOrdersLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="h-24 text-center text-slate-500">
+                            <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Memuat data...
+                          </TableCell>
+                        </TableRow>
+                      ) : recentOrders.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="h-24 text-center text-slate-500">
+                            Belum ada order servis
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        recentOrders.map((order: any) => (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium text-slate-700">{order.orderNumber}</TableCell>
+                            <TableCell>{order.customer?.name || '-'}</TableCell>
+                            <TableCell>{order.vehicle?.brand} {order.vehicle?.model}</TableCell>
+                            <TableCell>{formatCurrency(order.grandTotal)}</TableCell>
+                            <TableCell>{order.assignedMechanic?.name || '-'}</TableCell>
+                            <TableCell>
+                              <Badge className={`border-none shadow-none font-medium ${
+                                order.status === 'COMPLETED' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' :
+                                order.status === 'IN_PROGRESS' ? 'bg-amber-400 hover:bg-amber-500 text-slate-900' :
+                                'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                              }`}>
+                                {order.status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -198,7 +210,7 @@ export default function AdminDashboard() {
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg">Stok Barang</CardTitle>
-                <Link href="#" className="flex text-sm text-blue-600 hover:underline">
+                <Link href="/admin/inventory" className="flex text-sm text-blue-600 hover:underline">
                   Lihat Semua
                 </Link>
               </CardHeader>
@@ -214,41 +226,33 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell className="font-medium text-slate-700">Oli Mesin Shell AX7</TableCell>
-                      <TableCell>Oli</TableCell>
-                      <TableCell className="text-center font-bold">12</TableCell>
-                      <TableCell>Botol</TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-6 w-6"><Pencil className="size-3 text-slate-500" /></Button></TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium text-slate-700">Oli Mesin Castrol Matic</TableCell>
-                      <TableCell>Oli</TableCell>
-                      <TableCell className="text-center font-bold">8</TableCell>
-                      <TableCell>Botol</TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-6 w-6"><Pencil className="size-3 text-slate-500" /></Button></TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium text-slate-700">Filter Oli Honda</TableCell>
-                      <TableCell>Sparepart</TableCell>
-                      <TableCell className="text-center font-bold">15</TableCell>
-                      <TableCell>Pcs</TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-6 w-6"><Pencil className="size-3 text-slate-500" /></Button></TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium text-slate-700">Busi NGK CPR7EA-9</TableCell>
-                      <TableCell>Sparepart</TableCell>
-                      <TableCell className="text-center font-bold">20</TableCell>
-                      <TableCell>Pcs</TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-6 w-6"><Pencil className="size-3 text-slate-500" /></Button></TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium text-slate-700">Kampas Rem Depan</TableCell>
-                      <TableCell>Sparepart</TableCell>
-                      <TableCell className="text-center font-bold">7</TableCell>
-                      <TableCell>Set</TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-6 w-6"><Pencil className="size-3 text-slate-500" /></Button></TableCell>
-                    </TableRow>
+                    {isLowStockLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                          <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Memuat data...
+                        </TableCell>
+                      </TableRow>
+                    ) : lowStockItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                          Tidak ada barang menipis
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      lowStockItems.map((item: any) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium text-slate-700">{item.name}</TableCell>
+                          <TableCell>{item.category}</TableCell>
+                          <TableCell className="text-center font-bold text-red-500">{item.stock_quantity}</TableCell>
+                          <TableCell>{item.unit}</TableCell>
+                          <TableCell className="text-right">
+                            <Link href="/admin/inventory">
+                              <Button variant="ghost" size="icon" className="h-6 w-6"><Pencil className="size-3 text-slate-500" /></Button>
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -258,59 +262,39 @@ export default function AdminDashboard() {
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg">Aktivitas Mekanik</CardTitle>
-                <Link href="#" className="flex text-sm text-blue-600 hover:underline">
+                <Link href="/admin/mechanics" className="flex text-sm text-blue-600 hover:underline">
                   Lihat Semua
                 </Link>
               </CardHeader>
               <CardContent className="flex flex-col h-full space-y-5 pt-3">
                 
-                <div className="flex items-center gap-3">
-                  <Avatar className="size-10">
-                    <AvatarImage src="https://i.pravatar.cc/150?u=1" />
-                    <AvatarFallback>AN</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-slate-900">Andi</p>
-                    <p className="text-xs text-amber-500 font-medium">Sedang mengerjakan</p>
-                    <p className="text-xs text-slate-500 truncate">#SRV-240520-001 • Honda Brio 2020</p>
+                {isMechanicsLoading ? (
+                  <div className="flex items-center justify-center h-24">
+                    <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm text-slate-900">00:45</p>
-                    <p className="text-xs text-slate-500">Durasi</p>
+                ) : topMechanics.length === 0 ? (
+                  <div className="flex items-center justify-center h-24 text-sm text-slate-500">
+                    Belum ada data mekanik aktif
                   </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Avatar className="size-10">
-                    <AvatarImage src="https://i.pravatar.cc/150?u=2" />
-                    <AvatarFallback>RU</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-slate-900">Rudi</p>
-                    <p className="text-xs text-amber-500 font-medium">Sedang mengerjakan</p>
-                    <p className="text-xs text-slate-500 truncate">#SRV-240520-002 • Yamaha NMAX 2021</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm text-slate-900">01:10</p>
-                    <p className="text-xs text-slate-500">Durasi</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Avatar className="size-10">
-                    <AvatarImage src="https://i.pravatar.cc/150?u=3" />
-                    <AvatarFallback>DN</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-slate-900">Doni</p>
-                    <p className="text-xs text-amber-500 font-medium">Sedang mengerjakan</p>
-                    <p className="text-xs text-slate-500 truncate">#SRV-240520-005 • Yamaha Aerox 2022</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm text-slate-900">00:30</p>
-                    <p className="text-xs text-slate-500">Durasi</p>
-                  </div>
-                </div>
+                ) : (
+                  topMechanics.map((mechanic: any, index: number) => (
+                    <div key={mechanic.id} className="flex items-center gap-3">
+                      <Avatar className="size-10">
+                        <AvatarImage src={`https://i.pravatar.cc/150?u=${mechanic.id}`} />
+                        <AvatarFallback>{mechanic.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-slate-900">{mechanic.name}</p>
+                        <p className="text-xs text-amber-500 font-medium">{mechanic.inProgress} SPK aktif</p>
+                        <p className="text-xs text-slate-500 truncate">{mechanic.completed} SPK terselesaikan</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-sm text-slate-900">{formatCurrency(mechanic.totalRevenue)}</p>
+                        <p className="text-[10px] text-slate-500">Hasilkan</p>
+                      </div>
+                    </div>
+                  ))
+                )}
 
                 <div className="mt-auto pt-4">
                   <Button variant="outline" className="w-full text-amber-500 border-amber-200">
@@ -324,7 +308,7 @@ export default function AdminDashboard() {
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg">Pengingat</CardTitle>
-                <Link href="#" className="flex text-sm text-blue-600 hover:underline">
+                <Link href="/admin/reports" className="flex text-sm text-blue-600 hover:underline">
                   Lihat Semua
                 </Link>
               </CardHeader>
@@ -377,47 +361,47 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent className="pt-4 px-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
+                    <Link href="/admin/spk" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
                       <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
                         <ClipboardList className="size-5" />
                       </div>
                       <span className="text-[11px] font-semibold text-slate-700">Order Servis</span>
-                    </div>
+                    </Link>
 
-                    <div className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
+                    <Link href="/admin/schedule" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
                       <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
                         <Calendar className="size-5" />
                       </div>
                       <span className="text-[11px] font-semibold text-slate-700">Jadwal</span>
-                    </div>
+                    </Link>
 
-                    <div className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
+                    <Link href="/admin/customers" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
                       <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
                         <Users className="size-5" />
                       </div>
                       <span className="text-[11px] font-semibold text-slate-700">Pelanggan</span>
-                    </div>
+                    </Link>
 
-                    <div className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
+                    <Link href="/admin/inventory" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
                       <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
                         <Package className="size-5" />
                       </div>
                       <span className="text-[11px] font-semibold text-slate-700">Stok Barang</span>
-                    </div>
+                    </Link>
 
-                    <div className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
+                    <Link href="/admin/invoices" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
                       <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
                         <Receipt className="size-5" />
                       </div>
                       <span className="text-[11px] font-semibold text-slate-700">Pembayaran</span>
-                    </div>
+                    </Link>
 
-                    <div className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
+                    <Link href="/admin/reports" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
                       <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
                         <BarChart3 className="size-5" />
                       </div>
                       <span className="text-[11px] font-semibold text-slate-700">Laporan</span>
-                    </div>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
@@ -426,27 +410,27 @@ export default function AdminDashboard() {
               <Card className="shadow-sm border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100">
                   <CardTitle className="text-lg">Ringkasan Hari Ini</CardTitle>
-                  <Link href="#" className="flex text-[11px] text-blue-600 hover:underline font-medium">
+                  <Link href="/admin/reports" className="flex text-[11px] text-blue-600 hover:underline font-medium">
                     Lihat Detail
                   </Link>
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 gap-y-4 gap-x-2">
                     <div>
-                      <h4 className="text-xl font-bold">28</h4>
+                      <h4 className="text-xl font-bold">{isDashboardLoading ? "..." : stats.todayWorkOrders}</h4>
                       <p className="text-[11px] text-slate-500">Total Order</p>
                     </div>
                     <div>
-                      <h4 className="text-xl font-bold">12</h4>
+                      <h4 className="text-xl font-bold">{isDashboardLoading ? "..." : stats.activeWorkOrders}</h4>
                       <p className="text-[11px] text-slate-500">Dalam Proses</p>
                     </div>
                     <div>
-                      <h4 className="text-xl font-bold">16</h4>
-                      <p className="text-[11px] text-slate-500">Selesai</p>
+                      <h4 className="text-xl font-bold">{isDashboardLoading ? "..." : stats.totalCustomers}</h4>
+                      <p className="text-[11px] text-slate-500">Total Pelanggan</p>
                     </div>
                     <div>
-                      <h4 className="text-[17px] font-bold">Rp 12.450.000</h4>
-                      <p className="text-[11px] text-slate-500">Pendapatan</p>
+                      <h4 className="text-[17px] font-bold">{isDashboardLoading ? "..." : formatCurrency(stats.monthlyRevenue)}</h4>
+                      <p className="text-[11px] text-slate-500">Pendapatan Bulanan</p>
                     </div>
                   </div>
                 </CardContent>
@@ -456,46 +440,34 @@ export default function AdminDashboard() {
               <Card className="shadow-sm border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100">
                   <CardTitle className="text-lg">Order Terbaru</CardTitle>
-                  <Link href="#" className="flex text-[11px] text-blue-600 hover:underline font-medium">
+                  <Link href="/admin/spk" className="flex text-[11px] text-blue-600 hover:underline font-medium">
                     Lihat Semua
                   </Link>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">#SRV-240520-001</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Budi Santoso</p>
-                      <p className="text-[11px] text-slate-500">Honda Brio 2020</p>
+                  {isOrdersLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
                     </div>
-                    <Badge className="bg-[#FFC107] hover:bg-[#FFC107]/90 text-slate-900 border-none shadow-none text-[10px] px-2 py-0">Dalam Proses</Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">#SRV-240520-002</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Dewi Lestari</p>
-                      <p className="text-[11px] text-slate-500">Yamaha NMAX 2021</p>
-                    </div>
-                    <Badge className="bg-[#FFC107] hover:bg-[#FFC107]/90 text-slate-900 border-none shadow-none text-[10px] px-2 py-0">Dalam Proses</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">#SRV-240520-003</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Arif Setiawan</p>
-                      <p className="text-[11px] text-slate-500">Toyota Avanza 2018</p>
-                    </div>
-                    <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-none text-[10px] px-2 py-0">Selesai</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">#SRV-240520-004</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Fajar Nugroho</p>
-                      <p className="text-[11px] text-slate-500">Honda Vario 2019</p>
-                    </div>
-                    <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-none text-[10px] px-2 py-0">Selesai</Badge>
-                  </div>
+                  ) : recentOrders.length === 0 ? (
+                    <div className="text-center p-4 text-sm text-slate-500">Belum ada order</div>
+                  ) : (
+                    recentOrders.map((order: any) => (
+                      <div key={order.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{order.orderNumber}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">{order.customer?.name}</p>
+                        </div>
+                        <Badge className={`border-none shadow-none text-[10px] px-2 py-0 ${
+                          order.status === 'COMPLETED' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' :
+                          order.status === 'IN_PROGRESS' ? 'bg-[#FFC107] hover:bg-[#FFC107]/90 text-slate-900' :
+                          'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                        }`}>
+                          {order.status}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 

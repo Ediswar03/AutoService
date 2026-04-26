@@ -9,6 +9,7 @@ import workOrderRoutes from './work-order.routes';
 import inventoryRoutes from './inventory.routes';
 import invoiceRoutes from './invoice.routes';
 import reportRoutes from './report.routes';
+import uploadRoutes from './upload.routes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/work-orders', workOrderRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/reports', reportRoutes);
+router.use('/uploads', uploadRoutes);
 
 export default router;

@@ -29,11 +29,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-muted/30">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-          <Wrench className="h-6 w-6 text-primary-foreground" />
-        </div>
-        <h1 className="text-2xl font-bold">AutoServis System</h1>
+      <div className="flex items-center justify-center mb-6">
+        <img src="/Logo1.png" alt="AutoService Logo" className="h-16 w-auto object-contain" />
       </div>
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="mt-4 text-muted-foreground">Memuat aplikasi...</p>

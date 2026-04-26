@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'AutoServis System',
-    template: '%s | AutoServis',
+    default: 'AutoService System',
+    template: '%s | AutoService',
   },
   description: 'Sistem Manajemen Bengkel Mobil - Kelola SPK, Invoice, Sparepart, dan Laporan',
   keywords: ['bengkel', 'servis mobil', 'spk', 'invoice', 'sparepart', 'manajemen bengkel'],

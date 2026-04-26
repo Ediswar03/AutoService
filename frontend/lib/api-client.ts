@@ -111,20 +111,20 @@ export default apiClient
 
 // Helper functions for common HTTP methods
 export const api = {
-  get: <T>(url: string, params?: Record<string, unknown>) =>
-    apiClient.get<T>(url, { params }).then((res) => res.data),
+  get: <T>(url: string, params?: Record<string, unknown>, config?: import('axios').AxiosRequestConfig) =>
+    apiClient.get<T>(url, { params, ...config }).then((res) => res.data),
 
-  post: <T>(url: string, data?: unknown) =>
-    apiClient.post<T>(url, data).then((res) => res.data),
+  post: <T>(url: string, data?: unknown, config?: import('axios').AxiosRequestConfig) =>
+    apiClient.post<T>(url, data, config).then((res) => res.data),
 
-  put: <T>(url: string, data?: unknown) =>
-    apiClient.put<T>(url, data).then((res) => res.data),
+  put: <T>(url: string, data?: unknown, config?: import('axios').AxiosRequestConfig) =>
+    apiClient.put<T>(url, data, config).then((res) => res.data),
 
-  patch: <T>(url: string, data?: unknown) =>
-    apiClient.patch<T>(url, data).then((res) => res.data),
+  patch: <T>(url: string, data?: unknown, config?: import('axios').AxiosRequestConfig) =>
+    apiClient.patch<T>(url, data, config).then((res) => res.data),
 
-  delete: <T>(url: string) =>
-    apiClient.delete<T>(url).then((res) => res.data),
+  delete: <T>(url: string, config?: import('axios').AxiosRequestConfig) =>
+    apiClient.delete<T>(url, config).then((res) => res.data),
 }
 
 // SWR fetcher

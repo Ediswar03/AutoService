@@ -30,10 +30,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { inventoryItems, categories, formatCurrency, getStockStatusColor, getStockStatusLabel } from '@/lib/gudang-data'
+import { formatCurrency, getStockStatusColor, getStockStatusLabel } from '@/lib/gudang-data'
 import { GudangHeader } from '@/components/gudang/gudang-header'
+import useSWR from 'swr'
+import { fetcher } from '@/lib/api-client'
+import { Loader2 } from 'lucide-react'
 
 const ITEMS_PER_PAGE = 10
+
+function getStatusFromStock(quantity: number, minStock: number): 'ok' | 'minimum' | 'critical' {
+  if (quantity <= 0) return 'critical'
+  if (quantity <= minStock) return 'minimum'
+  return 'ok'
+}
 
 function InventoryContent() {
   const searchParams = useSearchParams()
@@ -47,10 +56,25 @@ function InventoryContent() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [currentPage, setCurrentPage] = useState(1)
 
+  const { data: rawData, isLoading } = useSWR('/inventory/spareparts?limit=1000', fetcher)
+  const inventoryItems = Array.isArray(rawData?.data) ? rawData.data.map((item: any) => ({
+    ...item,
+    partCode: item.code,
+    currentStock: item.stockQuantity,
+    minStock: item.minStock || 5,
+    maxStock: item.maxStock || 100,
+    status: getStatusFromStock(item.stockQuantity, item.minStock || 5),
+    supplier: item.supplier || { name: '-' },
+    locationStr: item.location || '-',
+    sellPrice: Number(item.sellPrice || 0)
+  })) : []
+  
+  const categories = Array.from(new Set(inventoryItems.map((item: any) => item.category)))
+
   const uniqueSuppliers = useMemo(() => {
-    const supplierNames = [...new Set(inventoryItems.map(item => item.supplier.name))]
-    return supplierNames
-  }, [])
+    const supplierNames = [...new Set(inventoryItems.map((item: any) => item.supplier.name))].filter(Boolean)
+    return supplierNames as string[]
+  }, [inventoryItems])
 
   const filteredItems = useMemo(() => {
     let items = [...inventoryItems]
@@ -78,7 +102,7 @@ function InventoryContent() {
 
     // Status filter
     if (statusFilter !== 'all') {
-      items = items.filter(item => item.status === statusFilter)
+      items = items.filter((item: any) => item.status === statusFilter)
     }
 
     // Sorting
@@ -144,7 +168,7 @@ function InventoryContent() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-slate-800">Manajemen Inventori</h2>
-          <p className="text-sm text-slate-500">Total {inventoryItems.length} jenis suku cadang tersedia</p>
+          <p className="text-sm text-slate-500">Total {isLoading ? "..." : inventoryItems.length} jenis suku cadang tersedia</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="bg-white">
@@ -179,7 +203,7 @@ function InventoryContent() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Kategori</SelectItem>
-                {categories.map((cat) => (
+                {categories.map((cat: any) => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
@@ -265,13 +289,25 @@ function InventoryContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedItems.map((item) => (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                      <Loader2 className="w-5 h-5 animate-spin inline mr-2" /> Memuat data inventori...
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                      Tidak ada part ditemukan
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedItems.map((item: any) => (
                   <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
                     <TableCell className="font-mono text-xs font-semibold text-slate-600">{item.partCode}</TableCell>
                     <TableCell>
                       <div>
                         <p className="font-bold text-slate-900 text-sm">{item.name}</p>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-tight">Lokasi: {item.location.rack}-{item.location.row}-{item.location.column}</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-tight">Lokasi: {item.locationStr}</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -310,17 +346,17 @@ function InventoryContent() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem asChild>
-                            <Link href={`/gudang/inventory/${item.id}/detail`} className="cursor-pointer">
+                            <Link href={`/gudang/inventory/${item.id}/detail`} className="cursor-pointer flex w-full items-center">
                               <Eye className="mr-2 size-4 text-slate-500" />
                               Lihat Detail
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem className="cursor-pointer flex w-full items-center">
                             <Edit className="mr-2 size-4 text-slate-500" />
                             Edit Data
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-500 hover:text-red-600 focus:text-red-600 cursor-pointer">
+                          <DropdownMenuItem className="text-red-500 hover:text-red-600 focus:text-red-600 cursor-pointer flex w-full items-center">
                             <Trash2 className="mr-2 size-4" />
                             Hapus Part
                           </DropdownMenuItem>

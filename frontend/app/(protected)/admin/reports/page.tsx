@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Download, TrendingUp, TrendingDown, Calendar, DollarSign, ClipboardList, Users, Car } from "lucide-react"
+import { Download, TrendingUp, DollarSign, ClipboardList, Users, Car, Loader2 } from "lucide-react"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { RevenueChart } from "@/components/admin/revenue-chart"
 import { StatsCard } from "@/components/admin/stats-card"
@@ -22,55 +22,69 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  mockSPKs,
-  mockInvoices,
-  mockCustomers,
-  mockVehicles,
-  mockMechanics,
-  getCustomerById,
-  formatCurrency,
-} from "@/lib/mock-data"
+import useSWR from "swr"
+import { fetcher } from "@/lib/api-client"
 
-// Generate mock monthly data
-const monthlyData = [
-  { month: "Jan", revenue: 15500000, spkCount: 12 },
-  { month: "Feb", revenue: 18200000, spkCount: 15 },
-  { month: "Mar", revenue: 22100000, spkCount: 18 },
-  { month: "Apr", revenue: 19800000, spkCount: 16 },
-  { month: "Mei", revenue: 24500000, spkCount: 20 },
-  { month: "Jun", revenue: 21300000, spkCount: 17 },
-]
-
-// Service popularity
-const popularServices = [
-  { name: "Ganti Oli Mesin", count: 45, revenue: 6750000 },
-  { name: "Tune Up", count: 32, revenue: 11200000 },
-  { name: "Servis AC", count: 28, revenue: 7000000 },
-  { name: "Ganti Kampas Rem", count: 24, revenue: 4800000 },
-  { name: "Spooring & Balancing", count: 18, revenue: 5400000 },
-]
-
-// Top customers
-const topCustomers = mockCustomers
-  .map((customer) => {
-    const customerInvoices = mockInvoices.filter((inv) => inv.customerId === customer.id)
-    const totalSpent = customerInvoices.reduce((sum, inv) => sum + inv.total, 0)
-    return { ...customer, totalSpent, invoiceCount: customerInvoices.length }
-  })
-  .sort((a, b) => b.totalSpent - a.totalSpent)
-  .slice(0, 5)
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount)
+}
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState("6months")
 
-  const totalRevenue = mockInvoices
-    .filter((inv) => inv.paymentStatus === "paid")
-    .reduce((sum, inv) => sum + inv.total, 0)
-  const totalSPK = mockSPKs.length
-  const completedSPK = mockSPKs.filter((s) => s.status === "completed").length
-  const averageOrderValue = totalRevenue / (completedSPK || 1)
+  // Date range helpers
+  const now = new Date()
+  const periodMap: Record<string, { startDate: string; endDate: string }> = {
+    "7days":   (() => { const d = new Date(now); d.setDate(d.getDate() - 7);  return { startDate: d.toISOString().slice(0,10), endDate: now.toISOString().slice(0,10) }})(),
+    "30days":  (() => { const d = new Date(now); d.setDate(d.getDate() - 30); return { startDate: d.toISOString().slice(0,10), endDate: now.toISOString().slice(0,10) }})(),
+    "3months": (() => { const d = new Date(now); d.setMonth(d.getMonth() - 3); return { startDate: d.toISOString().slice(0,10), endDate: now.toISOString().slice(0,10) }})(),
+    "6months": (() => { const d = new Date(now); d.setMonth(d.getMonth() - 6); return { startDate: d.toISOString().slice(0,10), endDate: now.toISOString().slice(0,10) }})(),
+    "1year":   (() => { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return { startDate: d.toISOString().slice(0,10), endDate: now.toISOString().slice(0,10) }})(),
+  }
+  const { startDate, endDate } = periodMap[period] || periodMap["6months"]
+
+  // API calls
+  const { data: dashRaw, isLoading } = useSWR(`/reports/dashboard?startDate=${startDate}&endDate=${endDate}`, fetcher)
+  const { data: mechanicsRaw }       = useSWR(`/reports/mechanics?startDate=${startDate}&endDate=${endDate}`, fetcher)
+  const { data: customersRaw }       = useSWR("/customers?limit=200", fetcher)
+  const { data: vehiclesRaw }        = useSWR("/vehicles?limit=1", fetcher)
+
+  const dash      = dashRaw?.data || dashRaw || {}
+  const mechanics: any[] = Array.isArray(mechanicsRaw) ? mechanicsRaw : []
+  const customers: any[] = Array.isArray(customersRaw?.data) ? customersRaw.data : []
+  const totalVehicles = vehiclesRaw?.meta?.total || vehiclesRaw?.total || 0
+
+  const totalRevenue    = Number(dash.totalRevenue    || 0)
+  const totalSPK        = Number(dash.totalOrders     || dash.totalSPK     || 0)
+  const completedSPK    = Number(dash.completedOrders || dash.totalCompleted || 0)
+  const avgOrderValue   = totalRevenue / Math.max(completedSPK, 1)
+
+  // Build monthly chart data from dashboard
+  const monthlyData = Array.isArray(dash.monthlyRevenue)
+    ? dash.monthlyRevenue.map((m: any) => ({
+        month:    m.month || m.label || "-",
+        revenue:  Number(m.realisasi || m.revenue || 0),
+        spkCount: Number(m.orderCount || m.count || 0),
+      }))
+    : [
+        { month: "Jan", revenue: 0, spkCount: 0 },
+        { month: "Feb", revenue: 0, spkCount: 0 },
+        { month: "Mar", revenue: 0, spkCount: 0 },
+        { month: "Apr", revenue: 0, spkCount: 0 },
+        { month: "Mei", revenue: 0, spkCount: 0 },
+        { month: "Jun", revenue: 0, spkCount: 0 },
+      ]
+
+  // Top customers by work-order count (from customers API)
+  const topCustomers = customers
+    .filter((c: any) => (c._count?.workOrders || 0) > 0 || (c.workOrderCount || 0) > 0)
+    .sort((a: any, b: any) => (b._count?.workOrders || b.workOrderCount || 0) - (a._count?.workOrders || a.workOrderCount || 0))
+    .slice(0, 5)
+
+  // Service popularity from dashboard
+  const popularServices: any[] = Array.isArray(dash.popularServices) ? dash.popularServices : []
 
   return (
     <>
@@ -78,6 +92,7 @@ export default function ReportsPage() {
 
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-7xl space-y-6">
+
           {/* Period Filter */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -95,8 +110,7 @@ export default function ReportsPage() {
               </Select>
             </div>
             <Button variant="outline">
-              <Download className="mr-2 size-4" />
-              Export PDF
+              <Download className="mr-2 size-4" />Export PDF
             </Button>
           </div>
 
@@ -104,27 +118,27 @@ export default function ReportsPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatsCard
               title="Total Pendapatan"
-              value={formatCurrency(totalRevenue)}
+              value={isLoading ? "..." : formatCurrency(totalRevenue)}
               icon={DollarSign}
               trend={{ value: 12, isPositive: true }}
             />
             <StatsCard
               title="Total SPK"
-              value={totalSPK}
+              value={isLoading ? "..." : totalSPK}
               description={`${completedSPK} selesai`}
               icon={ClipboardList}
               trend={{ value: 8, isPositive: true }}
             />
             <StatsCard
               title="Rata-rata Transaksi"
-              value={formatCurrency(averageOrderValue)}
+              value={isLoading ? "..." : formatCurrency(avgOrderValue)}
               icon={TrendingUp}
               trend={{ value: 5, isPositive: true }}
             />
             <StatsCard
               title="Total Pelanggan"
-              value={mockCustomers.length}
-              description={`${mockVehicles.length} kendaraan`}
+              value={isLoading ? "..." : customers.length}
+              description={`${totalVehicles} kendaraan`}
               icon={Users}
             />
           </div>
@@ -135,27 +149,37 @@ export default function ReportsPage() {
               <TabsTrigger value="revenue">Pendapatan</TabsTrigger>
               <TabsTrigger value="spk">Volume SPK</TabsTrigger>
             </TabsList>
-
             <TabsContent value="revenue">
               <Card>
                 <CardHeader>
                   <CardTitle>Grafik Pendapatan</CardTitle>
-                  <CardDescription>Pendapatan bulanan dalam 6 bulan terakhir</CardDescription>
+                  <CardDescription>Pendapatan per bulan dalam periode terpilih</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <RevenueChart data={monthlyData} type="area" />
+                  {isLoading ? (
+                    <div className="h-48 flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <RevenueChart data={monthlyData} type="area" />
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent value="spk">
               <Card>
                 <CardHeader>
                   <CardTitle>Volume SPK</CardTitle>
-                  <CardDescription>Jumlah SPK per bulan dalam 6 bulan terakhir</CardDescription>
+                  <CardDescription>Jumlah SPK per bulan dalam periode terpilih</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <RevenueChart data={monthlyData} type="bar" />
+                  {isLoading ? (
+                    <div className="h-48 flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <RevenueChart data={monthlyData} type="bar" />
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -179,13 +203,15 @@ export default function ReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {popularServices.map((service, i) => (
+                    {isLoading ? (
+                      <TableRow><TableCell colSpan={3} className="text-center py-6"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                    ) : popularServices.length === 0 ? (
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-muted-foreground">Belum ada data layanan</TableCell></TableRow>
+                    ) : popularServices.map((service: any, i: number) => (
                       <TableRow key={i}>
-                        <TableCell className="font-medium">{service.name}</TableCell>
-                        <TableCell className="text-center">{service.count}x</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(service.revenue)}
-                        </TableCell>
+                        <TableCell className="font-medium">{service.name || service.serviceName}</TableCell>
+                        <TableCell className="text-center">{service.count || service.orderCount}x</TableCell>
+                        <TableCell className="text-right">{formatCurrency(Number(service.revenue || 0))}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -197,31 +223,37 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Pelanggan Teratas</CardTitle>
-                <CardDescription>Berdasarkan total transaksi</CardDescription>
+                <CardDescription>Berdasarkan frekuensi kunjungan</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Pelanggan</TableHead>
-                      <TableHead className="text-center">Transaksi</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-center">Kunjungan</TableHead>
+                      <TableHead className="text-right">Tipe</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {topCustomers.map((customer) => (
+                    {isLoading ? (
+                      <TableRow><TableCell colSpan={3} className="text-center py-6"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                    ) : topCustomers.length === 0 ? (
+                      <TableRow><TableCell colSpan={3} className="text-center py-6 text-muted-foreground">Belum ada data pelanggan</TableCell></TableRow>
+                    ) : topCustomers.map((customer: any) => (
                       <TableRow key={customer.id}>
                         <TableCell>
                           <div>
                             <p className="font-medium">{customer.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {customer.type === "korporat" ? "Korporat" : "Pribadi"}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{customer.email || customer.phone}</p>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center">{customer.invoiceCount}x</TableCell>
+                        <TableCell className="text-center">
+                          {customer._count?.workOrders || customer.workOrderCount || 0}x
+                        </TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(customer.totalSpent)}
+                          <Badge variant={customer.customerType === "KORPORAT" ? "default" : "secondary"}>
+                            {customer.customerType === "KORPORAT" ? "Korporat" : "Pribadi"}
+                          </Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -235,7 +267,7 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Performa Mekanik</CardTitle>
-              <CardDescription>Statistik pekerjaan mekanik</CardDescription>
+              <CardDescription>Statistik pekerjaan mekanik dalam periode terpilih</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -243,42 +275,29 @@ export default function ReportsPage() {
                   <TableRow>
                     <TableHead>Mekanik</TableHead>
                     <TableHead>Spesialisasi</TableHead>
-                    <TableHead className="text-center">SPK Dikerjakan</TableHead>
+                    <TableHead className="text-center">Total SPK</TableHead>
                     <TableHead className="text-center">SPK Selesai</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Rating</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockMechanics.map((mechanic) => {
-                    const assignedSPK = mockSPKs.filter((s) => s.mechanicId === mechanic.id).length
-                    const completedSPK = mockSPKs.filter(
-                      (s) => s.mechanicId === mechanic.id && s.status === "completed"
-                    ).length
-
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-6"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
+                  ) : mechanics.length === 0 ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">Belum ada data mekanik</TableCell></TableRow>
+                  ) : mechanics.map((mechanic: any) => {
+                    const name = mechanic.mechanicName || mechanic.name || "-"
+                    const spk  = mechanic.totalOrders   || mechanic.spkCompleted || 0
+                    const done = mechanic.completedOrders || spk
+                    const rating = Number(mechanic.avgRating || mechanic.rating || 0)
                     return (
-                      <TableRow key={mechanic.id}>
-                        <TableCell className="font-medium">{mechanic.name}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {mechanic.specialization}
-                        </TableCell>
-                        <TableCell className="text-center">{assignedSPK}</TableCell>
-                        <TableCell className="text-center">{completedSPK}</TableCell>
+                      <TableRow key={mechanic.id || mechanic.mechanicId}>
+                        <TableCell className="font-medium">{name}</TableCell>
+                        <TableCell className="text-muted-foreground">{mechanic.specialization || "Umum"}</TableCell>
+                        <TableCell className="text-center">{spk}</TableCell>
+                        <TableCell className="text-center">{done}</TableCell>
                         <TableCell className="text-center">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                              mechanic.status === "available"
-                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                : mechanic.status === "busy"
-                                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                                : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-                            }`}
-                          >
-                            {mechanic.status === "available"
-                              ? "Tersedia"
-                              : mechanic.status === "busy"
-                              ? "Sibuk"
-                              : "Tidak Aktif"}
-                          </span>
+                          <span className="text-amber-500 font-semibold">{rating > 0 ? `⭐ ${rating.toFixed(1)}` : "-"}</span>
                         </TableCell>
                       </TableRow>
                     )
@@ -287,6 +306,7 @@ export default function ReportsPage() {
               </Table>
             </CardContent>
           </Card>
+
         </div>
       </div>
     </>

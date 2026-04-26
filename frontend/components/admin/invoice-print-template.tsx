@@ -25,13 +25,13 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
       <div ref={ref} className="p-8 bg-white text-black min-h-[297mm] w-[210mm] mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">AutoServis</h1>
+          <img src="/Logo1.png" alt="AutoService Logo" className="h-16 w-auto mx-auto mb-2 object-contain" />
           <p className="text-sm text-gray-600">Bengkel Otomotif Terpercaya</p>
           <p className="text-sm text-gray-600">
             Jl. Raya Utama No. 123, Jakarta Selatan
           </p>
           <p className="text-sm text-gray-600">
-            Telp: 021-5551234 | Email: info@autoservis.id
+            Telp: 021-5551234 | Email: info@autoservice.id
           </p>
         </div>
 
@@ -201,7 +201,7 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
 
         <div className="mt-8 text-center text-xs text-gray-500">
           <p>Terima kasih atas kepercayaan Anda</p>
-          <p>Dokumen ini dicetak secara otomatis oleh sistem AutoServis</p>
+          <p>Dokumen ini dicetak secara otomatis oleh sistem AutoService</p>
         </div>
       </div>
     )
