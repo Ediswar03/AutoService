@@ -7,10 +7,7 @@ import {
   BarChart3,
   CheckSquare,
   Settings,
-  Wrench,
   LogOut,
-  Package,
-  Users,
   TrendingUp
 } from "lucide-react"
 import {
@@ -24,6 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Logo } from "@/components/ui/logo"
 
 const navItems = [
   { title: "Dashboard", href: "/pimpinan", icon: LayoutDashboard },
@@ -39,9 +37,8 @@ export function PimpinanSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border overflow-x-hidden">
       <SidebarHeader className="p-4">
-        <Link href="/pimpinan" className="flex items-center justify-center py-2">
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-10 w-auto object-contain group-data-[collapsible=icon]:hidden" />
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-8 w-auto object-contain hidden group-data-[collapsible=icon]:block" />
+        <Link href="/pimpinan">
+          <Logo subtitle="Pimpinan" />
         </Link>
       </SidebarHeader>
 
@@ -70,8 +67,6 @@ export function PimpinanSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 pt-2 flex flex-col gap-2">
-
-
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="hover:bg-white/5 transition-colors text-sidebar-foreground py-3.5 px-3 rounded-lg">

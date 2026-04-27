@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Plus, Search, Filter, Wrench, Star, MoreVertical, Edit, Trash2, Eye, Loader2 } from "lucide-react"
-import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { StatsCard } from "@/components/admin/stats-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

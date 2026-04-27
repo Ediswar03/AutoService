@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Download, TrendingUp, DollarSign, ClipboardList, Users, Car, Loader2 } from "lucide-react"
-import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { RevenueChart } from "@/components/admin/revenue-chart"
 import { StatsCard } from "@/components/admin/stats-card"
 import { Button } from "@/components/ui/button"

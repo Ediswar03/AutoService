@@ -55,12 +55,14 @@ const statusConfig: Record<SPKStatus, {
   variant: 'default' | 'secondary' | 'destructive' | 'outline'
   className?: string
 }> = {
-  draft: { label: 'Draft', variant: 'outline' },
-  pending: { label: 'Pending', variant: 'secondary' },
-  dikerjakan: { label: 'Dikerjakan', variant: 'default', className: 'bg-blue-500' },
-  selesai: { label: 'Selesai', variant: 'default', className: 'bg-green-500' },
-  dibatalkan: { label: 'Dibatalkan', variant: 'destructive' },
-  menunggu_part: { label: 'Menunggu Part', variant: 'secondary', className: 'bg-orange-500 text-white' },
+  DRAFT: { label: 'Draft', variant: 'outline' },
+  PENDING: { label: 'Pending', variant: 'secondary' },
+  IN_PROGRESS: { label: 'Dikerjakan', variant: 'default', className: 'bg-blue-500' },
+  COMPLETED: { label: 'Selesai', variant: 'default', className: 'bg-green-500' },
+  CANCELLED: { label: 'Dibatalkan', variant: 'destructive' },
+  WAITING_PARTS: { label: 'Menunggu Part', variant: 'secondary', className: 'bg-orange-500 text-white' },
+  QUALITY_CHECK: { label: 'Cek Kualitas', variant: 'secondary' },
+  INVOICED: { label: 'Ditagihkan', variant: 'outline' },
 }
 
 export function SPKTable({ data, isLoading, onDelete, isDeleting }: SPKTableProps) {
@@ -180,7 +182,7 @@ export function SPKTable({ data, isLoading, onDelete, isDeleting }: SPKTableProp
                               Lihat Detail
                             </Link>
                           </DropdownMenuItem>
-                          {spk.status === 'draft' && (
+                          {spk.status === 'DRAFT' && (
                             <DropdownMenuItem asChild>
                               <Link href={`/admin/spk/${spk.id}/edit`}>
                                 <Edit className="mr-2 h-4 w-4" />
@@ -192,7 +194,7 @@ export function SPKTable({ data, isLoading, onDelete, isDeleting }: SPKTableProp
                             <Printer className="mr-2 h-4 w-4" />
                             Cetak SPK
                           </DropdownMenuItem>
-                          {spk.status === 'selesai' && (
+                          {spk.status === 'COMPLETED' && (
                             <DropdownMenuItem asChild>
                               <Link href={`/admin/invoices/create?spk_id=${spk.id}`}>
                                 <Receipt className="mr-2 h-4 w-4" />
@@ -200,7 +202,7 @@ export function SPKTable({ data, isLoading, onDelete, isDeleting }: SPKTableProp
                               </Link>
                             </DropdownMenuItem>
                           )}
-                          {spk.status === 'draft' && (
+                          {spk.status === 'DRAFT' && (
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem

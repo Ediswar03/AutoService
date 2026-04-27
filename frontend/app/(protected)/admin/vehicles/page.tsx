@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Plus, Search, Edit, Trash2, MoreHorizontal, User, Loader2 } from "lucide-react"
-import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

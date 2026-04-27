@@ -8,8 +8,6 @@ import {
   Package,
   History,
   UserCircle,
-  Wrench,
-  Settings,
   LogOut
 } from "lucide-react"
 import {
@@ -23,8 +21,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-
 import { useAuth } from "@/context/AuthContext"
+import { Logo } from "@/components/ui/logo"
 
 const navItems = [
   { title: "Dashboard", href: "/mekanik", icon: LayoutDashboard },
@@ -41,9 +39,8 @@ export function MekanikSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border overflow-x-hidden">
       <SidebarHeader className="p-4">
-        <Link href="/mekanik" className="flex items-center justify-center py-2">
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-10 w-auto object-contain group-data-[collapsible=icon]:hidden" />
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-8 w-auto object-contain hidden group-data-[collapsible=icon]:block" />
+        <Link href="/mekanik">
+          <Logo subtitle="Mekanik" />
         </Link>
       </SidebarHeader>
 
@@ -72,8 +69,6 @@ export function MekanikSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 pt-2 flex flex-col gap-2">
-
-
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton 

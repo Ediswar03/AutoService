@@ -3,21 +3,15 @@ import type {
   Vehicle,
   SPK,
   Invoice,
-  Mechanic,
-  ServiceItem,
-} from "./types"
+  User as Mechanic,
+} from "@/types"
 
-// Mock Customers
+// Mock data remains for backward compatibility in some views
 export const mockCustomers: Customer[] = []
-
-// Mock Vehicles
 export const mockVehicles: Vehicle[] = []
-
-// Mock Mechanics
 export const mockMechanics: Mechanic[] = []
 
-// Service catalog
-export const serviceCatalog: Omit<ServiceItem, "id" | "quantity">[] = [
+export const serviceCatalog: any[] = [
   { name: "Ganti Oli Mesin", price: 150000, description: "Termasuk oli 4 liter" },
   { name: "Tune Up", price: 350000, description: "Service lengkap mesin" },
   { name: "Servis AC", price: 250000, description: "Pembersihan dan isi freon" },
@@ -28,8 +22,7 @@ export const serviceCatalog: Omit<ServiceItem, "id" | "quantity">[] = [
   { name: "Ganti Busi", price: 75000, description: "Per busi" },
 ]
 
-// Parts catalog
-export const partsCatalog: Omit<ServiceItem, "id" | "quantity">[] = [
+export const partsCatalog: any[] = [
   { name: "Oli Mesin Shell Helix HX7 5W-40", price: 380000 },
   { name: "Oli Mesin Castrol GTX 10W-40", price: 320000 },
   { name: "Filter Oli Original", price: 85000 },
@@ -42,35 +35,32 @@ export const partsCatalog: Omit<ServiceItem, "id" | "quantity">[] = [
   { name: "V-Belt", price: 250000 },
 ]
 
-// Mock SPK
 export const mockSPKs: SPK[] = []
-
-// Mock Invoices
 export const mockInvoices: Invoice[] = []
 
 // Helper functions
-export function getCustomerById(id: string): Customer | undefined {
+export function getCustomerById(id: any): Customer | undefined {
   return mockCustomers.find((c) => c.id === id)
 }
 
-export function getVehicleById(id: string): Vehicle | undefined {
+export function getVehicleById(id: any): Vehicle | undefined {
   return mockVehicles.find((v) => v.id === id)
 }
 
-export function getVehiclesByCustomerId(customerId: string): Vehicle[] {
-  return mockVehicles.filter((v) => v.customerId === customerId)
+export function getVehiclesByCustomerId(customerId: any): Vehicle[] {
+  return mockVehicles.filter((v) => v.customer_id === customerId)
 }
 
-export function getMechanicById(id: string): Mechanic | undefined {
+export function getMechanicById(id: any): Mechanic | undefined {
   return mockMechanics.find((m) => m.id === id)
 }
 
-export function getSPKById(id: string): SPK | undefined {
+export function getSPKById(id: any): SPK | undefined {
   return mockSPKs.find((s) => s.id === id)
 }
 
-export function getInvoiceBySpkId(spkId: string): Invoice | undefined {
-  return mockInvoices.find((i) => i.spkId === spkId)
+export function getInvoiceBySpkId(spkId: any): Invoice | undefined {
+  return mockInvoices.find((i) => i.spk_id === spkId)
 }
 
 export function formatCurrency(amount: number): string {
@@ -82,22 +72,26 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-export function formatDate(date: Date): string {
+export function formatDate(date: any): string {
+  if (!date) return '-'
+  const d = typeof date === 'string' ? new Date(date) : date
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(date)
+  }).format(d)
 }
 
-export function formatDateTime(date: Date): string {
+export function formatDateTime(date: any): string {
+  if (!date) return '-'
+  const d = typeof date === 'string' ? new Date(date) : date
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(date)
+  }).format(d)
 }
 
 export function generateSPKNumber(): string {

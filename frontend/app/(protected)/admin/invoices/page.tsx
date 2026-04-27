@@ -4,9 +4,9 @@ import { useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { Plus, Search, Download, FileText } from "lucide-react"
 import { useReactToPrint } from "react-to-print"
-import { AdminHeader } from "@/components/admin/admin-header"
-import { InvoiceTable } from "@/components/admin/invoice-table"
-import { PaymentForm } from "@/components/admin/payment-form"
+import { AdminHeader } from "@/components/admin/AdminHeader"
+import { InvoiceTable } from "@/components/admin/InvoiceTable"
+import { PaymentForm } from "@/components/admin/PaymentForm"
 import { InvoicePrintTemplate } from "@/components/admin/invoice-print-template"
 import { SPKDetailModal } from "@/components/admin/spk-detail-modal"
 import { Button } from "@/components/ui/button"
@@ -39,24 +39,28 @@ import {
   formatDate,
   generateInvoiceNumber,
 } from "@/lib/mock-data"
-import type { Invoice, PaymentStatus, PaymentFormData, SPK } from "@/lib/types"
+import type { Invoice, InvoiceStatus, PaymentFormData, SPK } from "@/types"
 
 const paymentStatusConfig: Record<
-  PaymentStatus,
+  InvoiceStatus,
   { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
 > = {
-  unpaid: { label: "Belum Bayar", variant: "destructive" },
-  partial: { label: "Sebagian", variant: "secondary" },
-  paid: { label: "Lunas", variant: "outline" },
+  DRAFT: { label: "Draft", variant: "outline" },
+  SENT: { label: "Dikirim", variant: "secondary" },
+  PAID: { label: "Lunas", variant: "default" },
+  PARTIAL: { label: "Sebagian", variant: "secondary" },
+  OVERDUE: { label: "Terlambat", variant: "destructive" },
+  CANCELLED: { label: "Dibatalkan", variant: "destructive" },
+  REFUNDED: { label: "Dikembalikan", variant: "outline" },
 }
 
 export default function InvoicesPage() {
   const searchParams = useSearchParams()
   const spkIdParam = searchParams.get("spk")
 
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices)
+  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices as any)
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<PaymentStatus | "all">("all")
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "all">("all")
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
@@ -71,7 +75,7 @@ export default function InvoicesPage() {
   // Get completed SPKs that don't have invoices yet
   const completedSPKsWithoutInvoice = mockSPKs.filter(
     (spk) =>
-      spk.status === "completed" &&
+      spk.status === "COMPLETED" &&
       !invoices.find((inv) => inv.spkId === spk.id)
   )
 
@@ -85,11 +89,11 @@ export default function InvoicesPage() {
   })
 
   const totalRevenue = invoices
-    .filter((inv) => inv.paymentStatus === "paid")
-    .reduce((sum, inv) => sum + inv.total, 0)
+    .filter((inv) => inv.status === "PAID")
+    .reduce((sum, inv) => sum + Number(inv.grand_total), 0)
   const pendingPayments = invoices
-    .filter((inv) => inv.paymentStatus !== "paid")
-    .reduce((sum, inv) => sum + (inv.total - inv.paidAmount), 0)
+    .filter((inv) => inv.status !== "PAID")
+    .reduce((sum, inv) => sum + (Number(inv.grand_total) - Number(inv.jumlah_dibayar)), 0)
 
   const handleViewInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice)
@@ -112,22 +116,20 @@ export default function InvoicesPage() {
     setInvoices(
       invoices.map((inv) => {
         if (inv.id === invoiceId) {
-          const newPaidAmount = inv.paidAmount + data.amount
-          const newDiscount = inv.discount + (data.discount || 0)
-          const newTotal = inv.subtotal + inv.tax - newDiscount
-          const newStatus: PaymentStatus =
-            newPaidAmount >= newTotal ? "paid" : newPaidAmount > 0 ? "partial" : "unpaid"
+          const newPaidAmount = Number(inv.jumlah_dibayar) + data.amount
+          const newDiscount = Number(inv.diskon) + (data.discount || 0)
+          const newTotal = Number(inv.total_jasa) + Number(inv.total_sparepart) + Number(inv.ppn) - newDiscount
+          const newStatus: InvoiceStatus =
+            newPaidAmount >= newTotal ? "PAID" : newPaidAmount > 0 ? "PARTIAL" : "SENT"
 
           return {
             ...inv,
-            paidAmount: Math.min(newPaidAmount, newTotal),
-            discount: newDiscount,
-            total: newTotal,
-            paymentStatus: newStatus,
-            paymentMethod: data.method,
-            paymentDate: new Date(),
-            notes: data.notes || inv.notes,
-            updatedAt: new Date(),
+            jumlah_dibayar: Math.min(newPaidAmount, newTotal),
+            diskon: newDiscount,
+            grand_total: newTotal,
+            status: newStatus,
+            payment_method: data.method,
+            updated_at: new Date().toISOString(),
           }
         }
         return inv
@@ -139,24 +141,28 @@ export default function InvoicesPage() {
     const spk = getSPKById(selectedSpkForInvoice)
     if (!spk) return
 
-    const servicesTotal = spk.services.reduce((sum, s) => sum + s.price * s.quantity, 0)
-    const partsTotal = spk.parts.reduce((sum, p) => sum + p.price * p.quantity, 0)
+    const servicesTotal = (spk.items || []).filter(i => i.tipe === 'jasa').reduce((sum, s) => sum + Number(s.harga_satuan) * s.quantity, 0)
+    const partsTotal = (spk.items || []).filter(i => i.tipe === 'sparepart').reduce((sum, p) => sum + Number(p.harga_satuan) * p.quantity, 0)
     const subtotal = servicesTotal + partsTotal
-    const tax = Math.round(subtotal * 0.1)
+    const tax = Math.round(subtotal * 0.11)
 
     const newInvoice: Invoice = {
-      id: `inv-${Date.now()}`,
-      invoiceNumber: generateInvoiceNumber(),
-      spkId: spk.id,
-      customerId: spk.customerId,
-      subtotal,
-      discount: 0,
-      tax,
-      total: subtotal + tax,
-      paymentStatus: "unpaid",
-      paidAmount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      id: Date.now(),
+      nomor_invoice: generateInvoiceNumber(),
+      spk_id: spk.id as any,
+      tanggal: new Date().toISOString(),
+      total_jasa: servicesTotal,
+      total_sparepart: partsTotal,
+      diskon: 0,
+      ppn: tax,
+      grand_total: subtotal + tax,
+      jumlah_dibayar: 0,
+      sisa_bayar: subtotal + tax,
+      status: "SENT",
+      created_by: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      spk: spk as any,
     }
 
     setInvoices([newInvoice, ...invoices])
@@ -182,7 +188,7 @@ export default function InvoicesPage() {
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Belum Dibayar</p>
                 <p className="text-2xl font-bold">
-                  {invoices.filter((i) => i.paymentStatus === "unpaid").length}
+                  {invoices.filter((i) => i.status === "SENT" || i.status === "DRAFT").length}
                 </p>
               </CardContent>
             </Card>
@@ -234,16 +240,16 @@ export default function InvoicesPage() {
                 </div>
                 <Select
                   value={statusFilter}
-                  onValueChange={(value: PaymentStatus | "all") => setStatusFilter(value)}
+                  onValueChange={(value: InvoiceStatus | "all") => setStatusFilter(value)}
                 >
                   <SelectTrigger className="w-full sm:w-44">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Status</SelectItem>
-                    <SelectItem value="unpaid">Belum Bayar</SelectItem>
-                    <SelectItem value="partial">Sebagian</SelectItem>
-                    <SelectItem value="paid">Lunas</SelectItem>
+                    <SelectItem value="SENT">Belum Bayar</SelectItem>
+                    <SelectItem value="PARTIAL">Sebagian</SelectItem>
+                    <SelectItem value="PAID">Lunas</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -267,13 +273,13 @@ export default function InvoicesPage() {
               <DialogHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <DialogTitle>{selectedInvoice.invoiceNumber}</DialogTitle>
+                    <DialogTitle>{selectedInvoice.nomor_invoice}</DialogTitle>
                     <DialogDescription>
-                      Tanggal: {formatDate(selectedInvoice.createdAt)}
+                      Tanggal: {formatDate(selectedInvoice.tanggal)}
                     </DialogDescription>
                   </div>
-                  <Badge variant={paymentStatusConfig[selectedInvoice.paymentStatus].variant}>
-                    {paymentStatusConfig[selectedInvoice.paymentStatus].label}
+                  <Badge variant={paymentStatusConfig[selectedInvoice.status].variant}>
+                    {paymentStatusConfig[selectedInvoice.status].label}
                   </Badge>
                 </div>
               </DialogHeader>
@@ -283,42 +289,46 @@ export default function InvoicesPage() {
                 <div className="p-4 rounded-lg bg-muted/30">
                   <p className="text-sm font-medium text-muted-foreground mb-1">Pelanggan</p>
                   <p className="font-medium">
-                    {getCustomerById(selectedInvoice.customerId)?.name}
+                    {selectedInvoice.spk?.customer?.nama || getCustomerById(selectedInvoice.spk?.customer_id || 0)?.nama}
                   </p>
                 </div>
 
                 {/* Payment Details */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>{formatCurrency(selectedInvoice.subtotal)}</span>
+                    <span className="text-muted-foreground">Subtotal Jasa</span>
+                    <span>{formatCurrency(selectedInvoice.total_jasa)}</span>
                   </div>
-                  {selectedInvoice.discount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal Sparepart</span>
+                    <span>{formatCurrency(selectedInvoice.total_sparepart)}</span>
+                  </div>
+                  {selectedInvoice.diskon > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>Diskon</span>
-                      <span>-{formatCurrency(selectedInvoice.discount)}</span>
+                      <span>-{formatCurrency(selectedInvoice.diskon)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Pajak (10%)</span>
-                    <span>{formatCurrency(selectedInvoice.tax)}</span>
+                    <span className="text-muted-foreground">PPN (11%)</span>
+                    <span>{formatCurrency(selectedInvoice.ppn)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>{formatCurrency(selectedInvoice.total)}</span>
+                    <span>{formatCurrency(selectedInvoice.grand_total)}</span>
                   </div>
-                  {selectedInvoice.paidAmount > 0 && (
+                  {selectedInvoice.jumlah_dibayar > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>Dibayar</span>
-                      <span>-{formatCurrency(selectedInvoice.paidAmount)}</span>
+                      <span>-{formatCurrency(selectedInvoice.jumlah_dibayar)}</span>
                     </div>
                   )}
-                  {selectedInvoice.paymentStatus !== "paid" && (
+                  {selectedInvoice.status !== "PAID" && (
                     <div className="flex justify-between font-medium">
                       <span>Sisa</span>
                       <span className="text-orange-600">
-                        {formatCurrency(selectedInvoice.total - selectedInvoice.paidAmount)}
+                        {formatCurrency(selectedInvoice.sisa_bayar)}
                       </span>
                     </div>
                   )}
@@ -339,7 +349,7 @@ export default function InvoicesPage() {
               </div>
 
               <DialogFooter className="gap-2">
-                {selectedInvoice.paymentStatus !== "paid" && (
+                {selectedInvoice.status !== "PAID" && (
                   <Button onClick={() => {
                     setDetailDialogOpen(false)
                     handlePaymentClick(selectedInvoice)
@@ -379,10 +389,10 @@ export default function InvoicesPage() {
                   </SelectItem>
                 ) : (
                   completedSPKsWithoutInvoice.map((spk) => {
-                    const customer = getCustomerById(spk.customerId)
+                    const customer = getCustomerById(spk.customer_id)
                     return (
-                      <SelectItem key={spk.id} value={spk.id}>
-                        {spk.spkNumber} - {customer?.name} ({formatCurrency(spk.estimatedCost)})
+                      <SelectItem key={spk.id} value={String(spk.id)}>
+                        {spk.nomor_spk} - {customer?.nama} ({formatCurrency(Number(spk.total_biaya))})
                       </SelectItem>
                     )
                   })

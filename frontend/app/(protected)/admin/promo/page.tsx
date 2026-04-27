@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { PimpinanHeader } from "@/components/pimpinan/pimpinan-header"
 import { MekanikHeader } from "@/components/mekanik/mekanik-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"

@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import useSWR from "swr"
 import { fetcher } from "@/lib/api-client"
 import { Loader2 } from "lucide-react"
-import type { SPK, SPKStatus } from "@/lib/types"
+import type { SPK, SPKStatus } from "@/types"
 
 interface SPKDetailModalProps {
   open: boolean

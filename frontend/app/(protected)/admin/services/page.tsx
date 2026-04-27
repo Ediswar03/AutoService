@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Plus, Edit, Trash2, Search, Package, Wrench, Loader2 } from "lucide-react"
-import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

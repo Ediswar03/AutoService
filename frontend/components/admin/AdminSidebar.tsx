@@ -15,7 +15,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/context/AuthContext'
 import {
   Sidebar,
   SidebarContent,
@@ -44,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Logo } from '@/components/ui/logo'
 
 const mainMenuItems = [
   {
@@ -117,14 +118,14 @@ export function AdminSidebar() {
   }
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center justify-center px-2 py-2 w-full">
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-8 w-auto object-contain" />
-        </div>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border overflow-x-hidden">
+      <SidebarHeader className="p-4">
+        <Link href="/admin">
+          <Logo subtitle="System" />
+        </Link>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="overflow-x-hidden pt-2">
         {/* Main Menu */}
         <SidebarGroup>
           <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
@@ -132,7 +133,11 @@ export function AdminSidebar() {
             <SidebarMenu>
               {mainMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive(item.url)}
+                    tooltip={item.title}
+                  >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -150,13 +155,18 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {transactionMenuItems.map((item) => (
-                <Collapsible key={item.title} defaultOpen className="group/collapsible">
+                <Collapsible
+                  key={item.title}
+                  asChild
+                  defaultOpen={item.items.some(sub => isActive(sub.url))}
+                  className="group/collapsible"
+                >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton>
+                      <SidebarMenuButton tooltip={item.title}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                        <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                        <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -164,7 +174,9 @@ export function AdminSidebar() {
                         {item.items.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                              <Link href={subItem.url}>{subItem.title}</Link>
+                              <Link href={subItem.url}>
+                                <span>{subItem.title}</span>
+                              </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
@@ -179,12 +191,16 @@ export function AdminSidebar() {
 
         {/* Inventory */}
         <SidebarGroup>
-          <SidebarGroupLabel>Inventaris</SidebarGroupLabel>
+          <SidebarGroupLabel>Inventori & Jasa</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {inventoryMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive(item.url)}
+                    tooltip={item.title}
+                  >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -197,36 +213,45 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="p-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="w-full">
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="text-xs">
-                      {user ? getInitials(user.name) : 'U'}
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarFallback className="rounded-lg">
+                      {getInitials(user?.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col items-start text-left">
-                    <span className="text-sm font-medium">{user?.name || 'User'}</span>
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {user?.role || 'admin'}
-                    </span>
+                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                    <span className="truncate font-semibold">{user?.name || 'User'}</span>
+                    <span className="truncate text-xs text-muted-foreground capitalize">{user?.role || 'Admin'}</span>
                   </div>
-                  <ChevronDown className="ml-auto h-4 w-4" />
+                  <ChevronDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                side="bottom"
+                align="end"
+                sideOffset={4}
+              >
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/settings">
-                    <Settings className="mr-2 h-4 w-4" />
+                  <Link href="/admin/settings" className="flex items-center gap-2">
+                    <Settings className="size-4" />
                     Pengaturan
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => logout()}
+                >
+                  <LogOut className="mr-2 size-4" />
                   Keluar
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -9,7 +9,7 @@ import {
   formatCurrency,
   formatDate,
 } from "@/lib/mock-data"
-import type { Invoice } from "@/lib/types"
+import type { Invoice } from "@/types"
 
 interface InvoicePrintTemplateProps {
   invoice: Invoice
@@ -17,15 +17,16 @@ interface InvoicePrintTemplateProps {
 
 export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTemplateProps>(
   function InvoicePrintTemplate({ invoice }, ref) {
-    const spk = getSPKById(invoice.spkId)
-    const customer = getCustomerById(invoice.customerId)
-    const vehicle = spk ? getVehicleById(spk.vehicleId) : null
+    const spk = getSPKById(invoice.spk_id)
+    // The invoice object from the backend/Prisma usually follows the schema in types/index.ts
+    const customer = invoice.spk?.customer || getCustomerById(invoice.spk?.customer_id || 0)
+    const vehicle = invoice.spk?.vehicle || (invoice.spk?.vehicle_id ? getVehicleById(invoice.spk.vehicle_id) : null)
 
     return (
       <div ref={ref} className="p-8 bg-white text-black min-h-[297mm] w-[210mm] mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-16 w-auto mx-auto mb-2 object-contain" />
+          <h1 className="text-2xl font-bold">AutoService</h1>
           <p className="text-sm text-gray-600">Bengkel Otomotif Terpercaya</p>
           <p className="text-sm text-gray-600">
             Jl. Raya Utama No. 123, Jakarta Selatan
@@ -42,20 +43,20 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
           <div>
             <h2 className="text-lg font-bold mb-2">INVOICE</h2>
             <p className="text-sm">
-              <span className="text-gray-600">No. Invoice:</span> {invoice.invoiceNumber}
+              <span className="text-gray-600">No. Invoice:</span> {invoice.nomor_invoice}
             </p>
             <p className="text-sm">
-              <span className="text-gray-600">No. SPK:</span> {spk?.spkNumber || "-"}
+              <span className="text-gray-600">No. SPK:</span> {invoice.spk?.nomor_spk || "-"}
             </p>
             <p className="text-sm">
-              <span className="text-gray-600">Tanggal:</span> {formatDate(invoice.createdAt)}
+              <span className="text-gray-600">Tanggal:</span> {formatDate(invoice.created_at)}
             </p>
           </div>
           <div className="text-right">
             <p className="text-sm font-medium mb-1">Kepada:</p>
-            <p className="font-bold">{customer?.name}</p>
-            <p className="text-sm text-gray-600">{customer?.phone}</p>
-            <p className="text-sm text-gray-600 max-w-[200px]">{customer?.address}</p>
+            <p className="font-bold">{customer?.nama || 'Pelanggan'}</p>
+            <p className="text-sm text-gray-600">{customer?.telepon || '-'}</p>
+            <p className="text-sm text-gray-600 max-w-[200px]">{customer?.alamat || '-'}</p>
           </div>
         </div>
 
@@ -63,15 +64,15 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
         {vehicle && (
           <div className="mb-6 p-3 bg-gray-50 rounded">
             <p className="text-sm font-medium mb-1">Kendaraan:</p>
-            <p className="font-mono">{vehicle.plateNumber}</p>
+            <p className="font-mono">{vehicle.nomor_polisi}</p>
             <p className="text-sm text-gray-600">
-              {vehicle.brand} {vehicle.model} ({vehicle.year}) - {vehicle.color}
+              {vehicle.merk} {vehicle.model} ({vehicle.tahun}) - {vehicle.warna}
             </p>
           </div>
         )}
 
         {/* Services Table */}
-        {spk && spk.services.length > 0 && (
+        {invoice.spk?.items && invoice.spk.items.filter(i => i.tipe === 'jasa').length > 0 && (
           <div className="mb-6">
             <h3 className="font-bold mb-2">Layanan Servis</h3>
             <table className="w-full text-sm">
@@ -84,13 +85,13 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
                 </tr>
               </thead>
               <tbody>
-                {spk.services.map((service) => (
-                  <tr key={service.id} className="border-b border-gray-200">
-                    <td className="py-2">{service.name}</td>
-                    <td className="py-2 text-center">{service.quantity}</td>
-                    <td className="py-2 text-right">{formatCurrency(service.price)}</td>
+                {invoice.spk.items.filter(i => i.tipe === 'jasa').map((item: any) => (
+                  <tr key={item.id} className="border-b border-gray-200">
+                    <td className="py-2">{item.nama_item}</td>
+                    <td className="py-2 text-center">{item.quantity}</td>
+                    <td className="py-2 text-right">{formatCurrency(item.harga_satuan)}</td>
                     <td className="py-2 text-right">
-                      {formatCurrency(service.price * service.quantity)}
+                      {formatCurrency(item.subtotal)}
                     </td>
                   </tr>
                 ))}
@@ -100,7 +101,7 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
         )}
 
         {/* Parts Table */}
-        {spk && spk.parts.length > 0 && (
+        {invoice.spk?.items && invoice.spk.items.filter(i => i.tipe === 'sparepart').length > 0 && (
           <div className="mb-6">
             <h3 className="font-bold mb-2">Spare Parts</h3>
             <table className="w-full text-sm">
@@ -113,13 +114,13 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
                 </tr>
               </thead>
               <tbody>
-                {spk.parts.map((part) => (
-                  <tr key={part.id} className="border-b border-gray-200">
-                    <td className="py-2">{part.name}</td>
-                    <td className="py-2 text-center">{part.quantity}</td>
-                    <td className="py-2 text-right">{formatCurrency(part.price)}</td>
+                {invoice.spk.items.filter(i => i.tipe === 'sparepart').map((item: any) => (
+                  <tr key={item.id} className="border-b border-gray-200">
+                    <td className="py-2">{item.nama_item}</td>
+                    <td className="py-2 text-center">{item.quantity}</td>
+                    <td className="py-2 text-right">{formatCurrency(item.harga_satuan)}</td>
                     <td className="py-2 text-right">
-                      {formatCurrency(part.price * part.quantity)}
+                      {formatCurrency(item.subtotal)}
                     </td>
                   </tr>
                 ))}
@@ -132,33 +133,37 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
         <div className="flex justify-end mb-8">
           <div className="w-64">
             <div className="flex justify-between py-1 text-sm">
-              <span>Subtotal</span>
-              <span>{formatCurrency(invoice.subtotal)}</span>
+              <span>Subtotal Jasa</span>
+              <span>{formatCurrency(invoice.total_jasa)}</span>
             </div>
-            {invoice.discount > 0 && (
+            <div className="flex justify-between py-1 text-sm">
+              <span>Subtotal Sparepart</span>
+              <span>{formatCurrency(invoice.total_sparepart)}</span>
+            </div>
+            {invoice.diskon > 0 && (
               <div className="flex justify-between py-1 text-sm text-red-600">
                 <span>Diskon</span>
-                <span>-{formatCurrency(invoice.discount)}</span>
+                <span>-{formatCurrency(invoice.diskon)}</span>
               </div>
             )}
             <div className="flex justify-between py-1 text-sm">
-              <span>Pajak (10%)</span>
-              <span>{formatCurrency(invoice.tax)}</span>
+              <span>PPN (11%)</span>
+              <span>{formatCurrency(invoice.ppn)}</span>
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between py-1 font-bold text-lg">
               <span>Total</span>
-              <span>{formatCurrency(invoice.total)}</span>
+              <span>{formatCurrency(invoice.grand_total)}</span>
             </div>
-            {invoice.paidAmount > 0 && (
+            {invoice.jumlah_dibayar > 0 && (
               <>
                 <div className="flex justify-between py-1 text-sm text-green-600">
                   <span>Dibayar</span>
-                  <span>-{formatCurrency(invoice.paidAmount)}</span>
+                  <span>-{formatCurrency(invoice.jumlah_dibayar)}</span>
                 </div>
                 <div className="flex justify-between py-1 font-bold">
                   <span>Sisa</span>
-                  <span>{formatCurrency(invoice.total - invoice.paidAmount)}</span>
+                  <span>{formatCurrency(invoice.sisa_bayar)}</span>
                 </div>
               </>
             )}
@@ -166,20 +171,17 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
         </div>
 
         {/* Payment Info */}
-        {invoice.paymentStatus === "paid" && (
+        {invoice.status === "paid" && (
           <div className="mb-6 p-4 border-2 border-green-500 rounded text-center">
             <p className="text-green-600 font-bold text-lg">LUNAS</p>
-            <p className="text-sm text-gray-600">
-              {invoice.paymentMethod} - {invoice.paymentDate && formatDate(invoice.paymentDate)}
-            </p>
           </div>
         )}
 
         {/* Notes */}
-        {invoice.notes && (
+        {invoice.catatan && (
           <div className="mb-6">
             <p className="text-sm font-medium mb-1">Catatan:</p>
-            <p className="text-sm text-gray-600">{invoice.notes}</p>
+            <p className="text-sm text-gray-600">{invoice.catatan}</p>
           </div>
         )}
 
@@ -189,7 +191,7 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-16">Pelanggan</p>
               <Separator className="w-32 mx-auto" />
-              <p className="text-sm mt-1">({customer?.name})</p>
+              <p className="text-sm mt-1">({customer?.nama || 'Pelanggan'})</p>
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-16">Kasir</p>

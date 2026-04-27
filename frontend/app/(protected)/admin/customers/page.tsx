@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Plus, Search, Edit, Trash2, Car, MoreHorizontal, Loader2 } from "lucide-react"
-import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"

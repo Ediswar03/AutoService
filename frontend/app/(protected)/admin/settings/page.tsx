@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Save, Building2, Users, Wrench, Receipt, Bell } from "lucide-react"
-import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"

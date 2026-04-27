@@ -34,9 +34,14 @@ export interface User {
   id: string | number
   username?: string
   name: string
+  nama?: string
   email: string
+  phone?: string
   role: UserRole
+  rating?: number | string
   is_active?: boolean
+  isActive?: boolean
+  address?: string
   created_at?: string
   updated_at?: string
   photoUrl?: string | null
@@ -196,12 +201,16 @@ export interface ServiceFormData {
 // ==========================================
 
 export type SPKStatus = 
-  | 'draft'
-  | 'pending'
-  | 'dikerjakan'
-  | 'selesai'
-  | 'dibatalkan'
-  | 'menunggu_part'
+  | 'DRAFT'
+  | 'PENDING'
+  | 'IN_PROGRESS'
+  | 'WAITING_PARTS'
+  | 'QUALITY_CHECK'
+  | 'COMPLETED'
+  | 'INVOICED'
+  | 'CANCELLED'
+
+export type SPKPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 
 export interface SPKItem {
   id: number
@@ -271,7 +280,7 @@ export interface SPKItemFormData {
 // INVOICE TYPES
 // ==========================================
 
-export type InvoiceStatus = 'draft' | 'unpaid' | 'partial' | 'paid' | 'cancelled'
+export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'PARTIAL' | 'OVERDUE' | 'CANCELLED' | 'REFUNDED'
 export type PaymentMethod = 'cash' | 'transfer' | 'debit' | 'credit' | 'qris'
 
 export interface Invoice {

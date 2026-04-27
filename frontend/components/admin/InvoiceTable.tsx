@@ -31,8 +31,11 @@ import { Progress } from '@/components/ui/progress'
 import type { Invoice, InvoiceStatus } from '@/types'
 
 interface InvoiceTableProps {
-  data: Invoice[]
+  invoices: Invoice[]
   isLoading: boolean
+  onView?: (invoice: Invoice) => void
+  onPayment?: (invoice: Invoice) => void
+  onPrint?: (invoice: Invoice) => void
 }
 
 const statusConfig: Record<InvoiceStatus, { 
@@ -40,14 +43,16 @@ const statusConfig: Record<InvoiceStatus, {
   variant: 'default' | 'secondary' | 'destructive' | 'outline'
   className?: string
 }> = {
-  draft: { label: 'Draft', variant: 'outline' },
-  unpaid: { label: 'Belum Bayar', variant: 'destructive' },
-  partial: { label: 'Sebagian', variant: 'secondary', className: 'bg-orange-500 text-white' },
-  paid: { label: 'Lunas', variant: 'default', className: 'bg-green-500' },
-  cancelled: { label: 'Dibatalkan', variant: 'destructive' },
+  DRAFT: { label: 'Draft', variant: 'outline' },
+  SENT: { label: 'Dikirim', variant: 'secondary' },
+  PARTIAL: { label: 'Sebagian', variant: 'secondary', className: 'bg-orange-500 text-white' },
+  PAID: { label: 'Lunas', variant: 'default', className: 'bg-green-500' },
+  OVERDUE: { label: 'Terlambat', variant: 'destructive' },
+  CANCELLED: { label: 'Dibatalkan', variant: 'destructive' },
+  REFUNDED: { label: 'Dikembalikan', variant: 'outline' },
 }
 
-export function InvoiceTable({ data, isLoading }: InvoiceTableProps) {
+export function InvoiceTable({ invoices, isLoading, onView, onPayment, onPrint }: InvoiceTableProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -82,14 +87,14 @@ export function InvoiceTable({ data, isLoading }: InvoiceTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.length === 0 ? (
+          {invoices.length === 0 ? (
             <TableRow>
               <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                 Belum ada data invoice
               </TableCell>
             </TableRow>
           ) : (
-            data.map((invoice) => {
+            invoices.map((invoice) => {
               const status = statusConfig[invoice.status]
               const paymentProgress = invoice.grand_total > 0 
                 ? (invoice.jumlah_dibayar / invoice.grand_total) * 100 
@@ -147,21 +152,17 @@ export function InvoiceTable({ data, isLoading }: InvoiceTableProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/invoices/${invoice.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Lihat Detail
-                          </Link>
+                        <DropdownMenuItem onClick={() => onView?.(invoice)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Lihat Detail
                         </DropdownMenuItem>
-                        {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/invoices/${invoice.id}/pay`}>
-                              <CreditCard className="mr-2 h-4 w-4" />
-                              Terima Pembayaran
-                            </Link>
+                        {invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && (
+                          <DropdownMenuItem onClick={() => onPayment?.(invoice)}>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Terima Pembayaran
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onPrint?.(invoice)}>
                           <Printer className="mr-2 h-4 w-4" />
                           Cetak Invoice
                         </DropdownMenuItem>

@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Wrench, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { FieldGroup, Field, FieldLabel, FieldError } from '@/components/ui/field'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/context/AuthContext'
 import { getErrorMessage } from '@/lib/api-client'
+import { Logo } from '@/components/ui/logo'
 
 const loginSchema = z.object({
   email: z.string().email('Format email tidak valid'),
@@ -51,8 +52,8 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-6 flex justify-center">
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-16 w-auto object-contain" />
+        <div className="flex items-center justify-center mb-6">
+          <Logo iconSize={32} textSize="text-2xl" subtitle="System" />
         </div>
         <CardDescription>
           Masuk ke akun Anda untuk melanjutkan
@@ -136,8 +137,8 @@ function LoginLoading() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-6 flex justify-center">
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-16 w-auto object-contain" />
+        <div className="flex items-center justify-center mb-6">
+          <Logo iconSize={32} textSize="text-2xl" subtitle="System" />
         </div>
         <CardDescription>Memuat...</CardDescription>
       </CardHeader>

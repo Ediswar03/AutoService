@@ -17,6 +17,8 @@ export interface InventoryItem {
     id: string
     name: string
     contact: string
+    email?: string
+    phone?: string
     leadTime: number
   }
   location: {

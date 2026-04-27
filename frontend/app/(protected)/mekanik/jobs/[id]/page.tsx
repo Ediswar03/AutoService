@@ -35,26 +35,26 @@ const mockJobDetail = {
     description: "AC kurang dingin, suara mesin agak kasar saat idle, dan rem terasa kurang pakem",
     notes: "Pelanggan minta prioritas AC karena sering bepergian jauh",
   },
-  status: "in_progress" as const,
-  priority: "high" as const,
+  status: "IN_PROGRESS" as const,
+  priority: "HIGH" as const,
   estimatedDuration: 120,
   createdAt: new Date("2024-01-15T09:30:00"),
   startedAt: new Date("2024-01-15T10:00:00"),
 }
 
 const statusConfig = {
-  pending: { label: "Pending", className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-  in_progress: { label: "Dikerjakan", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-  waiting_parts: { label: "Tunggu Parts", className: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
-  waiting_approval: { label: "Tunggu Approval", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-  completed: { label: "Selesai", className: "bg-green-500/10 text-green-600 border-green-500/20" },
+  PENDING: { label: "Pending", className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
+  IN_PROGRESS: { label: "Dikerjakan", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  WAITING_PARTS: { label: "Tunggu Parts", className: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
+  WAITING_APPROVAL: { label: "Tunggu Approval", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+  COMPLETED: { label: "Selesai", className: "bg-green-500/10 text-green-600 border-green-500/20" },
 }
 
 const priorityConfig = {
-  low: { label: "Low", className: "text-zinc-500" },
-  normal: { label: "Normal", className: "text-blue-400" },
-  high: { label: "High", className: "text-amber-400" },
-  urgent: { label: "Urgent", className: "text-red-400" },
+  LOW: { label: "Low", className: "text-zinc-500" },
+  NORMAL: { label: "Normal", className: "text-blue-400" },
+  HIGH: { label: "High", className: "text-amber-400" },
+  URGENT: { label: "Urgent", className: "text-red-400" },
 }
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -171,7 +171,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
       {/* Primary Actions */}
       <div className="space-y-3 pt-4">
-        {job.status === "in_progress" && (
+        {job.status === "IN_PROGRESS" && (
           <>
             <Button className="w-full h-14 bg-primary text-black font-black uppercase text-sm tracking-[0.2em] shadow-[0_8px_30px_rgba(var(--primary),0.3)] rounded-2xl border-b-4 border-black/20 active:border-b-0 active:translate-y-1 transition-all">
               <CheckCircle2 className="h-5 w-5 mr-3" />

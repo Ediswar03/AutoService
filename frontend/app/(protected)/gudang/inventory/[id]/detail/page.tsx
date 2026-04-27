@@ -2,7 +2,29 @@
 
 import { use, Suspense } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Edit, ShoppingCart, Printer, ArrowLeftRight, MapPin, Truck, Calendar, Package, TrendingUp, TrendingDown, ArrowDownRight, ArrowUpRight, ChevronRight, Boxes } from 'lucide-react'
+import { 
+  ArrowLeft, 
+  Edit, 
+  ShoppingCart, 
+  Printer, 
+  ArrowLeftRight, 
+  MapPin, 
+  Truck, 
+  Calendar, 
+  Package, 
+  TrendingUp, 
+  TrendingDown, 
+  ArrowDownRight, 
+  ArrowUpRight, 
+  ChevronRight, 
+  Boxes,
+  Mail,
+  Phone,
+  User,
+  MessageSquare,
+  X,
+  Clock
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'

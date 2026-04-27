@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Search, Eye, Calendar, MoreHorizontal, Play, CheckCircle, XCircle } from "lucide-react"
-import { AdminHeader } from "@/components/admin/admin-header"
-import { SPKForm } from "@/components/admin/spk-form"
+import { useRouter } from "next/navigation"
+import { AdminHeader } from "@/components/admin/AdminHeader"
 import { SPKDetailModal } from "@/components/admin/spk-detail-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,9 +33,8 @@ import {
 import {
   formatCurrency,
   formatDate,
-  generateSPKNumber,
 } from "@/lib/mock-data"
-import type { SPK, SPKStatus, SPKFormData } from "@/lib/types"
+import type { SPK, SPKStatus } from "@/types"
 import useSWR from "swr"
 import { fetcher, api } from "@/lib/api-client"
 import { Loader2 } from "lucide-react"
@@ -52,10 +50,10 @@ const statusConfig: Record<SPKStatus, { label: string; variant: "default" | "sec
 }
 
 export default function SPKPage() {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<SPKStatus | "all">("all")
   const [mechanicFilter, setMechanicFilter] = useState<string>("all")
-  const [formOpen, setFormOpen] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedSPK, setSelectedSPK] = useState<SPK | null>(null)
 
@@ -157,7 +155,7 @@ export default function SPKPage() {
                     {filteredSPKs.length} SPK ditemukan
                   </CardDescription>
                 </div>
-                <Button onClick={() => setFormOpen(true)}>
+                <Button onClick={() => router.push('/admin/spk/create')}>
                   <Plus className="mr-2 size-4" />
                   Buat SPK Baru
                 </Button>
@@ -331,8 +329,7 @@ export default function SPKPage() {
         </div>
       </div>
 
-      {/* SPK Form Dialog */}
-      <SPKForm open={formOpen} onOpenChange={setFormOpen} onSubmit={handleCreateSPK} />
+
 
       {/* SPK Detail Modal */}
       <SPKDetailModal

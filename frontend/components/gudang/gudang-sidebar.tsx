@@ -10,9 +10,7 @@ import {
   Truck,
   FileText,
   Settings,
-  LogOut,
-  Wrench,
-  Boxes
+  LogOut
 } from "lucide-react"
 import {
   Sidebar,
@@ -27,6 +25,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar"
+import { Logo } from "@/components/ui/logo"
 
 const navItems = [
   { title: "Dashboard", href: "/gudang", icon: LayoutDashboard },
@@ -43,9 +42,8 @@ export function GudangSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border overflow-x-hidden">
       <SidebarHeader className="p-4">
-        <Link href="/gudang" className="flex items-center justify-center py-2">
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-10 w-auto object-contain group-data-[collapsible=icon]:hidden" />
-          <img src="/Logo1.png" alt="AutoService Logo" className="h-8 w-auto object-contain hidden group-data-[collapsible=icon]:block" />
+        <Link href="/gudang">
+          <Logo subtitle="Gudang" />
         </Link>
       </SidebarHeader>
 
