@@ -107,6 +107,8 @@ export interface CustomerFormData {
 // VEHICLE TYPES
 // ==========================================
 
+export type VehicleType = 'MOBIL' | 'MOTOR' | 'TRUCK' | 'BUS' | 'LAINNYA'
+
 export interface Vehicle {
   id: string
   customerId: string
@@ -116,6 +118,7 @@ export interface Vehicle {
   brand: string
   merk?: string
   model: string
+  vehicleType: VehicleType
   year: number
   tahun?: number
   color: string
@@ -124,7 +127,7 @@ export interface Vehicle {
   engineNumber?: string
   transmission: 'manual' | 'automatic'
   transmisi?: string
-  fuelType: 'bensin' | 'diesel' | 'listrik' | 'hybrid'
+  fuelType: 'BENSIN' | 'DIESEL' | 'LISTRIK' | 'HYBRID' | 'bensin' | 'diesel' | 'listrik' | 'hybrid'
   bahan_bakar?: string
   createdAt: string
   created_at?: string
@@ -145,17 +148,20 @@ export interface VehicleFormData {
   fuelType: 'bensin' | 'diesel' | 'listrik' | 'hybrid'
 }
 
-// ==========================================
-// SPAREPART TYPES
-// ==========================================
-
-export interface Category {
-  id: number
-  nama: string
-  deskripsi?: string
-  created_at: string
-  updated_at: string
-}
+export type SparepartCategory = 
+  | 'OLI_PELUMAS' 
+  | 'FILTER' 
+  | 'BRAKE' 
+  | 'SUSPENSION' 
+  | 'ENGINE' 
+  | 'TRANSMISSION' 
+  | 'ELECTRICAL' 
+  | 'BODY' 
+  | 'AC' 
+  | 'TIRE_WHEEL' 
+  | 'ACCESSORIES' 
+  | 'CONSUMABLE' 
+  | 'LAINNYA'
 
 export interface Sparepart {
   id: string
@@ -165,7 +171,7 @@ export interface Sparepart {
   nama?: string // alias
   description?: string
   deskripsi?: string // alias
-  category: SparepartCategory | string
+  category: SparepartCategory
   brand?: string
   unit: string
   satuan?: string // alias
@@ -193,7 +199,7 @@ export interface SparepartFormData {
   code: string
   name: string
   description?: string
-  category: string
+  category: SparepartCategory
   brand?: string
   unit: string
   buyPrice: number
@@ -210,10 +216,13 @@ export interface Supplier {
   code: string
   name: string
   contactPerson?: string
+  contact_person?: string // alias
   phone?: string
   email?: string
   address?: string
   city?: string
+  npwp?: string // alias
+  taxId?: string
   paymentTerms: number
   notes?: string
   isActive: boolean
@@ -240,11 +249,22 @@ export interface SupplierFormData {
 // SERVICE/JASA TYPES
 // ==========================================
 
+export type ServiceCategory = 
+  | 'SERVIS_BERKALA'
+  | 'PERBAIKAN_MESIN'
+  | 'PERBAIKAN_TRANSMISI'
+  | 'KELISTRIKAN'
+  | 'AC_COOLING'
+  | 'BODY_REPAIR'
+  | 'KAKI_KAKI'
+  | 'DETAILING'
+  | 'LAINNYA'
+
 export interface Service {
   id: number
   kode: string
   nama: string
-  kategori: 'ringan' | 'sedang' | 'berat'
+  category: ServiceCategory
   harga: number
   estimasi_waktu: number // dalam menit
   deskripsi?: string
@@ -255,7 +275,7 @@ export interface Service {
 export interface ServiceFormData {
   kode: string
   nama: string
-  kategori: 'ringan' | 'sedang' | 'berat'
+  category: ServiceCategory
   harga: number
   estimasi_waktu: number
   deskripsi?: string
@@ -443,17 +463,7 @@ export interface StockMovementFormData {
 
 export type POStatus = 'draft' | 'pending' | 'approved' | 'received' | 'cancelled'
 
-export interface Supplier {
-  id: number
-  nama: string
-  alamat: string
-  telepon: string
-  email?: string
-  npwp?: string
-  contact_person?: string
-  created_at: string
-  updated_at: string
-}
+// Supplier is now consolidated above
 
 export interface PurchaseOrderItem {
   id: number
@@ -529,4 +539,44 @@ export interface ActivityLog {
   user_agent?: string
   created_at: string
   user?: User
+}
+
+// ==========================================
+// PART REQUEST TYPES
+// ==========================================
+
+export type PartRequestStatus = 'pending' | 'approved' | 'rejected' | 'fulfilled'
+
+export interface PartRequestItem {
+  id: string
+  sparepart_id: string
+  sparepart_name: string
+  sparepart_code: string
+  quantity: number
+  available_stock?: number
+  notes?: string
+}
+
+export interface PartRequest {
+  id: string
+  orderNumber?: string
+  spk_number?: string
+  vehicle_plate?: string
+  vehicle_info?: string
+  mekanik_name?: string
+  status: PartRequestStatus
+  notes?: string
+  rejectReason?: string
+  created_at: string
+  items: PartRequestItem[]
+}
+
+export interface PartRequestFormData {
+  workOrderId?: string
+  notes?: string
+  items: {
+    sparepartId: string
+    quantity: number
+    notes?: string
+  }[]
 }

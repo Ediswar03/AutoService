@@ -5,6 +5,7 @@ import { MovementType } from '@prisma/client';
 import { AppError } from '../middleware/error.middleware';
 import { parsePagination, createPaginationMeta } from '../utils/pagination.util';
 import { PaginationQuery } from '../types/common.types';
+import { workOrderService } from './work-order.service';
 
 // Locally define enum to avoid missing export error if prisma generate hasn't run
 export enum PartRequestStatus {
@@ -177,7 +178,7 @@ export class PartRequestService {
         },
       });
 
-      // Deduct stock and create movements for each item
+      // Deduct stock and create movements/work order items for each item
       for (const item of request.items) {
         const sparepart = await tx.sparepart.findUnique({
           where: { id: item.sparepartId },
@@ -205,6 +206,25 @@ export class PartRequestService {
             createdById: userId,
           },
         });
+
+          // If linked to a work order, add to work order items
+        if (request.workOrderId) {
+          await (tx as any).workOrderSparepart.create({
+            data: {
+              workOrderId: request.workOrderId,
+              sparepartId: item.sparepartId,
+              quantity: item.quantity,
+              unitPrice: sparepart.sellPrice,
+              totalPrice: Number(sparepart.sellPrice) * item.quantity,
+              notes: item.notes || `From request ${request.orderNumber}`,
+            },
+          });
+        }
+      }
+
+      // If linked to a work order, recalculate totals after all items are added
+      if (request.workOrderId) {
+        await workOrderService.recalculateTotals(request.workOrderId);
       }
 
       return updatedRequest;

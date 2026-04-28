@@ -8,3 +8,4 @@ build
 minio.exe
 minio_data/
 scratch/
+backend/uploads/

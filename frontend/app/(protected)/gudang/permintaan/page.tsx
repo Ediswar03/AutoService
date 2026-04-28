@@ -40,24 +40,7 @@ import { InputGroup, InputGroupInput, InputGroupAddon } from '@/components/ui/in
 import { Pagination } from '@/components/shared/Pagination'
 import { fetcher, apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
-import type { PaginatedResponse } from '@/types'
-
-interface PartRequest {
-  id: number
-  spk_number: string
-  vehicle_plate: string
-  vehicle_info: string
-  mekanik_name: string
-  status: 'pending' | 'approved' | 'rejected' | 'fulfilled'
-  created_at: string
-  items: {
-    id: number
-    sparepart_name: string
-    sparepart_code: string
-    quantity: number
-    available_stock: number
-  }[]
-}
+import type { PaginatedResponse, PartRequest } from '@/types'
 
 export default function GudangPermintaanPage() {
   const [page, setPage] = useState(1)

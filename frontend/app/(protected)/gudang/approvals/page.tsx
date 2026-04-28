@@ -29,9 +29,10 @@ import { fetcher, apiClient } from '@/lib/api-client'
 import { format } from 'date-fns'
 import { id as idLocale } from 'date-fns/locale'
 import { toast } from 'sonner'
+import type { PartRequest } from '@/types'
 
 export default function ApprovalsPage() {
-  const [selectedRequest, setSelectedRequest] = useState<any | null>(null)
+  const [selectedRequest, setSelectedRequest] = useState<PartRequest | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -40,7 +41,7 @@ export default function ApprovalsPage() {
     fetcher
   )
 
-  const requests: any[] = Array.isArray(requestsRaw?.data) ? requestsRaw.data : []
+  const requests: PartRequest[] = Array.isArray(requestsRaw?.data) ? requestsRaw.data : []
 
   const pendingRequests = requests.filter(r => r.status === 'pending')
   const approvedRequests = requests.filter(r => r.status === 'approved')
@@ -163,10 +164,10 @@ export default function ApprovalsPage() {
                               </div>
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-mono font-bold text-slate-900">SPK: {req.spk_number}</span>
+                                  <span className="font-mono font-bold text-slate-900">SPK: {req.spk_number || 'N/A'}</span>
                                 </div>
                                 <div className="text-[11px] text-slate-400 font-medium">
-                                  {req.vehicle_plate} • {formatDateString(req.created_at)}
+                                  {req.vehicle_plate || 'No Plate'} • {formatDateString(req.created_at)}
                                 </div>
                               </div>
                             </div>
@@ -174,11 +175,11 @@ export default function ApprovalsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                                 <div className="size-8 rounded-full bg-white flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-100">
-                                  {req.mekanik_name.substring(0, 2).toUpperCase()}
+                                  {(req.mekanik_name || '??').substring(0, 2).toUpperCase()}
                                 </div>
                                 <div>
                                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Diminta Oleh</p>
-                                  <p className="text-sm font-bold text-slate-700">{req.mekanik_name}</p>
+                                  <p className="text-sm font-bold text-slate-700">{req.mekanik_name || 'Mekanik Tidak Diketahui'}</p>
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-1.5 items-center">
@@ -201,13 +202,13 @@ export default function ApprovalsPage() {
                               </DialogTrigger>
                               <DialogContent className="max-w-md">
                                 <DialogHeader>
-                                  <DialogTitle>Detail Permintaan SPK: {req.spk_number}</DialogTitle>
+                                  <DialogTitle>Detail Permintaan SPK: {req.spk_number || 'N/A'}</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
                                   <div className="grid grid-cols-2 gap-4 text-xs font-medium">
                                     <div className="bg-slate-50 p-3 rounded-xl">
                                       <p className="text-slate-400 mb-1">Mekanik</p>
-                                      <p className="font-bold text-slate-900">{req.mekanik_name}</p>
+                                      <p className="font-bold text-slate-900">{req.mekanik_name || 'N/A'}</p>
                                     </div>
                                     <div className="bg-slate-50 p-3 rounded-xl text-right">
                                       <p className="text-slate-400 mb-1">Tanggal</p>
@@ -294,10 +295,10 @@ export default function ApprovalsPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-slate-700 text-sm">{req.spk_number}</span>
+                            <span className="font-mono font-bold text-slate-700 text-sm">{req.spk_number || 'N/A'}</span>
                             <Badge className="bg-emerald-100 text-emerald-700 border-none text-[8px] font-bold uppercase py-0 px-1.5 h-3.5">Approved</Badge>
                           </div>
-                          <p className="text-[10px] text-slate-400 font-medium">{req.mekanik_name} • {req.items.length} item</p>
+                          <p className="text-[10px] text-slate-400 font-medium">{req.mekanik_name || 'N/A'} • {req.items.length} item</p>
                         </div>
                       </div>
                       <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">{formatDateString(req.created_at)}</span>
@@ -318,10 +319,10 @@ export default function ApprovalsPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-slate-700 text-sm">{req.spk_number}</span>
+                            <span className="font-mono font-bold text-slate-700 text-sm">{req.spk_number || 'N/A'}</span>
                             <Badge className="bg-slate-200 text-slate-600 border-none text-[8px] font-bold uppercase py-0 px-1.5 h-3.5">Rejected</Badge>
                           </div>
-                          <p className="text-[10px] text-slate-400 font-medium">{req.mekanik_name} • {req.items.length} item</p>
+                          <p className="text-[10px] text-slate-400 font-medium">{req.mekanik_name || 'N/A'} • {req.items.length} item</p>
                         </div>
                       </div>
                       <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">{formatDateString(req.created_at)}</span>
