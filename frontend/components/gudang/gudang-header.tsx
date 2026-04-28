@@ -23,17 +23,26 @@ import useSWR from "swr"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:3001"
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:3002"
 
 function resolvePhotoUrl(photoUrl?: string | null): string | undefined {
   if (!photoUrl) return undefined
   if (photoUrl.startsWith("http")) return photoUrl
+  
+  // Handle local: prefix used by the backend when Minio is down
   if (photoUrl.startsWith("local:")) {
     const key = photoUrl.replace("local:", "")
     return `${BACKEND_URL}/api/v1/uploads/${key}`
   }
+  
+  // If it's just a filename or path (like avatars/...), try backend uploads first
+  // then fallback to MinIO logic if that's what was intended
+  if (photoUrl.includes('/') || photoUrl.length > 20) {
+     return `${BACKEND_URL}/api/v1/uploads/${photoUrl}`
+  }
+
   try {
-    const url = new URL(BACKEND_URL || "http://localhost:3001")
+    const url = new URL(BACKEND_URL || "http://localhost:3002")
     return `http://${url.hostname}:9000/autoservis/${photoUrl}`
   } catch {
     return `http://localhost:9000/autoservis/${photoUrl}`
@@ -58,7 +67,11 @@ export function GudangHeader({ title, description }: GudangHeaderProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
-  const displayPhoto = resolvePhotoUrl(profile?.photoUrl || user?.photoUrl)
+  // Add timestamp to photo URL to bypass cache
+  const photoUrl = profile?.photoUrl || user?.photoUrl
+  const displayPhoto = resolvePhotoUrl(photoUrl) 
+    ? `${resolvePhotoUrl(photoUrl)}?t=${new Date().getTime()}`
+    : undefined
   const displayName = profile?.name || user?.name || "Staf Gudang"
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { ArrowDownRight, ArrowUpRight, Search, Filter, Download, Calendar, Package } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowDownRight, ArrowUpRight, Search, Filter, Download, Calendar, Package, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,64 +21,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { stockMovements, formatDate } from '@/lib/gudang-data'
 import { GudangHeader } from '@/components/gudang/gudang-header'
+import useSWR from 'swr'
+import { fetcher } from '@/lib/api-client'
+import { format } from 'date-fns'
+import { id as idLocale } from 'date-fns/locale'
 
 export default function StockMovementsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
 
-  const filteredMovements = useMemo(() => {
-    let movements = [...stockMovements]
+  const { data: movementsRaw, isLoading } = useSWR(
+    `/inventory/stock-movements?limit=100&search=${searchQuery}${typeFilter !== 'all' ? `&type=${typeFilter}` : ''}`,
+    fetcher
+  )
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      movements = movements.filter(
-        m =>
-          m.partName.toLowerCase().includes(query) ||
-          m.partCode.toLowerCase().includes(query) ||
-          m.reference.toLowerCase().includes(query)
-      )
+  const movements: any[] = Array.isArray(movementsRaw?.data) ? movementsRaw.data : []
+
+  const inboundCount = movements.filter(m => m.movementType.includes('IN') || m.movementType === 'PURCHASE').reduce((sum, m) => sum + Math.abs(m.quantity), 0)
+  const outboundCount = movements.filter(m => m.movementType.includes('OUT') || m.movementType === 'SALE').reduce((sum, m) => sum + Math.abs(m.quantity), 0)
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return format(new Date(dateStr), 'dd MMM yyyy HH:mm', { locale: idLocale })
+    } catch (e) {
+      return dateStr
     }
+  }
 
-    // Type filter
-    if (typeFilter !== 'all') {
-      movements = movements.filter(m => m.type === typeFilter)
+  const getMovementLabel = (type: string) => {
+    switch (type) {
+      case 'PURCHASE': return 'Pembelian'
+      case 'SALE': return 'Penjualan'
+      case 'ADJUSTMENT_IN': return 'Penyesuaian Masuk'
+      case 'ADJUSTMENT_OUT': return 'Penyesuaian Keluar'
+      case 'INITIAL': return 'Stok Awal'
+      default: return type
     }
+  }
 
-    // Date filter
-    if (dateFilter !== 'all') {
-      const today = new Date()
-      const movementDate = (dateStr: string) => new Date(dateStr)
-      
-      switch (dateFilter) {
-        case 'today':
-          movements = movements.filter(m => {
-            const date = movementDate(m.date)
-            return date.toDateString() === today.toDateString()
-          })
-          break
-        case 'week':
-          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-          movements = movements.filter(m => movementDate(m.date) >= weekAgo)
-          break
-        case 'month':
-          const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
-          movements = movements.filter(m => movementDate(m.date) >= monthAgo)
-          break
-      }
-    }
-
-    // Sort by date descending
-    movements.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-    return movements
-  }, [searchQuery, typeFilter, dateFilter])
-
-  const inboundCount = stockMovements.filter(m => m.type === 'in').reduce((sum, m) => sum + m.quantity, 0)
-  const outboundCount = stockMovements.filter(m => m.type === 'out').reduce((sum, m) => sum + m.quantity, 0)
+  const isPositive = (type: string) => {
+    return type.includes('IN') || type === 'PURCHASE' || type === 'INITIAL' || type === 'RETURN_CUSTOMER'
+  }
 
   return (
     <>
@@ -94,8 +79,8 @@ export default function StockMovementsPage() {
                 <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Transaksi</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-slate-900">{stockMovements.length}</div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Bulan April</p>
+                <div className="text-3xl font-bold text-slate-900">{isLoading ? '...' : movements.length}</div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Transaksi Terkini</p>
               </CardContent>
             </Card>
 
@@ -106,7 +91,7 @@ export default function StockMovementsPage() {
               <CardContent>
                 <div className="flex items-center gap-2">
                   <ArrowDownRight className="size-5 text-emerald-600" />
-                  <span className="text-3xl font-bold text-emerald-600">+{inboundCount}</span>
+                  <span className="text-3xl font-bold text-emerald-600">+{isLoading ? '...' : inboundCount}</span>
                 </div>
                 <p className="text-[10px] text-emerald-600/80 font-bold uppercase mt-1">Unit diterima</p>
               </CardContent>
@@ -119,7 +104,7 @@ export default function StockMovementsPage() {
               <CardContent>
                 <div className="flex items-center gap-2">
                   <ArrowUpRight className="size-5 text-blue-600" />
-                  <span className="text-3xl font-bold text-blue-600">-{outboundCount}</span>
+                  <span className="text-3xl font-bold text-blue-600">-{isLoading ? '...' : outboundCount}</span>
                 </div>
                 <p className="text-[10px] text-blue-600/80 font-bold uppercase mt-1">Unit dikeluarkan</p>
               </CardContent>
@@ -130,8 +115,8 @@ export default function StockMovementsPage() {
                 <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest">Net Movement</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`text-3xl font-bold ${inboundCount - outboundCount >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                  {inboundCount - outboundCount >= 0 ? '+' : ''}{inboundCount - outboundCount}
+                <div className={`text-3xl font-bold ${isLoading ? 'text-slate-400' : (inboundCount - outboundCount >= 0 ? 'text-emerald-600' : 'text-red-500')}`}>
+                  {isLoading ? '...' : (inboundCount - outboundCount >= 0 ? '+' : '')}{isLoading ? '' : inboundCount - outboundCount}
                 </div>
                 <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Selisih bersih</p>
               </CardContent>
@@ -168,8 +153,10 @@ export default function StockMovementsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Tipe</SelectItem>
-                    <SelectItem value="in">Barang Masuk</SelectItem>
-                    <SelectItem value="out">Barang Keluar</SelectItem>
+                    <SelectItem value="PURCHASE">Pembelian</SelectItem>
+                    <SelectItem value="SALE">Penjualan</SelectItem>
+                    <SelectItem value="ADJUSTMENT_IN">Penyesuaian Masuk</SelectItem>
+                    <SelectItem value="ADJUSTMENT_OUT">Penyesuaian Keluar</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -197,7 +184,7 @@ export default function StockMovementsPage() {
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="w-[80px] font-bold text-slate-700">Aksi</TableHead>
                     <TableHead className="font-bold text-slate-700">Informasi Part</TableHead>
-                    <TableHead className="font-bold text-slate-700">Referensi</TableHead>
+                    <TableHead className="font-bold text-slate-700">Jenis</TableHead>
                     <TableHead className="font-bold text-slate-700">Quantity</TableHead>
                     <TableHead className="font-bold text-slate-700">Oleh</TableHead>
                     <TableHead className="font-bold text-slate-700">Catatan</TableHead>
@@ -205,48 +192,59 @@ export default function StockMovementsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMovements.map((movement) => (
-                    <TableRow key={movement.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell>
-                        <div className={`flex size-9 items-center justify-center rounded-xl ${
-                          movement.type === 'in' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
-                        }`}>
-                          {movement.type === 'in' ? (
-                            <ArrowDownRight className="size-4" />
-                          ) : (
-                            <ArrowUpRight className="size-4" />
-                          )}
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-48 text-center">
+                        <div className="flex items-center justify-center">
+                          <Loader2 className="size-8 animate-spin text-slate-300" />
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-bold text-sm text-slate-900">{movement.partName}</p>
-                          <p className="text-[10px] text-slate-500 font-mono tracking-tighter uppercase">{movement.partCode}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono text-[10px] border-slate-200 bg-white text-slate-600 font-bold px-2">
-                          {movement.reference}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-sm font-black ${movement.type === 'in' ? 'text-emerald-600' : 'text-blue-600'}`}>
-                          {movement.type === 'in' ? '+' : '-'}{movement.quantity}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs font-semibold text-slate-600">{movement.performedBy}</TableCell>
-                      <TableCell className="text-xs text-slate-400 max-w-[180px] truncate">
-                        {movement.notes}
-                      </TableCell>
-                      <TableCell className="text-[11px] font-bold text-slate-400">
-                        {formatDate(movement.date)}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : movements.map((movement) => {
+                    const positive = isPositive(movement.movementType)
+                    return (
+                      <TableRow key={movement.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell>
+                          <div className={`flex size-9 items-center justify-center rounded-xl ${
+                            positive ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
+                          }`}>
+                            {positive ? (
+                              <ArrowDownRight className="size-4" />
+                            ) : (
+                              <ArrowUpRight className="size-4" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-bold text-sm text-slate-900">{movement.sparepart?.name}</p>
+                            <p className="text-[10px] text-slate-500 font-mono tracking-tighter uppercase">{movement.sparepart?.code}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono text-[10px] border-slate-200 bg-white text-slate-600 font-bold px-2">
+                            {getMovementLabel(movement.movementType)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`text-sm font-black ${positive ? 'text-emerald-600' : 'text-blue-600'}`}>
+                            {positive ? '+' : '-'}{Math.abs(movement.quantity)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold text-slate-600">{movement.createdBy?.name}</TableCell>
+                        <TableCell className="text-xs text-slate-400 max-w-[180px] truncate">
+                          {movement.notes || '-'}
+                        </TableCell>
+                        <TableCell className="text-[11px] font-bold text-slate-400">
+                          {formatDate(movement.createdAt)}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
 
-              {filteredMovements.length === 0 && (
+              {!isLoading && movements.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 bg-white">
                   <div className="size-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
                     <Package className="size-8 text-slate-200" />

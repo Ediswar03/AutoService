@@ -26,6 +26,8 @@ model User {
   receivedPayments   Payment[]
   refreshTokens      RefreshToken[]
   stockMovements     StockMovement[]
+  requestedParts     PartRequest[]      @relation("RequestedParts")
+  approvedParts      PartRequest[]      @relation("ApprovedParts")
   performedServices  WorkOrderService[]
   assignedWorkOrders WorkOrder[]        @relation("AssignedMechanic")
   createdWorkOrders  WorkOrder[]        @relation("CreatedBy")
@@ -151,6 +153,7 @@ model Sparepart {
   updatedAt           DateTime             @updatedAt @map("updated_at")
   supplier            Supplier?            @relation(fields: [supplierId], references: [id])
   stockMovements      StockMovement[]
+  partRequestItems    PartRequestItem[]
   workOrderSpareparts WorkOrderSparepart[]
 
   @@index([code])
@@ -188,6 +191,7 @@ model WorkOrder {
   updatedById         String?              @map("updated_by")
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
+  partRequests        PartRequest[]
   invoices            Invoice[]
   services            WorkOrderService[]
   spareparts          WorkOrderSparepart[]
@@ -244,6 +248,45 @@ model WorkOrderSparepart {
   @@index([workOrderId])
   @@index([sparepartId])
   @@map("work_order_spareparts")
+}
+
+model PartRequest {
+  id            String            @id @default(uuid())
+  orderNumber   String            @unique @map("order_number")
+  workOrderId   String?           @map("work_order_id")
+  status        PartRequestStatus @default(PENDING)
+  requestedById String            @map("requested_by")
+  approvedById  String?           @map("approved_by")
+  rejectReason  String?           @map("reject_reason")
+  notes         String?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  workOrder   WorkOrder?        @relation(fields: [workOrderId], references: [id])
+  requestedBy User              @relation("RequestedParts", fields: [requestedById], references: [id])
+  approvedBy  User?             @relation("ApprovedParts", fields: [approvedById], references: [id])
+  items       PartRequestItem[]
+
+  @@index([workOrderId])
+  @@index([requestedById])
+  @@index([status])
+  @@map("part_requests")
+}
+
+model PartRequestItem {
+  id            String  @id @default(uuid())
+  requestId     String  @map("request_id")
+  sparepartId   String  @map("sparepart_id")
+  quantity      Int
+  quantityGiven Int     @default(0) @map("quantity_given")
+  notes         String?
+
+  request   PartRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sparepart Sparepart   @relation(fields: [sparepartId], references: [id])
+
+  @@index([requestId])
+  @@index([sparepartId])
+  @@map("part_request_items")
 }
 
 model StockMovement {
@@ -504,6 +547,13 @@ enum ReminderStatus {
   SENT
   COMPLETED
   CANCELLED
+}
+
+enum PartRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
 }
 
 enum AuditAction {

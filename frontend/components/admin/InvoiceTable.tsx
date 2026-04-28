@@ -94,10 +94,13 @@ export function InvoiceTable({ invoices, isLoading, onView, onPayment, onPrint }
               </TableCell>
             </TableRow>
           ) : (
-            invoices.map((invoice) => {
-              const status = statusConfig[invoice.status]
-              const paymentProgress = invoice.grand_total > 0 
-                ? (invoice.jumlah_dibayar / invoice.grand_total) * 100 
+            invoices.map((inv) => {
+              const invoice = inv as any
+              const status = statusConfig[inv.status as InvoiceStatus] || { label: inv.status, variant: 'outline' }
+              const grandTotal = Number(invoice.grand_total ?? invoice.grandTotal ?? 0)
+              const amountPaid = Number(invoice.jumlah_dibayar ?? invoice.amountPaid ?? 0)
+              const paymentProgress = grandTotal > 0 
+                ? (amountPaid / grandTotal) * 100 
                 : 0
 
               return (
@@ -105,26 +108,26 @@ export function InvoiceTable({ invoices, isLoading, onView, onPayment, onPrint }
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Receipt className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-mono font-medium">{invoice.nomor_invoice}</span>
+                      <span className="font-mono font-medium">{invoice.nomor_invoice ?? invoice.invoiceNumber ?? '-'}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     {invoice.spk ? (
                       <Link 
-                        href={`/admin/spk/${invoice.spk_id}`}
+                        href={`/admin/spk/${invoice.spk_id ?? invoice.spkId}`}
                         className="font-mono text-primary hover:underline"
                       >
-                        {invoice.spk.nomor_spk}
+                        {invoice.spk.nomor_spk ?? invoice.spk.spkNumber ?? '-'}
                       </Link>
                     ) : (
                       '-'
                     )}
                   </TableCell>
                   <TableCell>
-                    {format(new Date(invoice.tanggal), 'dd MMM yyyy', { locale: id })}
+                    {format(new Date(invoice.tanggal ?? invoice.createdAt ?? new Date()), 'dd MMM yyyy', { locale: id })}
                   </TableCell>
                   <TableCell>
-                    {invoice.spk?.customer?.nama || '-'}
+                    {invoice.spk?.customer?.nama ?? invoice.spk?.customer?.name ?? '-'}
                   </TableCell>
                   <TableCell>
                     <Badge variant={status.variant} className={status.className}>
@@ -132,13 +135,13 @@ export function InvoiceTable({ invoices, isLoading, onView, onPayment, onPrint }
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatCurrency(invoice.grand_total)}
+                    {formatCurrency(grandTotal)}
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <Progress value={paymentProgress} className="h-2" />
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{formatCurrency(invoice.jumlah_dibayar)}</span>
+                        <span>{formatCurrency(amountPaid)}</span>
                         <span>{Math.round(paymentProgress)}%</span>
                       </div>
                     </div>

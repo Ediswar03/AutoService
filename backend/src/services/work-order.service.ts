@@ -125,26 +125,100 @@ export class WorkOrderService {
   async create(data: CreateWorkOrderInput, userId: string) {
     const orderNumber = await this.generateOrderNumber();
 
-    return prisma.workOrder.create({
-      data: {
-        orderNumber,
-        customerId: data.customerId,
-        vehicleId: data.vehicleId,
-        priority: data.priority || 'NORMAL',
-        assignedMechanicId: data.assignedMechanicId,
-        odometerIn: data.odometerIn,
-        fuelLevel: data.fuelLevel,
-        customerComplaints: data.customerComplaints,
-        estimatedCompletion: data.estimatedCompletion
-          ? new Date(data.estimatedCompletion)
-          : undefined,
-        internalNotes: data.internalNotes,
-        createdById: userId,
-      },
-      include: {
-        customer: true,
-        vehicle: true,
-      },
+    return prisma.$transaction(async (tx) => {
+      const workOrder = await tx.workOrder.create({
+        data: {
+          orderNumber,
+          customerId: data.customerId,
+          vehicleId: data.vehicleId,
+          priority: data.priority || 'NORMAL',
+          assignedMechanicId: data.assignedMechanicId,
+          odometerIn: data.odometerIn,
+          fuelLevel: data.fuelLevel,
+          customerComplaints: data.customerComplaints,
+          estimatedCompletion: data.estimatedCompletion
+            ? new Date(data.estimatedCompletion)
+            : undefined,
+          internalNotes: data.internalNotes,
+          createdById: userId,
+          status: 'PENDING',
+        },
+      });
+
+      // Add services if any
+      if (data.services && data.services.length > 0) {
+        for (const item of data.services) {
+          const service = await tx.service.findUnique({
+            where: { id: item.serviceId },
+          });
+          if (service) {
+            const totalPrice = Number(service.basePrice) * item.quantity * (1 - item.discountPercent / 100);
+            await tx.workOrderService.create({
+              data: {
+                workOrderId: workOrder.id,
+                serviceId: item.serviceId,
+                quantity: item.quantity,
+                unitPrice: service.basePrice,
+                discountPercent: item.discountPercent,
+                totalPrice,
+              },
+            });
+          }
+        }
+      }
+
+      // Add spareparts if any
+      if (data.spareparts && data.spareparts.length > 0) {
+        for (const item of data.spareparts) {
+          const sparepart = await tx.sparepart.findUnique({
+            where: { id: item.sparepartId },
+          });
+          if (sparepart) {
+            if (sparepart.stockQuantity < item.quantity) {
+              throw new AppError(`Insufficient stock for ${sparepart.name}. Available: ${sparepart.stockQuantity}`, 400);
+            }
+            const totalPrice = Number(sparepart.sellPrice) * item.quantity * (1 - item.discountPercent / 100);
+            await tx.workOrderSparepart.create({
+              data: {
+                workOrderId: workOrder.id,
+                sparepartId: item.sparepartId,
+                quantity: item.quantity,
+                unitPrice: sparepart.sellPrice,
+                discountPercent: item.discountPercent,
+                totalPrice,
+              },
+            });
+
+            // Update stock and create movement
+            const newStock = sparepart.stockQuantity - item.quantity;
+            await tx.sparepart.update({
+              where: { id: item.sparepartId },
+              data: { stockQuantity: newStock },
+            });
+
+            await tx.stockMovement.create({
+              data: {
+                sparepartId: item.sparepartId,
+                movementType: (MovementType.SALE || 'SALE' as any),
+                quantity: -item.quantity,
+                referenceType: 'work_order',
+                referenceId: workOrder.id,
+                stockBefore: sparepart.stockQuantity,
+                stockAfter: newStock,
+                unitCost: sparepart.sellPrice,
+                totalCost: totalPrice,
+                createdById: userId,
+              },
+            });
+          }
+        }
+      }
+
+      // Initial calculation will be done by the next step or here
+      return workOrder;
+    }).then(async (wo) => {
+       await this.recalculateTotals(wo.id);
+       return this.findById(wo.id);
     });
   }
 
@@ -163,7 +237,7 @@ export class WorkOrderService {
       throw new AppError('Work order not found', 404);
     }
 
-    if (['COMPLETED', 'INVOICED', 'CANCELLED'].includes(workOrder.status)) {
+    if (['COMPLETED', 'INVOICED', 'CANCELLED'].includes(workOrder.status as any)) {
       throw new AppError(
         'Cannot modify completed/invoiced work order',
         400
@@ -214,7 +288,7 @@ export class WorkOrderService {
       throw new AppError('Work order not found', 404);
     }
 
-    if (['COMPLETED', 'INVOICED', 'CANCELLED'].includes(workOrder.status)) {
+    if (['COMPLETED', 'INVOICED', 'CANCELLED'].includes(workOrder.status as any)) {
       throw new AppError(
         'Cannot modify completed/invoiced work order',
         400
@@ -264,7 +338,7 @@ export class WorkOrderService {
       await tx.stockMovement.create({
         data: {
           sparepartId,
-          movementType: MovementType.SALE,
+          movementType: (MovementType.SALE || 'SALE' as any),
           quantity: -quantity,
           referenceType: 'work_order',
           referenceId: workOrderId,
@@ -295,7 +369,7 @@ export class WorkOrderService {
       throw new AppError('Work order not found', 404);
     }
 
-    if (['COMPLETED', 'INVOICED', 'CANCELLED'].includes(workOrder.status)) {
+    if (['COMPLETED', 'INVOICED', 'CANCELLED'].includes(workOrder.status as any)) {
       throw new AppError('Cannot modify completed/invoiced work order', 400);
     }
 
@@ -309,7 +383,7 @@ export class WorkOrderService {
   // Update work order status
   async updateStatus(
     workOrderId: string,
-    newStatus: WorkOrderStatus,
+    newStatus: string,
     userId: string
   ) {
     const workOrder = await prisma.workOrder.findUnique({
@@ -321,7 +395,7 @@ export class WorkOrderService {
     }
 
     // Validate status transitions
-    const validTransitions: Record<WorkOrderStatus, WorkOrderStatus[]> = {
+    const validTransitions: Record<string, string[]> = {
       DRAFT: ['PENDING', 'CANCELLED'],
       PENDING: ['IN_PROGRESS', 'CANCELLED'],
       IN_PROGRESS: [
@@ -337,7 +411,7 @@ export class WorkOrderService {
       CANCELLED: [],
     };
 
-    if (!validTransitions[workOrder.status].includes(newStatus)) {
+    if (!validTransitions[workOrder.status as any]?.includes(newStatus)) {
       throw new AppError(
         `Cannot transition from ${workOrder.status} to ${newStatus}`,
         400

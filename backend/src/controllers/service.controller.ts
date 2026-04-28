@@ -80,6 +80,13 @@ export class ServiceController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const data = createServiceSchema.parse(req.body);
+      
+      // Auto-generate code if empty
+      if (!data.code) {
+        const timestamp = Date.now().toString().slice(-6);
+        data.code = `SRV-${timestamp}`;
+      }
+      
       const service = await prisma.service.create({ data: data as any });
       sendCreated(res, service);
     } catch (error) {

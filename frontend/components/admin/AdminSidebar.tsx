@@ -13,6 +13,7 @@ import {
   LogOut,
   Wrench,
   ChevronDown,
+  Gift,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
@@ -61,6 +62,11 @@ const mainMenuItems = [
     title: 'Kendaraan',
     url: '/admin/vehicles',
     icon: Car,
+  },
+  {
+    title: 'Promo',
+    url: '/admin/promo',
+    icon: Gift,
   },
 ]
 

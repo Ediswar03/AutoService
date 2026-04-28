@@ -3,7 +3,7 @@
 import { z } from 'zod';
 
 export const createServiceSchema = z.object({
-  code: z.string().min(1, 'Service code is required'),
+  code: z.string().min(1, 'Service code is required').optional().default(''),
   name: z.string().min(1, 'Service name is required'),
   description: z.string().optional().nullable(),
   category: z.enum([
@@ -16,7 +16,7 @@ export const createServiceSchema = z.object({
     'KAKI_KAKI',
     'DETAILING',
     'LAINNYA',
-  ]),
+  ]).optional().default('LAINNYA'),
   basePrice: z.number().min(0).default(0),
   estimatedDuration: z.number().int().min(0).optional().nullable(),
 });

@@ -3,7 +3,7 @@
 import { useState, useMemo, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Search, Filter, Plus, Download, Eye, Edit, Trash2, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Filter, Plus, Download, Eye, Edit, Trash2, ArrowUpDown, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +35,7 @@ import { GudangHeader } from '@/components/gudang/gudang-header'
 import useSWR from 'swr'
 import { fetcher } from '@/lib/api-client'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const ITEMS_PER_PAGE = 10
 
@@ -57,17 +58,43 @@ function InventoryContent() {
   const [currentPage, setCurrentPage] = useState(1)
 
   const { data: rawData, isLoading } = useSWR('/inventory/spareparts?limit=1000', fetcher)
-  const inventoryItems = Array.isArray(rawData?.data) ? rawData.data.map((item: any) => ({
-    ...item,
-    partCode: item.code,
-    currentStock: item.stockQuantity,
-    minStock: item.minStock || 5,
-    maxStock: item.maxStock || 100,
-    status: getStatusFromStock(item.stockQuantity, item.minStock || 5),
-    supplier: item.supplier || { name: '-' },
-    locationStr: item.location || '-',
-    sellPrice: Number(item.sellPrice || 0)
-  })) : []
+  
+  const sampleParts = [
+    { id: 's1', code: 'OIL-MAX-5W30', name: 'Shell Helix Ultra 5W-30', category: 'OLI_PELUMAS', stockQuantity: 45, minStock: 15, maxStock: 100, sellPrice: 125000, location: 'Rak A-1', supplier: { name: 'PT. Shell Indonesia' } },
+    { id: 's2', code: 'FLT-OIL-AVZ', name: 'Filter Oli Toyota Avanza', category: 'FILTER', stockQuantity: 8, minStock: 10, maxStock: 50, sellPrice: 35000, location: 'Rak B-2', supplier: { name: 'Global Parts' } },
+    { id: 's3', code: 'BRK-PAD-FR', name: 'Brake Pad Front - Akebono', category: 'BRAKE', stockQuantity: 12, minStock: 5, maxStock: 30, sellPrice: 245000, location: 'Rak C-3', supplier: { name: 'Indopart' } },
+    { id: 's4', code: 'BATT-GS-MF', name: 'Aki GS Astra MF NS60', category: 'ELECTRICAL', stockQuantity: 4, minStock: 5, maxStock: 20, sellPrice: 850000, location: 'Lantai G-1', supplier: { name: 'Astra Otoparts' } },
+    { id: 's5', code: 'WIP-BOS-20', name: 'Wiper Bosch Advantage 20"', category: 'ACCESSORIES', stockQuantity: 30, minStock: 10, maxStock: 60, sellPrice: 65000, location: 'Rak D-4', supplier: { name: 'BOSCH Indonesia' } },
+  ]
+
+  const apiItems = Array.isArray(rawData?.data) ? rawData.data.map((item: any) => {
+    const stock = item.stok !== undefined ? item.stok : (item.stockQuantity !== undefined ? item.stockQuantity : 0);
+    const minS = item.stok_minimum !== undefined ? item.stok_minimum : (item.minStock !== undefined ? item.minStock : 5);
+    
+    return {
+      ...item,
+      id: item.id,
+      partCode: item.kode || item.code || '-',
+      name: item.nama || item.name || '-',
+      currentStock: stock,
+      minStock: minS,
+      maxStock: item.max_stock || item.maxStock || 100,
+      status: getStatusFromStock(stock, minS),
+      supplier: item.supplier || { name: '-' },
+      locationStr: item.lokasi_rak || item.location || '-',
+      sellPrice: Number(item.harga_jual || item.sellPrice || 0),
+      category: item.category?.nama || item.category || 'LAINNYA'
+    }
+  }) : []
+
+  // Combine API items with samples if API is empty or for a richer initial experience
+  const inventoryItems = apiItems.length > 0 ? apiItems : sampleParts.map(p => ({
+    ...p,
+    partCode: p.code,
+    currentStock: p.stockQuantity,
+    status: getStatusFromStock(p.stockQuantity, p.minStock),
+    locationStr: p.location,
+  })) as any[]
   
   const categories = Array.from(new Set(inventoryItems.map((item: any) => item.category)))
 
@@ -171,13 +198,66 @@ function InventoryContent() {
           <p className="text-sm text-slate-500">Total {isLoading ? "..." : inventoryItems.length} jenis suku cadang tersedia</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="bg-white">
-            <Download className="mr-2 size-4" />
-            Export
-          </Button>
-          <Button className="bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 font-bold">
-            <Plus className="mr-2 size-4" />
-            Tambah Part
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="bg-white">
+                <Download className="mr-2 size-4" />
+                Export
+                <ChevronDown className="ml-2 size-3 text-slate-400" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                className="cursor-pointer"
+                onClick={() => {
+                  if (inventoryItems.length === 0) return alert("Tidak ada data untuk di-export")
+                  const headers = ['Kode Part', 'Nama Part', 'Kategori', 'Stok', 'Min Stok', 'Harga Jual', 'Lokasi', 'Supplier']
+                  const rows = inventoryItems.map((item: any) => [
+                    item.partCode,
+                    item.name,
+                    item.category,
+                    item.currentStock,
+                    item.minStock,
+                    item.sellPrice,
+                    item.locationStr,
+                    item.supplier?.name || '-'
+                  ])
+                  const csvContent = [
+                    headers.join(','),
+                    ...rows.map((row: any[]) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                  ].join('\n')
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+                  const url = URL.createObjectURL(blob)
+                  const link = document.createElement('a')
+                  link.setAttribute('href', url)
+                  link.setAttribute('download', `inventory_report_${new Date().toISOString().split('T')[0]}.csv`)
+                  link.style.visibility = 'hidden'
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                  toast.success("Laporan CSV berhasil diunduh!")
+                }}
+              >
+                <Download className="mr-2 size-4 text-slate-500" />
+                Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="cursor-pointer"
+                onClick={() => {
+                  window.print()
+                }}
+              >
+                <Eye className="mr-2 size-4 text-slate-500" />
+                Export PDF (Cetak)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button className="bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 font-bold" asChild>
+            <Link href="/gudang/inventory/add">
+              <Plus className="mr-2 size-4" />
+              Tambah Part
+            </Link>
           </Button>
         </div>
       </div>

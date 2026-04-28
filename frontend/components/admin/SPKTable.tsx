@@ -124,19 +124,19 @@ export function SPKTable({ data, isLoading, onDelete, isDeleting }: SPKTableProp
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-mono font-medium">{spk.nomor_spk}</span>
+                        <span className="font-mono font-medium">{(spk as any).nomor_spk ?? (spk as any).orderNumber ?? '-'}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(spk.tanggal), 'dd MMM yyyy', { locale: id })}
+                      {format(new Date((spk as any).tanggal ?? (spk as any).receivedAt ?? new Date()), 'dd MMM yyyy', { locale: id })}
                     </TableCell>
                     <TableCell>
                       {spk.customer ? (
                         <Link 
-                          href={`/admin/customers/${spk.customer_id}`}
+                          href={`/admin/customers/${spk.customer_id ?? (spk as any).customerId}`}
                           className="text-primary hover:underline"
                         >
-                          {spk.customer.nama}
+                          {(spk as any).customer?.nama ?? (spk as any).customer?.name ?? '-'}
                         </Link>
                       ) : (
                         '-'
@@ -145,9 +145,9 @@ export function SPKTable({ data, isLoading, onDelete, isDeleting }: SPKTableProp
                     <TableCell>
                       {spk.vehicle ? (
                         <div>
-                          <div className="font-medium">{spk.vehicle.nomor_polisi}</div>
+                          <div className="font-medium">{(spk as any).vehicle?.nomor_polisi ?? (spk as any).vehicle?.licensePlate ?? '-'}</div>
                           <div className="text-xs text-muted-foreground">
-                            {spk.vehicle.merk} {spk.vehicle.model}
+                            {(spk as any).vehicle?.merk ?? (spk as any).vehicle?.brand ?? '-'} {(spk as any).vehicle?.model ?? '-'}
                           </div>
                         </div>
                       ) : (
@@ -155,7 +155,7 @@ export function SPKTable({ data, isLoading, onDelete, isDeleting }: SPKTableProp
                       )}
                     </TableCell>
                     <TableCell>
-                      {spk.mekanik?.nama || (
+                      {(spk as any).mekanik?.nama ?? (spk as any).assignedMechanic?.name ?? (
                         <span className="text-muted-foreground">Belum ditugaskan</span>
                       )}
                     </TableCell>
@@ -165,7 +165,7 @@ export function SPKTable({ data, isLoading, onDelete, isDeleting }: SPKTableProp
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {formatCurrency(spk.grand_total)}
+                      {formatCurrency(Number((spk as any).grand_total ?? (spk as any).grandTotal ?? 0))}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

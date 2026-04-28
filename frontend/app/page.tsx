@@ -20,7 +20,8 @@ export default function HomePage() {
           gudang: '/gudang',
           pimpinan: '/pimpinan',
         }
-        router.push(routes[user.role] || '/admin')
+        const role = user.role.toLowerCase()
+        router.push(routes[role] || '/admin')
       } else {
         router.push('/login')
       }

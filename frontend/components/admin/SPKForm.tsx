@@ -42,13 +42,13 @@ import {
   TableFooter,
 } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
-import { useApiGet } from '@/hooks/useApi'
+import { useApiPaginated } from '@/hooks/useApi'
 import { cn } from '@/lib/utils'
 import type { SPK, SPKFormData, Customer, Vehicle, Service, Sparepart, User } from '@/types'
 
 const spkItemSchema = z.object({
   tipe: z.enum(['jasa', 'sparepart']),
-  item_id: z.number().min(1, 'Item wajib dipilih'),
+  item_id: z.string().min(1, 'Item wajib dipilih'),
   quantity: z.number().min(1, 'Quantity minimal 1'),
   harga_satuan: z.number().min(0, 'Harga tidak valid'),
   diskon: z.number().min(0).max(100, 'Diskon maksimal 100%'),
@@ -56,14 +56,15 @@ const spkItemSchema = z.object({
 })
 
 const spkSchema = z.object({
-  tanggal: z.string().min(1, 'Tanggal wajib diisi'),
-  customer_id: z.number().min(1, 'Pelanggan wajib dipilih'),
-  vehicle_id: z.number().min(1, 'Kendaraan wajib dipilih'),
-  mekanik_id: z.number().optional(),
-  keluhan: z.string().min(1, 'Keluhan wajib diisi'),
-  diagnosa: z.string().optional(),
-  estimasi_selesai: z.string().optional(),
-  catatan: z.string().optional(),
+  customerId: z.string().uuid('Pelanggan wajib dipilih'),
+  vehicleId: z.string().uuid('Kendaraan wajib dipilih'),
+  assignedMechanicId: z.string().uuid().optional().nullable(),
+  customerComplaints: z.string().min(1, 'Keluhan wajib diisi'),
+  internalNotes: z.string().optional().nullable(),
+  priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
+  odometerIn: z.number().int().min(0).optional().nullable(),
+  fuelLevel: z.string().optional().nullable(),
+  estimatedCompletion: z.string().optional().nullable(),
   items: z.array(spkItemSchema).min(1, 'Minimal 1 item harus ditambahkan'),
 })
 
@@ -80,36 +81,37 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
   const [sparepartOpen, setSparepartOpen] = useState(false)
   const [dateOpen, setDateOpen] = useState(false)
 
-  const { data: customers } = useApiGet<Customer[]>('/customers?per_page=100')
-  const { data: services } = useApiGet<Service[]>('/services?per_page=100')
-  const { data: spareparts } = useApiGet<Sparepart[]>('/spareparts?per_page=100')
-  const { data: mekaniks } = useApiGet<User[]>('/users?role=mekanik')
+  const { data: customers } = useApiPaginated<Customer>('/customers', 1, 100)
+  const { data: services } = useApiPaginated<Service>('/services', 1, 100)
+  const { data: spareparts } = useApiPaginated<Sparepart>('/inventory/spareparts', 1, 100)
+  const { data: mekaniks } = useApiPaginated<User>('/users', 1, 100, { role: 'MEKANIK' })
 
   const {
     register,
     control,
-    handleSubmit,
+    handleSubmit: hookFormSubmit,
     watch,
     setValue,
     formState: { errors },
-  } = useForm<SPKFormData>({
+  } = useForm<any>({
     resolver: zodResolver(spkSchema),
     defaultValues: {
-      tanggal: initialData?.tanggal || format(new Date(), 'yyyy-MM-dd'),
-      customer_id: initialData?.customer_id || 0,
-      vehicle_id: initialData?.vehicle_id || 0,
-      mekanik_id: initialData?.mekanik_id || undefined,
-      keluhan: initialData?.keluhan || '',
-      diagnosa: initialData?.diagnosa || '',
-      estimasi_selesai: initialData?.estimasi_selesai || '',
-      catatan: initialData?.catatan || '',
+      customerId: initialData?.customerId || '',
+      vehicleId: initialData?.vehicleId || '',
+      assignedMechanicId: initialData?.assignedMechanicId || undefined,
+      customerComplaints: initialData?.customerComplaints || '',
+      internalNotes: initialData?.internalNotes || '',
+      priority: initialData?.priority || 'NORMAL',
+      odometerIn: initialData?.odometerIn || undefined,
+      fuelLevel: initialData?.fuelLevel || '',
+      estimatedCompletion: initialData?.estimatedCompletion || '',
       items: initialData?.items?.map(item => ({
         tipe: item.tipe,
-        item_id: item.item_id,
+        item_id: item.serviceId || item.sparepartId,
         quantity: item.quantity,
-        harga_satuan: item.harga_satuan,
-        diskon: item.diskon,
-        catatan: item.catatan,
+        harga_satuan: item.unitPrice,
+        diskon: item.discountPercent,
+        catatan: item.notes,
       })) || [],
     },
   })
@@ -119,12 +121,12 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
     name: 'items',
   })
 
-  const selectedCustomerId = watch('customer_id')
-  const selectedVehicleId = watch('vehicle_id')
+  const selectedCustomerId = watch('customerId')
+  const selectedVehicleId = watch('vehicleId')
   const items = watch('items')
-  const tanggal = watch('tanggal')
+  const estimatedCompletion = watch('estimatedCompletion')
 
-  const selectedCustomer = customers?.find(c => c.id === selectedCustomerId)
+  const selectedCustomer = (customers as any)?.data?.find((c: any) => c.id === selectedCustomerId)
   const customerVehicles = selectedCustomer?.vehicles || []
 
   const formatCurrency = (value: number) => {
@@ -135,55 +137,87 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
     }).format(value)
   }
 
-  const calculateSubtotal = (item: typeof items[0]) => {
+  const calculateSubtotal = (item: any) => {
     const subtotal = item.quantity * item.harga_satuan
     const discount = (subtotal * item.diskon) / 100
     return subtotal - discount
   }
 
   const totalJasa = items
-    .filter(item => item.tipe === 'jasa')
-    .reduce((sum, item) => sum + calculateSubtotal(item), 0)
+    .filter((item: any) => item.tipe === 'jasa')
+    .reduce((sum: number, item: any) => sum + calculateSubtotal(item), 0)
 
   const totalSparepart = items
-    .filter(item => item.tipe === 'sparepart')
-    .reduce((sum, item) => sum + calculateSubtotal(item), 0)
+    .filter((item: any) => item.tipe === 'sparepart')
+    .reduce((sum: number, item: any) => sum + calculateSubtotal(item), 0)
 
   const grandTotal = totalJasa + totalSparepart
 
-  const addService = (service: Service) => {
+  const addService = (service: any) => {
     append({
       tipe: 'jasa',
       item_id: service.id,
       quantity: 1,
-      harga_satuan: service.harga,
+      harga_satuan: Number(service.basePrice ?? 0),
       diskon: 0,
       catatan: '',
     })
     setServiceOpen(false)
   }
 
-  const addSparepart = (part: Sparepart) => {
+  const addSparepart = (part: any) => {
     append({
       tipe: 'sparepart',
       item_id: part.id,
       quantity: 1,
-      harga_satuan: part.harga_jual,
+      harga_satuan: Number(part.sellPrice ?? 0),
       diskon: 0,
       catatan: '',
     })
     setSparepartOpen(false)
   }
 
-  const getItemName = (item: typeof items[0]) => {
+  const getItemName = (item: any) => {
     if (item.tipe === 'jasa') {
-      return services?.find(s => s.id === item.item_id)?.nama || '-'
+      const svc = (services as any)?.data?.find((s: any) => s.id === item.item_id)
+      return svc?.name ?? '-'
     }
-    return spareparts?.find(s => s.id === item.item_id)?.nama || '-'
+    const part = (spareparts as any)?.data?.find((s: any) => s.id === item.item_id)
+    return part?.name ?? '-'
+  }
+
+  const handleFormSubmit = (data: any) => {
+    // Map items to backend format
+    const payload: SPKFormData = {
+      customerId: data.customerId,
+      vehicleId: data.vehicleId,
+      assignedMechanicId: data.assignedMechanicId || undefined,
+      customerComplaints: data.customerComplaints,
+      internalNotes: data.internalNotes,
+      priority: data.priority,
+      odometerIn: data.odometerIn,
+      fuelLevel: data.fuelLevel,
+      estimatedCompletion: data.estimatedCompletion ? new Date(data.estimatedCompletion).toISOString() : undefined,
+      services: data.items
+        .filter((item: any) => item.tipe === 'jasa')
+        .map((item: any) => ({
+          serviceId: item.item_id,
+          quantity: item.quantity,
+          discountPercent: item.diskon,
+        })),
+      spareparts: data.items
+        .filter((item: any) => item.tipe === 'sparepart')
+        .map((item: any) => ({
+          sparepartId: item.item_id,
+          quantity: item.quantity,
+          discountPercent: item.diskon,
+        })),
+    }
+    onSubmit(payload)
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={hookFormSubmit(handleFormSubmit)}>
       <div className="space-y-6">
         {/* Customer & Vehicle Selection */}
         <Card>
@@ -198,7 +232,7 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                 <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-between">
-                      {selectedCustomer?.nama || 'Pilih pelanggan...'}
+                      {selectedCustomer?.name ?? 'Pilih pelanggan...'}
                       <Search className="ml-2 h-4 w-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -208,18 +242,18 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                       <CommandList>
                         <CommandEmpty>Tidak ditemukan</CommandEmpty>
                         <CommandGroup>
-                          {customers?.map((customer) => (
+                          {(customers as any)?.data?.map((customer: any) => (
                             <CommandItem
                               key={customer.id}
                               onSelect={() => {
-                                setValue('customer_id', customer.id)
-                                setValue('vehicle_id', 0)
+                                setValue('customerId', customer.id)
+                                setValue('vehicleId', '')
                                 setCustomerOpen(false)
                               }}
                             >
                               <div>
-                                <div className="font-medium">{customer.nama}</div>
-                                <div className="text-xs text-muted-foreground">{customer.telepon}</div>
+                                <div className="font-medium">{customer.name}</div>
+                                <div className="text-xs text-muted-foreground">{customer.phone}</div>
                               </div>
                             </CommandItem>
                           ))}
@@ -228,28 +262,28 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                     </Command>
                   </PopoverContent>
                 </Popover>
-                {errors.customer_id && <FieldError>{errors.customer_id.message}</FieldError>}
+                {errors.customerId && <FieldError>{errors.customerId.message as string}</FieldError>}
               </Field>
 
               <Field>
                 <FieldLabel>Kendaraan</FieldLabel>
                 <Select
-                  value={selectedVehicleId ? String(selectedVehicleId) : ''}
-                  onValueChange={(value) => setValue('vehicle_id', Number(value))}
+                  value={selectedVehicleId || ''}
+                  onValueChange={(value) => setValue('vehicleId', value)}
                   disabled={!selectedCustomerId}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={selectedCustomerId ? 'Pilih kendaraan' : 'Pilih pelanggan dulu'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {customerVehicles.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={String(vehicle.id)}>
-                        {vehicle.nomor_polisi} - {vehicle.merk} {vehicle.model}
+                    {customerVehicles.map((vehicle: any) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.licensePlate} - {vehicle.brand} {vehicle.model}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.vehicle_id && <FieldError>{errors.vehicle_id.message}</FieldError>}
+                {errors.vehicleId && <FieldError>{errors.vehicleId.message as string}</FieldError>}
               </Field>
             </div>
           </CardContent>
@@ -264,21 +298,21 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
               <Field>
-                <FieldLabel>Tanggal SPK</FieldLabel>
+                <FieldLabel>Estimasi Selesai</FieldLabel>
                 <Popover open={dateOpen} onOpenChange={setDateOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn("w-full justify-start text-left font-normal")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {tanggal ? format(new Date(tanggal), 'dd MMMM yyyy') : 'Pilih tanggal'}
+                      {estimatedCompletion ? format(new Date(estimatedCompletion), 'dd MMMM yyyy') : 'Pilih tanggal'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={tanggal ? new Date(tanggal) : undefined}
+                      selected={estimatedCompletion ? new Date(estimatedCompletion) : undefined}
                       onSelect={(date) => {
                         if (date) {
-                          setValue('tanggal', format(date, 'yyyy-MM-dd'))
+                          setValue('estimatedCompletion', date.toISOString())
                           setDateOpen(false)
                         }
                       }}
@@ -290,38 +324,57 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
               <Field>
                 <FieldLabel>Mekanik</FieldLabel>
                 <Select
-                  value={watch('mekanik_id') ? String(watch('mekanik_id')) : ''}
-                  onValueChange={(value) => setValue('mekanik_id', Number(value))}
+                  value={watch('assignedMechanicId') || ''}
+                  onValueChange={(value) => setValue('assignedMechanicId', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih mekanik (opsional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mekaniks?.map((mekanik) => (
-                      <SelectItem key={mekanik.id} value={String(mekanik.id)}>
-                        {mekanik.nama}
+                    {(mekaniks as any)?.data?.map((mekanik: any) => (
+                      <SelectItem key={mekanik.id} value={mekanik.id}>
+                        {mekanik.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </Field>
 
-              <Field className="md:col-span-2">
-                <FieldLabel>Keluhan</FieldLabel>
-                <Textarea
-                  placeholder="Deskripsikan keluhan pelanggan..."
-                  rows={3}
-                  {...register('keluhan')}
-                />
-                {errors.keluhan && <FieldError>{errors.keluhan.message}</FieldError>}
+              <Field>
+                <FieldLabel>Odometer Masuk</FieldLabel>
+                <Input type="number" {...register('odometerIn', { valueAsNumber: true })} placeholder="KM" />
+              </Field>
+
+              <Field>
+                <FieldLabel>Level Bahan Bakar</FieldLabel>
+                <Select onValueChange={(v) => setValue('fuelLevel', v)} defaultValue={watch('fuelLevel')}>
+                  <SelectTrigger><SelectValue placeholder="Pilih level..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="E">Empty</SelectItem>
+                    <SelectItem value="1/4">1/4</SelectItem>
+                    <SelectItem value="1/2">1/2</SelectItem>
+                    <SelectItem value="3/4">3/4</SelectItem>
+                    <SelectItem value="F">Full</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field className="md:col-span-2">
-                <FieldLabel>Diagnosa (opsional)</FieldLabel>
+                <FieldLabel>Keluhan Pelanggan</FieldLabel>
                 <Textarea
-                  placeholder="Hasil diagnosa mekanik..."
+                  placeholder="Deskripsikan keluhan pelanggan..."
+                  rows={3}
+                  {...register('customerComplaints')}
+                />
+                {errors.customerComplaints && <FieldError>{errors.customerComplaints.message as string}</FieldError>}
+              </Field>
+
+              <Field className="md:col-span-2">
+                <FieldLabel>Catatan Internal (opsional)</FieldLabel>
+                <Textarea
+                  placeholder="Instruksi tambahan untuk mekanik..."
                   rows={2}
-                  {...register('diagnosa')}
+                  {...register('internalNotes')}
                 />
               </Field>
             </div>
@@ -349,12 +402,12 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                     <CommandList>
                       <CommandEmpty>Tidak ditemukan</CommandEmpty>
                       <CommandGroup>
-                        {services?.map((service) => (
+                        {(services as any)?.data?.map((service: any) => (
                           <CommandItem key={service.id} onSelect={() => addService(service)}>
                             <div className="flex-1">
-                              <div>{service.nama}</div>
+                              <div>{service.name}</div>
                               <div className="text-xs text-muted-foreground">
-                                {formatCurrency(service.harga)}
+                                {formatCurrency(Number(service.basePrice ?? 0))}
                               </div>
                             </div>
                           </CommandItem>
@@ -378,12 +431,12 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                     <CommandList>
                       <CommandEmpty>Tidak ditemukan</CommandEmpty>
                       <CommandGroup>
-                        {spareparts?.map((part) => (
+                        {(spareparts as any)?.data?.map((part: any) => (
                           <CommandItem key={part.id} onSelect={() => addSparepart(part)}>
                             <div className="flex-1">
-                              <div>{part.nama}</div>
+                              <div>{part.name}</div>
                               <div className="text-xs text-muted-foreground">
-                                {formatCurrency(part.harga_jual)} - Stok: {part.stok}
+                                {formatCurrency(Number(part.sellPrice ?? 0))} - Stok: {part.stockQuantity}
                               </div>
                             </div>
                           </CommandItem>
@@ -395,7 +448,7 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
               </Popover>
             </div>
 
-            {errors.items && <p className="mb-2 text-sm text-destructive">{errors.items.message}</p>}
+            {errors.items && <p className="mb-2 text-sm text-destructive">{errors.items.message as string}</p>}
 
             <div className="rounded-md border">
               <Table>

@@ -50,6 +50,12 @@ const paymentMethods: { value: PaymentMethod; label: string; icon: React.Element
 ]
 
 export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProps) {
+  const inv = invoice as any
+  const invoiceId = inv.id
+  const sisaBayar = Number(inv.sisa_bayar ?? inv.amountDue ?? 0)
+  const nomorInvoice = inv.nomor_invoice ?? inv.invoiceNumber ?? '-'
+  const grandTotal = Number(inv.grand_total ?? inv.grandTotal ?? 0)
+  const jumlahDibayar = Number(inv.jumlah_dibayar ?? inv.amountPaid ?? 0)
   const {
     register,
     handleSubmit,
@@ -59,9 +65,9 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
-      invoice_id: invoice.id,
+      invoice_id: invoiceId,
       tanggal: format(new Date(), 'yyyy-MM-dd'),
-      jumlah: invoice.sisa_bayar,
+      jumlah: sisaBayar,
       metode: 'cash',
       referensi: '',
       catatan: '',
@@ -87,31 +93,31 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
         <Card>
           <CardHeader>
             <CardTitle>Ringkasan Invoice</CardTitle>
-            <CardDescription>Invoice #{invoice.nomor_invoice}</CardDescription>
+            <CardDescription>Invoice #{nomorInvoice}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Total Invoice</span>
-                <span className="font-medium">{formatCurrency(invoice.grand_total)}</span>
+                <span className="font-medium">{formatCurrency(grandTotal)}</span>
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Sudah Dibayar</span>
                 <span className="font-medium text-green-600">
-                  {formatCurrency(invoice.jumlah_dibayar)}
+                  {formatCurrency(jumlahDibayar)}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Sisa Bayar</span>
                 <span className="font-bold text-lg text-destructive">
-                  {formatCurrency(invoice.sisa_bayar)}
+                  {formatCurrency(sisaBayar)}
                 </span>
               </div>
               {jumlah > 0 && (
                 <div className="flex justify-between py-2 bg-muted rounded-md px-3">
                   <span className="text-muted-foreground">Setelah Pembayaran Ini</span>
                   <span className="font-bold text-green-600">
-                    {formatCurrency(Math.max(0, invoice.sisa_bayar - jumlah))}
+                    {formatCurrency(Math.max(0, sisaBayar - jumlah))}
                   </span>
                 </div>
               )}
@@ -157,11 +163,11 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
                 <Input
                   type="number"
                   min={1}
-                  max={invoice.sisa_bayar}
+                  max={sisaBayar}
                   {...register('jumlah', { valueAsNumber: true })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Maksimal: {formatCurrency(invoice.sisa_bayar)}
+                  Maksimal: {formatCurrency(sisaBayar)}
                 </p>
                 {errors.jumlah && <FieldError>{errors.jumlah.message}</FieldError>}
               </Field>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -29,39 +29,51 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { useApiGet } from '@/hooks/useApi'
-import type { Vehicle, VehicleFormData, Customer } from '@/types'
+import useSWR from 'swr'
+import { fetcher } from '@/lib/api-client'
 
+// ─── Schema matches backend createVehicleSchema ─────────────────────────────
 const vehicleSchema = z.object({
-  customer_id: z.number().min(1, 'Pelanggan wajib dipilih'),
-  nomor_polisi: z.string().min(1, 'Nomor polisi wajib diisi').max(15, 'Nomor polisi maksimal 15 karakter'),
-  merk: z.string().min(1, 'Merk wajib diisi').max(50, 'Merk maksimal 50 karakter'),
-  model: z.string().min(1, 'Model wajib diisi').max(50, 'Model maksimal 50 karakter'),
-  tahun: z.number().min(1900, 'Tahun tidak valid').max(new Date().getFullYear() + 1, 'Tahun tidak valid'),
-  warna: z.string().min(1, 'Warna wajib diisi').max(30, 'Warna maksimal 30 karakter'),
-  nomor_rangka: z.string().optional(),
-  nomor_mesin: z.string().optional(),
-  transmisi: z.enum(['manual', 'automatic']),
-  bahan_bakar: z.enum(['bensin', 'diesel', 'listrik', 'hybrid']),
+  customerId:   z.string().min(1, 'Pelanggan wajib dipilih'),
+  licensePlate: z.string().min(1, 'Nomor polisi wajib diisi').max(15),
+  brand:        z.string().min(1, 'Merk wajib diisi').max(50),
+  model:        z.string().min(1, 'Model wajib diisi').max(50),
+  vehicleType:  z.enum(['MOBIL', 'MOTOR', 'TRUCK', 'BUS', 'LAINNYA']).default('MOBIL'),
+  year:         z.number().int().min(1900).max(2100).nullable().optional(),
+  color:        z.string().optional().nullable(),
+  transmission: z.string().optional().nullable(),
+  fuelType:     z.string().optional().nullable(),
+  vin:          z.string().optional().nullable(),
+  engineNumber: z.string().optional().nullable(),
+  lastOdometer: z.number().int().min(0).optional().nullable(),
+  notes:        z.string().optional().nullable(),
 })
 
+type VehicleFormValues = z.infer<typeof vehicleSchema>
+
 interface VehicleFormProps {
-  initialData?: Vehicle
-  onSubmit: (data: VehicleFormData) => Promise<void>
+  initialData?: Partial<VehicleFormValues> & { id?: string }
+  onSubmit: (data: VehicleFormValues) => Promise<void>
   isSubmitting?: boolean
 }
 
 const carBrands = [
-  'Toyota', 'Honda', 'Suzuki', 'Daihatsu', 'Mitsubishi', 'Nissan', 
-  'Mazda', 'Hyundai', 'KIA', 'Wuling', 'BMW', 'Mercedes-Benz', 
-  'Audi', 'Volkswagen', 'Ford', 'Chevrolet', 'Isuzu', 'Hino'
+  'Toyota', 'Honda', 'Suzuki', 'Daihatsu', 'Mitsubishi', 'Nissan',
+  'Mazda', 'Hyundai', 'KIA', 'Wuling', 'BMW', 'Mercedes-Benz',
+  'Audi', 'Volkswagen', 'Ford', 'Chevrolet', 'Isuzu', 'Hino', 'Lainnya',
 ]
 
 export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleFormProps) {
   const [customerOpen, setCustomerOpen] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
-  
-  const { data: customers } = useApiGet<Customer[]>('/customers?per_page=100')
+
+  // Fetch customers — backend returns { data: [...], pagination: ... }
+  const { data: customersData } = useSWR('/customers?limit=200&sortBy=name&sortOrder=asc', fetcher)
+  const customers: any[] = Array.isArray(customersData?.data)
+    ? customersData.data
+    : Array.isArray(customersData)
+    ? customersData
+    : []
 
   const {
     register,
@@ -69,29 +81,36 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
     watch,
     setValue,
     formState: { errors },
-  } = useForm<VehicleFormData>({
+  } = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
-      customer_id: initialData?.customer_id || 0,
-      nomor_polisi: initialData?.nomor_polisi || '',
-      merk: initialData?.merk || '',
-      model: initialData?.model || '',
-      tahun: initialData?.tahun || new Date().getFullYear(),
-      warna: initialData?.warna || '',
-      nomor_rangka: initialData?.nomor_rangka || '',
-      nomor_mesin: initialData?.nomor_mesin || '',
-      transmisi: initialData?.transmisi || 'manual',
-      bahan_bakar: initialData?.bahan_bakar || 'bensin',
+      customerId:   initialData?.customerId   ?? '',
+      licensePlate: initialData?.licensePlate ?? '',
+      brand:        initialData?.brand        ?? '',
+      model:        initialData?.model        ?? '',
+      vehicleType:  initialData?.vehicleType  ?? 'MOBIL',
+      year:         initialData?.year         ?? new Date().getFullYear(),
+      color:        initialData?.color        ?? '',
+      transmission: initialData?.transmission ?? 'Manual',
+      fuelType:     initialData?.fuelType     ?? 'Bensin',
+      vin:          initialData?.vin          ?? '',
+      engineNumber: initialData?.engineNumber ?? '',
+      lastOdometer: initialData?.lastOdometer ?? 0,
+      notes:        initialData?.notes        ?? '',
     },
   })
 
-  const selectedCustomerId = watch('customer_id')
-  const selectedCustomer = customers?.find(c => c.id === selectedCustomerId)
+  const selectedCustomerId = watch('customerId')
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
 
-  const filteredCustomers = customers?.filter(c => 
-    c.nama.toLowerCase().includes(customerSearch.toLowerCase()) ||
-    c.telepon.includes(customerSearch)
-  ) || []
+  const filteredCustomers = customers.filter((c) => {
+    const name = (c.name ?? '').toLowerCase()
+    const phone = c.phone ?? ''
+    return (
+      name.includes(customerSearch.toLowerCase()) ||
+      phone.includes(customerSearch)
+    )
+  })
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -104,22 +123,26 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
           </CardHeader>
           <CardContent>
             <Field>
-              <FieldLabel>Pelanggan</FieldLabel>
+              <FieldLabel>Pelanggan *</FieldLabel>
               <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full justify-between"
+                    className="w-full justify-between font-normal"
                   >
-                    {selectedCustomer ? selectedCustomer.nama : 'Pilih pelanggan...'}
+                    {selectedCustomer ? (
+                      <span>{selectedCustomer.name} <span className="text-muted-foreground text-xs">— {selectedCustomer.phone}</span></span>
+                    ) : (
+                      <span className="text-muted-foreground">Pilih pelanggan...</span>
+                    )}
                     <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                   <Command>
-                    <CommandInput 
-                      placeholder="Cari pelanggan..." 
+                    <CommandInput
+                      placeholder="Cari nama atau telepon..."
                       value={customerSearch}
                       onValueChange={setCustomerSearch}
                     />
@@ -129,15 +152,15 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
                         {filteredCustomers.map((customer) => (
                           <CommandItem
                             key={customer.id}
-                            value={customer.nama}
+                            value={customer.id}
                             onSelect={() => {
-                              setValue('customer_id', customer.id)
+                              setValue('customerId', customer.id)
                               setCustomerOpen(false)
                             }}
                           >
                             <div>
-                              <div className="font-medium">{customer.nama}</div>
-                              <div className="text-xs text-muted-foreground">{customer.telepon}</div>
+                              <div className="font-medium">{customer.name}</div>
+                              <div className="text-xs text-muted-foreground">{customer.phone}</div>
                             </div>
                           </CommandItem>
                         ))}
@@ -146,7 +169,7 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
                   </Command>
                 </PopoverContent>
               </Popover>
-              {errors.customer_id && <FieldError>{errors.customer_id.message}</FieldError>}
+              {errors.customerId && <FieldError>{errors.customerId.message}</FieldError>}
             </Field>
           </CardContent>
         </Card>
@@ -160,67 +183,69 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
           <CardContent>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="nomor_polisi">Nomor Polisi</FieldLabel>
+                <FieldLabel htmlFor="licensePlate">Nomor Polisi *</FieldLabel>
                 <Input
-                  id="nomor_polisi"
+                  id="licensePlate"
                   placeholder="B 1234 ABC"
                   className="uppercase"
-                  {...register('nomor_polisi')}
+                  {...register('licensePlate')}
                 />
-                {errors.nomor_polisi && <FieldError>{errors.nomor_polisi.message}</FieldError>}
+                {errors.licensePlate && <FieldError>{errors.licensePlate.message}</FieldError>}
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="merk">Merk</FieldLabel>
+                <FieldLabel>Tipe Kendaraan *</FieldLabel>
                 <Select
-                  value={watch('merk')}
-                  onValueChange={(value) => setValue('merk', value)}
+                  value={watch('vehicleType')}
+                  onValueChange={(v) => setValue('vehicleType', v as any)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih merk kendaraan" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {carBrands.map((brand) => (
-                      <SelectItem key={brand} value={brand}>
-                        {brand}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="MOBIL">Mobil</SelectItem>
+                    <SelectItem value="MOTOR">Motor</SelectItem>
+                    <SelectItem value="TRUCK">Truk</SelectItem>
+                    <SelectItem value="BUS">Bus</SelectItem>
+                    <SelectItem value="LAINNYA">Lainnya</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.merk && <FieldError>{errors.merk.message}</FieldError>}
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="model">Model</FieldLabel>
-                <Input
-                  id="model"
-                  placeholder="Contoh: Avanza, Jazz, Xenia"
-                  {...register('model')}
-                />
+                <FieldLabel>Merk *</FieldLabel>
+                <Select
+                  value={watch('brand')}
+                  onValueChange={(v) => setValue('brand', v)}
+                >
+                  <SelectTrigger><SelectValue placeholder="Pilih merk kendaraan" /></SelectTrigger>
+                  <SelectContent>
+                    {carBrands.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {errors.brand && <FieldError>{errors.brand.message}</FieldError>}
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="model">Model *</FieldLabel>
+                <Input id="model" placeholder="Avanza, Jazz, Xenia..." {...register('model')} />
                 {errors.model && <FieldError>{errors.model.message}</FieldError>}
               </Field>
 
               <div className="grid grid-cols-2 gap-4">
                 <Field>
-                  <FieldLabel htmlFor="tahun">Tahun</FieldLabel>
+                  <FieldLabel htmlFor="year">Tahun</FieldLabel>
                   <Input
-                    id="tahun"
+                    id="year"
                     type="number"
                     min={1900}
                     max={new Date().getFullYear() + 1}
-                    {...register('tahun', { valueAsNumber: true })}
+                    {...register('year', { valueAsNumber: true })}
                   />
-                  {errors.tahun && <FieldError>{errors.tahun.message}</FieldError>}
+                  {errors.year && <FieldError>{errors.year.message}</FieldError>}
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="warna">Warna</FieldLabel>
-                  <Input
-                    id="warna"
-                    placeholder="Putih, Hitam, dll"
-                    {...register('warna')}
-                  />
-                  {errors.warna && <FieldError>{errors.warna.message}</FieldError>}
+                  <FieldLabel htmlFor="color">Warna</FieldLabel>
+                  <Input id="color" placeholder="Putih, Hitam..." {...register('color')} />
                 </Field>
               </div>
             </FieldGroup>
@@ -236,61 +261,62 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
           <CardContent>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="transmisi">Transmisi</FieldLabel>
+                <FieldLabel>Transmisi</FieldLabel>
                 <Select
-                  value={watch('transmisi')}
-                  onValueChange={(value: 'manual' | 'automatic') => setValue('transmisi', value)}
+                  value={watch('transmission') ?? 'Manual'}
+                  onValueChange={(v) => setValue('transmission', v)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih transmisi" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="automatic">Automatic</SelectItem>
+                    <SelectItem value="Manual">Manual</SelectItem>
+                    <SelectItem value="Automatic">Automatic</SelectItem>
+                    <SelectItem value="CVT">CVT</SelectItem>
+                    <SelectItem value="AMT">AMT</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.transmisi && <FieldError>{errors.transmisi.message}</FieldError>}
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="bahan_bakar">Bahan Bakar</FieldLabel>
+                <FieldLabel>Bahan Bakar</FieldLabel>
                 <Select
-                  value={watch('bahan_bakar')}
-                  onValueChange={(value: 'bensin' | 'diesel' | 'listrik' | 'hybrid') => 
-                    setValue('bahan_bakar', value)
-                  }
+                  value={watch('fuelType') ?? 'Bensin'}
+                  onValueChange={(v) => setValue('fuelType', v)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih bahan bakar" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="bensin">Bensin</SelectItem>
-                    <SelectItem value="diesel">Diesel</SelectItem>
-                    <SelectItem value="listrik">Listrik</SelectItem>
-                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectItem value="Bensin">Bensin</SelectItem>
+                    <SelectItem value="Diesel">Diesel / Solar</SelectItem>
+                    <SelectItem value="Listrik">Listrik (EV)</SelectItem>
+                    <SelectItem value="Hybrid">Hybrid</SelectItem>
+                    <SelectItem value="Gas">Gas (LPG/CNG)</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.bahan_bakar && <FieldError>{errors.bahan_bakar.message}</FieldError>}
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="nomor_rangka">Nomor Rangka (opsional)</FieldLabel>
-                <Input
-                  id="nomor_rangka"
-                  placeholder="Nomor rangka kendaraan"
-                  {...register('nomor_rangka')}
-                />
-                {errors.nomor_rangka && <FieldError>{errors.nomor_rangka.message}</FieldError>}
+                <FieldLabel htmlFor="vin">Nomor Rangka (VIN)</FieldLabel>
+                <Input id="vin" placeholder="Nomor rangka kendaraan" {...register('vin')} />
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="nomor_mesin">Nomor Mesin (opsional)</FieldLabel>
+                <FieldLabel htmlFor="engineNumber">Nomor Mesin</FieldLabel>
+                <Input id="engineNumber" placeholder="Nomor mesin kendaraan" {...register('engineNumber')} />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="lastOdometer">Odometer Terakhir (km)</FieldLabel>
                 <Input
-                  id="nomor_mesin"
-                  placeholder="Nomor mesin kendaraan"
-                  {...register('nomor_mesin')}
+                  id="lastOdometer"
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  {...register('lastOdometer', { valueAsNumber: true })}
                 />
-                {errors.nomor_mesin && <FieldError>{errors.nomor_mesin.message}</FieldError>}
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="notes">Catatan</FieldLabel>
+                <Input id="notes" placeholder="Catatan tambahan..." {...register('notes')} />
               </Field>
             </FieldGroup>
           </CardContent>
@@ -303,13 +329,8 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
         </Button>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Menyimpan...
-            </>
-          ) : (
-            'Simpan'
-          )}
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</>
+          ) : 'Simpan'}
         </Button>
       </div>
     </form>

@@ -20,7 +20,8 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
-import { User, Phone, Calendar, MessageSquare, X } from "lucide-react"
+import { User, Phone, Calendar, MessageSquare, X, Gift } from "lucide-react"
+import SpecialPromo from "@/components/mekanik/SpecialPromo"
 
 // Mock data - replace with actual API calls
 const mockTodayJobs: any[] = []
@@ -90,6 +91,8 @@ export default function MekanikDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <SpecialPromo />
 
 
       {/* Status Summary */}
@@ -240,9 +243,11 @@ export default function MekanikDashboard() {
                             <p className="text-xl font-black text-zinc-100 uppercase italic tracking-tight">{job.customer?.name || job.customer}</p>
                             <p className="text-xs font-mono text-zinc-400 flex items-center gap-2">{job.customer?.phone || '0812-3456-7890'}</p>
                           </div>
-                          <Button size="icon" variant="outline" className="rounded-xl bg-zinc-950 border-white/10 text-primary">
-                            <Phone className="h-4 w-4" />
-                          </Button>
+                          <a href={`tel:${job.customer?.phone || '081234567890'}`}>
+                            <Button size="icon" variant="outline" className="rounded-xl bg-zinc-950 border-white/10 text-primary">
+                              <Phone className="h-4 w-4" />
+                            </Button>
+                          </a>
                         </div>
                       </div>
 
@@ -307,10 +312,11 @@ export default function MekanikDashboard() {
       </div>
 
       {/* Rating Widget */}
-      <Card className="bg-primary border-0 overflow-hidden relative group cursor-pointer rounded-3xl shadow-[0_10px_30px_-10px_rgba(var(--primary),0.6)] hover:-translate-y-1 transition-transform duration-300">
-        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-        <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <CardContent className="pt-6 pb-6 px-6 relative z-10">
+      <Link href="/mekanik/profile">
+        <Card className="bg-primary border-0 overflow-hidden relative group cursor-pointer rounded-3xl shadow-[0_10px_30px_-10px_rgba(var(--primary),0.6)] hover:-translate-y-1 transition-transform duration-300">
+          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardContent className="pt-6 pb-6 px-6 relative z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 sm:gap-5">
               <div className="h-14 w-14 rounded-2xl bg-black/15 flex items-center justify-center border border-black/10 shadow-inner group-hover:scale-105 transition-transform duration-300">
@@ -330,6 +336,7 @@ export default function MekanikDashboard() {
           </div>
         </CardContent>
       </Card>
+      </Link>
     </div>
   )
 }

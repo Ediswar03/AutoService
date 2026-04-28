@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Search, Plus, Truck, Mail, Phone, MapPin, Clock, Package, Edit, Trash2, MoreHorizontal, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,20 +31,31 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { suppliers, type Supplier } from '@/lib/gudang-data'
+import { suppliers as mockSuppliers, type Supplier } from '@/lib/gudang-data'
 import { GudangHeader } from '@/components/gudang/gudang-header'
+import useSWR from 'swr'
+import { fetcher } from '@/lib/api-client'
+import { Loader2 } from 'lucide-react'
 
 export default function SuppliersPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
+  const [selectedSupplier, setSelectedSupplier] = useState<any | null>(null)
 
-  const filteredSuppliers = suppliers.filter(supplier =>
+  const { data: rawData, isLoading } = useSWR('/inventory/suppliers', fetcher)
+  const suppliers = Array.isArray(rawData?.data) ? rawData.data.map((s: any) => ({
+    ...s,
+    contact: s.contactPerson || '-',
+    totalProducts: s._count?.spareparts || 0,
+    status: s.isActive !== false ? 'active' : 'inactive'
+  })) : []
+
+  const filteredSuppliers = suppliers.filter((supplier: any) =>
     supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     supplier.contact.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const activeSuppliersCount = suppliers.filter(s => s.status === 'active').length
-  const totalProducts = suppliers.reduce((sum, s) => sum + s.totalProducts, 0)
+  const activeSuppliersCount = suppliers.filter((s: any) => s.status === 'active').length
+  const totalProducts = suppliers.reduce((sum: number, s: any) => sum + s.totalProducts, 0)
 
   return (
     <>
@@ -90,7 +102,9 @@ export default function SuppliersPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-slate-900">
-                  {Math.round(suppliers.reduce((sum, s) => sum + s.leadTime, 0) / suppliers.length)} <span className="text-sm font-normal text-slate-400">Hari</span>
+                  {suppliers.length > 0 
+                    ? Math.round(suppliers.reduce((sum: number, s: any) => sum + (s.paymentTerms || 0), 0) / suppliers.length) 
+                    : 0} <span className="text-sm font-normal text-slate-400">Hari</span>
                 </div>
                 <p className="text-[10px] text-slate-400 font-medium">Waktu rata-rata</p>
               </CardContent>
@@ -109,9 +123,11 @@ export default function SuppliersPage() {
                 className="pl-9 h-11 bg-white border-slate-200 shadow-sm focus:ring-amber-400 rounded-xl"
               />
             </div>
-            <Button className="w-full sm:w-auto h-11 px-6 bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 font-black rounded-xl shadow-lg shadow-amber-200/50 transition-all active:scale-95">
-              <Plus className="mr-2 size-5" />
-              TAMBAH SUPPLIER
+            <Button className="w-full sm:w-auto h-11 px-6 bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 font-black rounded-xl shadow-lg shadow-amber-200/50 transition-all active:scale-95" asChild>
+              <Link href="/gudang/suppliers/add">
+                <Plus className="mr-2 size-5" />
+                TAMBAH SUPPLIER
+              </Link>
             </Button>
           </div>
 
@@ -131,7 +147,19 @@ export default function SuppliersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSuppliers.map((supplier) => (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                        <Loader2 className="w-5 h-5 animate-spin inline mr-2" /> Memuat data supplier...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredSuppliers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                        Tidak ada supplier ditemukan
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredSuppliers.map((supplier: any) => (
                     <TableRow key={supplier.id} className="hover:bg-slate-50/50 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-4">
@@ -152,17 +180,17 @@ export default function SuppliersPage() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-[11px] text-slate-500">
                             <Mail className="size-3" />
-                            <span>{supplier.email}</span>
+                            <span>{supplier.email || '-'}</span>
                           </div>
                           <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold">
                             <Phone className="size-3" />
-                            <span>{supplier.phone}</span>
+                            <span>{supplier.phone || '-'}</span>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px] font-bold text-slate-500 border-slate-200">
-                          {supplier.leadTime} HARI
+                          {supplier.paymentTerms || 0} HARI
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -229,11 +257,11 @@ export default function SuppliersPage() {
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contact Person</p>
-                    <p className="font-bold text-slate-900">{selectedSupplier.contact}</p>
+                    <p className="font-bold text-slate-900">{selectedSupplier.contactPerson || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Average Lead Time</p>
-                    <p className="font-bold text-slate-900">{selectedSupplier.leadTime} Hari Kerja</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tempo Pembayaran</p>
+                    <p className="font-bold text-slate-900">{selectedSupplier.paymentTerms || 0} Hari</p>
                   </div>
                 </div>
 

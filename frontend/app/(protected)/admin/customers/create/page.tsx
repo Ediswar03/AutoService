@@ -13,7 +13,18 @@ export default function CreateCustomerPage() {
   const { post, isLoading } = useApiMutation<CustomerFormData, Customer>()
 
   const handleSubmit = async (data: CustomerFormData) => {
-    await post('/customers', data, {
+    // Map frontend field names to backend field names
+    const payload = {
+      name: data.nama,
+      phone: data.telepon,
+      email: data.email || null,
+      address: data.alamat,
+      customerType: data.tipe === 'perusahaan' ? 'KORPORAT' : 'PRIBADI',
+      companyName: data.nama_perusahaan || null,
+      taxId: data.npwp || null,
+      notes: null,
+    }
+    await post('/customers', payload as any, {
       onSuccess: () => {
         toast.success('Pelanggan berhasil ditambahkan')
         invalidateCache('/customers')

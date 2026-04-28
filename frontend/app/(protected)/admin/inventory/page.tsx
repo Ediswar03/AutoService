@@ -1,5 +1,5 @@
 "use client"
-
+import Link from "next/link"
 import { useState } from "react"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 import { Card, CardContent } from "@/components/ui/card"
@@ -55,22 +55,26 @@ export default function AdminInventoryPage() {
     )
   }
 
-  const enriched = inventoryData.map((item: any) => ({
-    ...item,
-    status: getStatus(item.stockQuantity, item.minStock ?? 5),
-    stock: item.stockQuantity,
-  }))
+  const enriched = inventoryData.map((item: any) => {
+    const stock = item.stockQuantity ?? item.stok ?? 0
+    const minStock = item.minStock ?? item.stok_minimum ?? 5
+    return {
+      ...item,
+      status: getStatus(stock, minStock),
+      stock: stock,
+    }
+  })
 
   const criticalCount = enriched.filter((i) => i.status === "Kritis").length
   const totalValue = enriched.reduce(
-    (sum, i) => sum + Number(i.sellPrice || 0) * (i.stockQuantity || 0),
+    (sum, i) => sum + Number(i.sellPrice ?? i.harga_jual ?? 0) * (i.stock ?? 0),
     0
   )
 
   const filtered = enriched.filter(
     (item) =>
-      (item.name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (item.code || "").toLowerCase().includes(search.toLowerCase())
+      (item.name ?? item.nama ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (item.code ?? item.kode ?? "").toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -129,8 +133,10 @@ export default function AdminInventoryPage() {
               <Filter className="size-4 mr-2" /> Kategori
             </Button>
           </div>
-          <Button className="bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 w-full sm:w-auto font-bold shadow-sm">
-            <Plus className="size-4 mr-2 stroke-[3px]" /> Tambah Part
+          <Button asChild className="bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 w-full sm:w-auto font-bold shadow-sm">
+            <Link href="/admin/services">
+              <Plus className="size-4 mr-2 stroke-[3px]" /> Tambah Part
+            </Link>
           </Button>
         </div>
 
@@ -167,21 +173,24 @@ export default function AdminInventoryPage() {
                       key={item.id}
                       className={item.status === "Kritis" ? "bg-red-50/50" : ""}
                     >
-                      <TableCell className="font-semibold text-slate-700 pl-4 font-mono">{item.code || item.id.slice(0, 8)}</TableCell>
-                      <TableCell className="font-bold text-slate-900 dark:text-slate-100">{item.name}</TableCell>
-                      <TableCell className="font-medium text-slate-600">{item.category || "-"}</TableCell>
+                      <TableCell className="font-semibold text-slate-700 pl-4 font-mono">{item.code ?? item.kode ?? item.id.slice(0, 8)}</TableCell>
+                      <TableCell className="font-bold text-slate-900 dark:text-slate-100">{item.name ?? item.nama}</TableCell>
+                      <TableCell className="font-medium text-slate-600">{item.category?.name ?? item.category?.nama ?? item.category ?? "-"}</TableCell>
                       <TableCell className="text-right font-bold text-slate-800">
-                        Rp {Number(item.sellPrice || 0).toLocaleString("id-ID")}
+                        Rp {Number(item.sellPrice ?? item.harga_jual ?? 0).toLocaleString("id-ID")}
                       </TableCell>
                       <TableCell className="px-6">{getStockBadge(item.status, item.stock)}</TableCell>
                       <TableCell className="text-center pr-4">
                         <div className="flex items-center justify-center gap-2">
                           <Button
+                            asChild
                             variant="outline"
                             size="icon"
                             className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200"
                           >
-                            <Pencil className="size-4" />
+                            <Link href="/admin/services">
+                              <Pencil className="size-4" />
+                            </Link>
                           </Button>
                           <Button
                             variant="outline"

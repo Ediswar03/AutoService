@@ -112,6 +112,17 @@ export class InventoryController {
     }
   }
 
+  async getAllStockMovements(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await inventoryService.getAllStockMovements(
+        req.query as any
+      );
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Supplier endpoints
   async findAllSuppliers(req: Request, res: Response, next: NextFunction) {
     try {

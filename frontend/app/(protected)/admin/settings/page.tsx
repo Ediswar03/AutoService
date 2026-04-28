@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Save, Building2, Users, Wrench, Receipt, Bell } from "lucide-react"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 import { Button } from "@/components/ui/button"
@@ -11,9 +12,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
-import { mockMechanics } from "@/lib/mock-data"
+import { useApiPaginated } from "@/hooks/useApi"
+import type { User } from "@/types"
 
 export default function SettingsPage() {
+  const { data: mechanics } = useApiPaginated<User>('/users', 1, 100, { role: 'MEKANIK' })
+
   const [businessSettings, setBusinessSettings] = useState({
     name: "AutoServis",
     tagline: "Bengkel Otomotif Terpercaya",
@@ -151,46 +155,46 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockMechanics.map((mechanic) => (
+                    {(mechanics || []).map((mechanic: any) => (
                       <div
                         key={mechanic.id}
                         className="flex items-center justify-between p-4 rounded-lg border"
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary font-medium">
-                            {mechanic.name.charAt(0)}
+                            {(mechanic.name ?? mechanic.nama ?? "M").charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-medium">{mechanic.name}</p>
+                            <p className="font-medium">{mechanic.name ?? mechanic.nama}</p>
                             <p className="text-sm text-muted-foreground">
-                              {mechanic.specialization} | {mechanic.phone}
+                              {mechanic.role} | {mechanic.phone ?? mechanic.telepon ?? '-'}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                              mechanic.status === "available"
+                              (mechanic.is_active ?? mechanic.isActive)
                                 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                : mechanic.status === "busy"
-                                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
                                 : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
                             }`}
                           >
-                            {mechanic.status === "available"
-                              ? "Tersedia"
-                              : mechanic.status === "busy"
-                              ? "Sibuk"
+                            {(mechanic.is_active ?? mechanic.isActive)
+                              ? "Aktif"
                               : "Tidak Aktif"}
                           </span>
-                          <Button variant="outline" size="sm">
-                            Edit
+                          <Button asChild variant="outline" size="sm">
+                            <Link href="/admin/mechanics">
+                              Edit
+                            </Link>
                           </Button>
                         </div>
                       </div>
                     ))}
-                    <Button variant="outline" className="w-full">
-                      + Tambah Mekanik Baru
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href="/admin/mechanics">
+                        + Tambah Mekanik Baru
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>

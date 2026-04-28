@@ -15,7 +15,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import { formatCurrency } from "@/lib/mock-data"
+import { formatCurrency } from "@/lib/api-client"
 
 interface RevenueChartProps {
   data: { month: string; revenue: number; spkCount: number }[]

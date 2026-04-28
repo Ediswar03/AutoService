@@ -8,7 +8,8 @@ import {
   Package,
   History,
   UserCircle,
-  LogOut
+  LogOut,
+  Gift,
 } from "lucide-react"
 import {
   Sidebar,
@@ -30,6 +31,7 @@ const navItems = [
   { title: "Permintaan Parts", href: "/mekanik/parts-request", icon: Package },
   { title: "Riwayat", href: "/mekanik/history", icon: History },
   { title: "Profil", href: "/mekanik/profile", icon: UserCircle },
+  { title: "Promo", href: "/admin/promo", icon: Gift },
 ]
 
 export function MekanikSidebar() {

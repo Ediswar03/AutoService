@@ -29,13 +29,15 @@ interface RecentSPKTableProps {
   isLoading: boolean
 }
 
-const statusConfig: Record<SPKStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  draft: { label: 'Draft', variant: 'outline' },
-  pending: { label: 'Pending', variant: 'secondary' },
-  dikerjakan: { label: 'Dikerjakan', variant: 'default' },
-  selesai: { label: 'Selesai', variant: 'default' },
-  dibatalkan: { label: 'Dibatalkan', variant: 'destructive' },
-  menunggu_part: { label: 'Menunggu Part', variant: 'secondary' },
+const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  DRAFT: { label: 'Draft', variant: 'outline' },
+  PENDING: { label: 'Pending', variant: 'secondary' },
+  IN_PROGRESS: { label: 'Dikerjakan', variant: 'default' },
+  WAITING_PARTS: { label: 'Tunggu Parts', variant: 'secondary' },
+  QUALITY_CHECK: { label: 'Cek Kualitas', variant: 'secondary' },
+  COMPLETED: { label: 'Selesai', variant: 'default' },
+  INVOICED: { label: 'Ditagihkan', variant: 'outline' },
+  CANCELLED: { label: 'Dibatalkan', variant: 'destructive' },
 }
 
 export function RecentSPKTable({ data, isLoading }: RecentSPKTableProps) {
@@ -97,21 +99,22 @@ export function RecentSPKTable({ data, isLoading }: RecentSPKTableProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((spk) => {
-                const status = statusConfig[spk.status]
+              data.map((rawSpk) => {
+                const spk = rawSpk as any
+                const status = statusConfig[spk.status] || { label: spk.status, variant: 'outline' }
                 return (
                   <TableRow key={spk.id}>
-                    <TableCell className="font-medium">{spk.nomor_spk}</TableCell>
+                    <TableCell className="font-medium">{spk.nomor_spk ?? spk.orderNumber ?? '-'}</TableCell>
                     <TableCell>
-                      {format(new Date(spk.tanggal), 'dd MMM yyyy', { locale: id })}
+                      {format(new Date(spk.tanggal ?? spk.receivedAt ?? new Date()), 'dd MMM yyyy', { locale: id })}
                     </TableCell>
-                    <TableCell>{spk.customer?.nama || '-'}</TableCell>
+                    <TableCell>{spk.customer?.nama ?? spk.customer?.name ?? '-'}</TableCell>
                     <TableCell>
                       {spk.vehicle ? (
                         <div>
-                          <div className="font-medium">{spk.vehicle.nomor_polisi}</div>
+                          <div className="font-medium">{spk.vehicle.nomor_polisi ?? spk.vehicle.licensePlate}</div>
                           <div className="text-xs text-muted-foreground">
-                            {spk.vehicle.merk} {spk.vehicle.model}
+                            {spk.vehicle.merk ?? spk.vehicle.brand} {spk.vehicle.model}
                           </div>
                         </div>
                       ) : (
@@ -122,7 +125,7 @@ export function RecentSPKTable({ data, isLoading }: RecentSPKTableProps) {
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(spk.grand_total)}
+                      {formatCurrency(Number(spk.grand_total ?? spk.grandTotal ?? 0))}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

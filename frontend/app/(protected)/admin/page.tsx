@@ -13,7 +13,9 @@ import {
   Users,
   Package,
   BarChart3,
+  Gift,
 } from "lucide-react"
+import SpecialPromo from "@/components/mekanik/SpecialPromo"
 import Link from "next/link"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 import { StatsCard } from "@/components/admin/stats-card"
@@ -167,8 +169,10 @@ export default function AdminDashboard() {
                     </TableBody>
                   </Table>
                 </div>
-                <Button variant="outline" className="w-full mt-4 text-amber-500 border-amber-200 hover:bg-amber-50 hover:text-amber-600 border-dashed">
-                  + Order Baru
+                <Button asChild variant="outline" className="w-full mt-4 text-amber-500 border-amber-200 hover:bg-amber-50 hover:text-amber-600 border-dashed">
+                  <Link href="/admin/spk/create">
+                    + Order Baru
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -297,8 +301,10 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="mt-auto pt-4">
-                  <Button variant="outline" className="w-full text-amber-500 border-amber-200">
-                    Lihat Semua Mekanik
+                  <Button asChild variant="outline" className="w-full text-amber-500 border-amber-200">
+                    <Link href="/admin/mechanics">
+                      Lihat Semua Mekanik
+                    </Link>
                   </Button>
                 </div>
               </CardContent>
@@ -313,7 +319,7 @@ export default function AdminDashboard() {
                 </Link>
               </CardHeader>
               <CardContent className="space-y-4 pt-3">
-                <div className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
+                <Link href="/admin/inventory" className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
                   <div className="flex size-12 items-center justify-center rounded-xl bg-red-100 text-red-500 shrink-0">
                     <AlertTriangle className="size-6" />
                   </div>
@@ -322,9 +328,9 @@ export default function AdminDashboard() {
                     <p className="text-xs text-slate-500 mt-0.5">Tersisa 12 Botol</p>
                   </div>
                   <ChevronRight className="size-5 text-slate-300" />
-                </div>
+                </Link>
 
-                <div className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
+                <Link href="/admin/schedule" className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
                   <div className="flex size-12 items-center justify-center rounded-xl bg-amber-100 text-amber-500 shrink-0">
                     <CalendarClock className="size-6" />
                   </div>
@@ -333,9 +339,9 @@ export default function AdminDashboard() {
                     <p className="text-xs text-slate-500 mt-0.5">5 kendaraan perlu servis berkala</p>
                   </div>
                   <ChevronRight className="size-5 text-slate-300" />
-                </div>
+                </Link>
 
-                <div className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
+                <Link href="/admin/invoices" className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
                   <div className="flex size-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shrink-0">
                     <Receipt className="size-6" />
                   </div>
@@ -344,7 +350,7 @@ export default function AdminDashboard() {
                     <p className="text-xs text-slate-500 mt-0.5">3 order belum lunas</p>
                   </div>
                   <ChevronRight className="size-5 text-slate-300" />
-                </div>
+                </Link>
               </CardContent>
             </Card>
 
@@ -353,6 +359,7 @@ export default function AdminDashboard() {
 
             {/* Right Column Content */}
             <div className="space-y-6">
+              <SpecialPromo />
               
               {/* Menu Cepat */}
               <Card className="shadow-sm border-slate-200">

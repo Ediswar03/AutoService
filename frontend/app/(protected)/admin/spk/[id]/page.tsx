@@ -18,14 +18,15 @@ interface PageProps {
 export default function SPKDetailPage({ params }: PageProps) {
   const { id } = use(params)
   const router = useRouter()
-  const { data: spk, isLoading, error } = useApiGet<SPK>(`/spk/${id}`)
+  const { data: spk, isLoading, error, mutate } = useApiGet<SPK>(`/work-orders/${id}`)
   const { patch, isLoading: isUpdating } = useApiMutation()
 
   const updateStatus = async (status: string) => {
-    await patch(`/spk/${id}/status`, { status }, {
+    await patch(`/work-orders/${id}/status`, { status }, {
       onSuccess: () => {
         toast.success('Status SPK berhasil diubah')
-        invalidateCache('/spk')
+        invalidateCache('/work-orders')
+        mutate() // Refresh data
       },
       onError: (error) => {
         toast.error(error)
@@ -68,7 +69,7 @@ export default function SPKDetailPage({ params }: PageProps) {
         </Button>
 
         <div className="flex flex-wrap gap-2">
-          {spk.status === 'draft' && (
+          {spk.status === 'DRAFT' && (
             <>
               <Button asChild variant="outline" size="sm">
                 <Link href={`/admin/spk/${id}/edit`}>
@@ -78,7 +79,7 @@ export default function SPKDetailPage({ params }: PageProps) {
               </Button>
               <Button 
                 size="sm" 
-                onClick={() => updateStatus('pending')}
+                onClick={() => updateStatus('PENDING')}
                 disabled={isUpdating}
               >
                 <Play className="mr-2 h-4 w-4" />
@@ -87,10 +88,10 @@ export default function SPKDetailPage({ params }: PageProps) {
             </>
           )}
 
-          {spk.status === 'pending' && (
+          {spk.status === 'PENDING' && (
             <Button 
               size="sm"
-              onClick={() => updateStatus('dikerjakan')}
+              onClick={() => updateStatus('IN_PROGRESS')}
               disabled={isUpdating}
             >
               <Play className="mr-2 h-4 w-4" />
@@ -98,19 +99,19 @@ export default function SPKDetailPage({ params }: PageProps) {
             </Button>
           )}
 
-          {spk.status === 'dikerjakan' && (
+          {spk.status === 'IN_PROGRESS' && (
             <>
               <Button 
                 size="sm"
                 variant="outline"
-                onClick={() => updateStatus('menunggu_part')}
+                onClick={() => updateStatus('WAITING_PARTS')}
                 disabled={isUpdating}
               >
                 Menunggu Part
               </Button>
               <Button 
                 size="sm"
-                onClick={() => updateStatus('selesai')}
+                onClick={() => updateStatus('COMPLETED')}
                 disabled={isUpdating}
               >
                 <CheckCircle className="mr-2 h-4 w-4" />
@@ -119,10 +120,10 @@ export default function SPKDetailPage({ params }: PageProps) {
             </>
           )}
 
-          {spk.status === 'menunggu_part' && (
+          {spk.status === 'WAITING_PARTS' && (
             <Button 
               size="sm"
-              onClick={() => updateStatus('dikerjakan')}
+              onClick={() => updateStatus('IN_PROGRESS')}
               disabled={isUpdating}
             >
               <Play className="mr-2 h-4 w-4" />
@@ -130,7 +131,7 @@ export default function SPKDetailPage({ params }: PageProps) {
             </Button>
           )}
 
-          {spk.status === 'selesai' && (
+          {spk.status === 'COMPLETED' && (
             <Button asChild size="sm">
               <Link href={`/admin/invoices/create?spk_id=${id}`}>
                 <Receipt className="mr-2 h-4 w-4" />
@@ -139,11 +140,11 @@ export default function SPKDetailPage({ params }: PageProps) {
             </Button>
           )}
 
-          {['draft', 'pending'].includes(spk.status) && (
+          {['DRAFT', 'PENDING'].includes(spk.status) && (
             <Button 
               size="sm"
               variant="destructive"
-              onClick={() => updateStatus('dibatalkan')}
+              onClick={() => updateStatus('CANCELLED')}
               disabled={isUpdating}
             >
               <XCircle className="mr-2 h-4 w-4" />

@@ -102,8 +102,8 @@ export class InventoryService {
           sparepartId,
           movementType:
             type === 'in'
-              ? MovementType.ADJUSTMENT_IN
-              : MovementType.ADJUSTMENT_OUT,
+              ? (MovementType.ADJUSTMENT_IN || 'ADJUSTMENT_IN' as any)
+              : (MovementType.ADJUSTMENT_OUT || 'ADJUSTMENT_OUT' as any),
           quantity: adjustedQty,
           referenceType: 'adjustment',
           stockBefore: sparepart.stockQuantity,
@@ -152,7 +152,7 @@ export class InventoryService {
       await tx.stockMovement.create({
         data: {
           sparepartId,
-          movementType: MovementType.PURCHASE,
+          movementType: (MovementType.PURCHASE || 'PURCHASE' as any),
           quantity,
           referenceType: 'purchase',
           stockBefore: sparepart.stockQuantity,
@@ -196,6 +196,44 @@ export class InventoryService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
+          createdBy: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.stockMovement.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: createPaginationMeta(total, page, limit),
+    };
+  }
+
+  async getAllStockMovements(query: PaginationQuery & { type?: string }) {
+    const { page, limit, skip, sortBy, sortOrder } = parsePagination(query);
+
+    const where: any = {};
+    if (query.type) {
+      where.movementType = query.type;
+    }
+
+    if (query.search) {
+      where.OR = [
+        { sparepart: { name: { contains: query.search, mode: 'insensitive' } } },
+        { sparepart: { code: { contains: query.search, mode: 'insensitive' } } },
+        { notes: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.stockMovement.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          sparepart: {
+            select: { id: true, code: true, name: true, unit: true },
+          },
           createdBy: { select: { id: true, name: true } },
         },
       }),

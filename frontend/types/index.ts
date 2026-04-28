@@ -28,7 +28,7 @@ export interface SelectOption {
 // USER & AUTH TYPES
 // ==========================================
 
-export type UserRole = 'admin' | 'kasir' | 'mekanik' | 'gudang' | 'pimpinan'
+export type UserRole = 'ADMIN' | 'MEKANIK' | 'GUDANG' | 'PIMPINAN' | 'admin' | 'kasir' | 'mekanik' | 'gudang' | 'pimpinan'
 
 export interface User {
   id: string | number
@@ -70,17 +70,25 @@ export interface LoginResponse {
 // ==========================================
 
 export interface Customer {
-  id: number
-  nama: string
-  alamat: string
-  telepon: string
+  id: string
+  name: string
+  nama?: string
+  address: string
+  alamat?: string
+  phone: string
+  telepon?: string
   email?: string
   nik?: string
-  tipe: 'individu' | 'perusahaan'
+  type: 'individu' | 'perusahaan'
+  tipe?: 'individu' | 'perusahaan'
+  companyName?: string
   nama_perusahaan?: string
+  taxId?: string
   npwp?: string
-  created_at: string
-  updated_at: string
+  isActive: boolean
+  createdAt: string
+  created_at?: string
+  updatedAt: string
   vehicles?: Vehicle[]
 }
 
@@ -100,33 +108,41 @@ export interface CustomerFormData {
 // ==========================================
 
 export interface Vehicle {
-  id: number
-  customer_id: number
-  nomor_polisi: string
-  merk: string
+  id: string
+  customerId: string
+  customer_id?: string
+  licensePlate: string
+  nomor_polisi?: string
+  brand: string
+  merk?: string
   model: string
-  tahun: number
-  warna: string
-  nomor_rangka?: string
-  nomor_mesin?: string
-  transmisi: 'manual' | 'automatic'
-  bahan_bakar: 'bensin' | 'diesel' | 'listrik' | 'hybrid'
-  created_at: string
-  updated_at: string
+  year: number
+  tahun?: number
+  color: string
+  warna?: string
+  vin?: string
+  engineNumber?: string
+  transmission: 'manual' | 'automatic'
+  transmisi?: string
+  fuelType: 'bensin' | 'diesel' | 'listrik' | 'hybrid'
+  bahan_bakar?: string
+  createdAt: string
+  created_at?: string
+  updatedAt: string
   customer?: Customer
 }
 
 export interface VehicleFormData {
-  customer_id: number
-  nomor_polisi: string
-  merk: string
+  customerId: string
+  licensePlate: string
+  brand: string
   model: string
-  tahun: number
-  warna: string
-  nomor_rangka?: string
-  nomor_mesin?: string
-  transmisi: 'manual' | 'automatic'
-  bahan_bakar: 'bensin' | 'diesel' | 'listrik' | 'hybrid'
+  year: number
+  color: string
+  vin?: string
+  engineNumber?: string
+  transmission: 'manual' | 'automatic'
+  fuelType: 'bensin' | 'diesel' | 'listrik' | 'hybrid'
 }
 
 // ==========================================
@@ -142,33 +158,82 @@ export interface Category {
 }
 
 export interface Sparepart {
-  id: number
-  kode: string
-  nama: string
-  category_id: number
-  satuan: string
-  harga_beli: number
-  harga_jual: number
-  stok: number
-  stok_minimum: number
-  lokasi_rak?: string
-  deskripsi?: string
-  created_at: string
-  updated_at: string
-  category?: Category
+  id: string
+  code: string
+  kode?: string // alias
+  name: string
+  nama?: string // alias
+  description?: string
+  deskripsi?: string // alias
+  category: SparepartCategory | string
+  brand?: string
+  unit: string
+  satuan?: string // alias
+  buyPrice: number
+  harga_beli?: number // alias
+  sellPrice: number
+  harga_jual?: number // alias
+  stockQuantity: number
+  stok?: number // alias
+  minStock: number
+  stok_minimum?: number // alias
+  maxStock?: number
+  location?: string
+  lokasi_rak?: string // alias
+  supplierId?: string
+  supplier_id?: string // alias
+  photoUrl?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  supplier?: Supplier
 }
 
 export interface SparepartFormData {
-  kode: string
-  nama: string
-  category_id: number
-  satuan: string
-  harga_beli: number
-  harga_jual: number
-  stok: number
-  stok_minimum: number
-  lokasi_rak?: string
-  deskripsi?: string
+  code: string
+  name: string
+  description?: string
+  category: string
+  brand?: string
+  unit: string
+  buyPrice: number
+  sellPrice: number
+  stockQuantity: number
+  minStock: number
+  maxStock?: number
+  location?: string
+  supplierId?: string | null
+}
+
+export interface Supplier {
+  id: string
+  code: string
+  name: string
+  contactPerson?: string
+  phone?: string
+  email?: string
+  address?: string
+  city?: string
+  paymentTerms: number
+  notes?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  _count?: {
+    spareparts: number
+  }
+}
+
+export interface SupplierFormData {
+  code: string
+  name: string
+  contactPerson?: string
+  phone?: string
+  email?: string
+  address?: string
+  city?: string
+  paymentTerms: number
+  notes?: string
 }
 
 // ==========================================
@@ -213,58 +278,73 @@ export type SPKStatus =
 export type SPKPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 
 export interface SPKItem {
-  id: number
-  spk_id: number
+  id: string
+  workOrderId: string
   tipe: 'jasa' | 'sparepart'
-  item_id: number
-  nama_item: string
+  serviceId?: string
+  sparepartId?: string
   quantity: number
-  harga_satuan: number
-  diskon: number
-  subtotal: number
-  status: 'pending' | 'dikerjakan' | 'selesai'
-  catatan?: string
+  unitPrice: number
+  discountPercent: number
+  totalPrice: number
+  notes?: string
   service?: Service
   sparepart?: Sparepart
 }
 
 export interface SPK {
-  id: number
-  nomor_spk: string
-  tanggal: string
-  customer_id: number
-  vehicle_id: number
-  mekanik_id?: number
-  keluhan: string
-  diagnosa?: string
-  status: SPKStatus
-  estimasi_selesai?: string
-  tanggal_selesai?: string
-  total_jasa: number
-  total_sparepart: number
-  diskon_total: number
-  ppn: number
-  grand_total: number
+  id: string
+  orderNumber: string
+  nomor_spk?: string
+  customerId: string
+  vehicleId: string
+  assignedMechanicId?: string
+  customerComplaints: string
+  keluhan?: string
+  internalNotes?: string
   catatan?: string
-  created_by: number
-  created_at: string
-  updated_at: string
+  status: SPKStatus
+  priority: SPKPriority
+  odometerIn?: number
+  fuelLevel?: string
+  estimatedCompletion?: string
+  actualCompletion?: string
+  totalServiceCost: number
+  totalPartsCost: number
+  discountPercent: number
+  discountAmount: number
+  taxPercent: number
+  taxAmount: number
+  grandTotal: number
+  createdAt: string
+  created_at?: string
+  updatedAt: string
   customer?: Customer
   vehicle?: Vehicle
-  mekanik?: User
+  assignedMechanic?: User
   items?: SPKItem[]
 }
 
 export interface SPKFormData {
-  tanggal: string
-  customer_id: number
-  vehicle_id: number
-  mekanik_id?: number
-  keluhan: string
-  diagnosa?: string
-  estimasi_selesai?: string
-  catatan?: string
-  items: SPKItemFormData[]
+  customerId: string
+  vehicleId: string
+  assignedMechanicId?: string
+  customerComplaints: string
+  internalNotes?: string
+  priority?: SPKPriority
+  odometerIn?: number
+  fuelLevel?: string
+  estimatedCompletion?: string
+  services?: {
+    serviceId: string
+    quantity: number
+    discountPercent: number
+  }[]
+  spareparts?: {
+    sparepartId: string
+    quantity: number
+    discountPercent: number
+  }[]
 }
 
 export interface SPKItemFormData {

@@ -2,13 +2,12 @@
 
 import { useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
-import { Plus, Search, Download, FileText } from "lucide-react"
+import { Plus, Search, FileText } from "lucide-react"
 import { useReactToPrint } from "react-to-print"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 import { InvoiceTable } from "@/components/admin/InvoiceTable"
 import { PaymentForm } from "@/components/admin/PaymentForm"
 import { InvoicePrintTemplate } from "@/components/admin/invoice-print-template"
-import { SPKDetailModal } from "@/components/admin/spk-detail-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -29,17 +28,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import {
-  mockInvoices,
-  mockSPKs,
-  getCustomerById,
-  getSPKById,
-  getVehicleById,
-  formatCurrency,
-  formatDate,
-  generateInvoiceNumber,
-} from "@/lib/mock-data"
-import type { Invoice, InvoiceStatus, PaymentFormData, SPK } from "@/types"
+import { formatCurrency } from "@/lib/api-client"
+import { format } from "date-fns"
+import { id } from "date-fns/locale"
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '-'
+  return format(new Date(dateStr), 'dd MMMM yyyy', { locale: id })
+}
+import type { Invoice, InvoiceStatus, PaymentFormData } from "@/types"
+import useSWR from "swr"
+import { fetcher, api } from "@/lib/api-client"
+import { Loader2 } from "lucide-react"
 
 const paymentStatusConfig: Record<
   InvoiceStatus,
@@ -56,44 +56,48 @@ const paymentStatusConfig: Record<
 
 export default function InvoicesPage() {
   const searchParams = useSearchParams()
-  const spkIdParam = searchParams.get("spk")
-
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices as any)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "all">("all")
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
-  const [createDialogOpen, setCreateDialogOpen] = useState(spkIdParam ? true : false)
-  const [selectedSpkForInvoice, setSelectedSpkForInvoice] = useState<string>(spkIdParam || "")
 
   const printRef = useRef<HTMLDivElement>(null)
   const handlePrint = useReactToPrint({
     contentRef: printRef,
   })
 
-  // Get completed SPKs that don't have invoices yet
-  const completedSPKsWithoutInvoice = mockSPKs.filter(
-    (spk) =>
-      spk.status === "COMPLETED" &&
-      !invoices.find((inv) => inv.spkId === spk.id)
+  const { data: invoiceData, isLoading, mutate } = useSWR(
+    '/invoices?limit=100&sortBy=createdAt&sortOrder=desc',
+    fetcher
   )
+  const invoices: Invoice[] = Array.isArray(invoiceData?.data)
+    ? invoiceData.data
+    : Array.isArray(invoiceData)
+    ? invoiceData
+    : []
 
-  const filteredInvoices = invoices.filter((invoice) => {
-    const customer = getCustomerById(invoice.customerId)
+  const filteredInvoices = invoices.filter((invoice: any) => {
+    const nomor = invoice.nomor_invoice ?? invoice.invoiceNumber ?? ""
+    const customerName = invoice.spk?.customer?.nama ?? invoice.spk?.customer?.name ?? ""
     const matchesSearch =
-      invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer?.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || invoice.paymentStatus === statusFilter
+      nomor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === "all" || invoice.status === statusFilter
     return matchesSearch && matchesStatus
   })
 
   const totalRevenue = invoices
-    .filter((inv) => inv.status === "PAID")
-    .reduce((sum, inv) => sum + Number(inv.grand_total), 0)
+    .filter((inv: any) => inv.status === "PAID")
+    .reduce((sum: number, inv: any) => sum + Number(inv.grand_total ?? inv.grandTotal ?? 0), 0)
+
   const pendingPayments = invoices
-    .filter((inv) => inv.status !== "PAID")
-    .reduce((sum, inv) => sum + (Number(inv.grand_total) - Number(inv.jumlah_dibayar)), 0)
+    .filter((inv: any) => inv.status !== "PAID" && inv.status !== "CANCELLED")
+    .reduce((sum: number, inv: any) => {
+      const total = Number(inv.grand_total ?? inv.grandTotal ?? 0)
+      const paid = Number(inv.jumlah_dibayar ?? inv.amountPaid ?? 0)
+      return sum + Math.max(0, total - paid)
+    }, 0)
 
   const handleViewInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice)
@@ -112,63 +116,17 @@ export default function InvoicesPage() {
     }, 100)
   }
 
-  const handlePaymentSubmit = async (invoiceId: string, data: PaymentFormData) => {
-    setInvoices(
-      invoices.map((inv) => {
-        if (inv.id === invoiceId) {
-          const newPaidAmount = Number(inv.jumlah_dibayar) + data.amount
-          const newDiscount = Number(inv.diskon) + (data.discount || 0)
-          const newTotal = Number(inv.total_jasa) + Number(inv.total_sparepart) + Number(inv.ppn) - newDiscount
-          const newStatus: InvoiceStatus =
-            newPaidAmount >= newTotal ? "PAID" : newPaidAmount > 0 ? "PARTIAL" : "SENT"
-
-          return {
-            ...inv,
-            jumlah_dibayar: Math.min(newPaidAmount, newTotal),
-            diskon: newDiscount,
-            grand_total: newTotal,
-            status: newStatus,
-            payment_method: data.method,
-            updated_at: new Date().toISOString(),
-          }
-        }
-        return inv
-      })
-    )
-  }
-
-  const handleCreateInvoice = () => {
-    const spk = getSPKById(selectedSpkForInvoice)
-    if (!spk) return
-
-    const servicesTotal = (spk.items || []).filter(i => i.tipe === 'jasa').reduce((sum, s) => sum + Number(s.harga_satuan) * s.quantity, 0)
-    const partsTotal = (spk.items || []).filter(i => i.tipe === 'sparepart').reduce((sum, p) => sum + Number(p.harga_satuan) * p.quantity, 0)
-    const subtotal = servicesTotal + partsTotal
-    const tax = Math.round(subtotal * 0.11)
-
-    const newInvoice: Invoice = {
-      id: Date.now(),
-      nomor_invoice: generateInvoiceNumber(),
-      spk_id: spk.id as any,
-      tanggal: new Date().toISOString(),
-      total_jasa: servicesTotal,
-      total_sparepart: partsTotal,
-      diskon: 0,
-      ppn: tax,
-      grand_total: subtotal + tax,
-      jumlah_dibayar: 0,
-      sisa_bayar: subtotal + tax,
-      status: "SENT",
-      created_by: 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      spk: spk as any,
+  const handlePaymentSubmit = async (data: PaymentFormData) => {
+    try {
+      await api.post("/payments", data)
+      await mutate()
+      setPaymentDialogOpen(false)
+    } catch (error) {
+      console.error("Gagal memproses pembayaran:", error)
     }
-
-    setInvoices([newInvoice, ...invoices])
-    setCreateDialogOpen(false)
-    setSelectedSpkForInvoice("")
   }
+
+  const inv = selectedInvoice as any
 
   return (
     <>
@@ -181,14 +139,14 @@ export default function InvoicesPage() {
             <Card>
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Total Invoice</p>
-                <p className="text-2xl font-bold">{invoices.length}</p>
+                <p className="text-2xl font-bold">{isLoading ? "..." : invoices.length}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">Belum Dibayar</p>
                 <p className="text-2xl font-bold">
-                  {invoices.filter((i) => i.status === "SENT" || i.status === "DRAFT").length}
+                  {isLoading ? "..." : invoices.filter((i: any) => i.status === "SENT" || i.status === "DRAFT").length}
                 </p>
               </CardContent>
             </Card>
@@ -220,10 +178,6 @@ export default function InvoicesPage() {
                     {filteredInvoices.length} invoice ditemukan
                   </CardDescription>
                 </div>
-                <Button onClick={() => setCreateDialogOpen(true)}>
-                  <Plus className="mr-2 size-4" />
-                  Buat Invoice
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -250,12 +204,14 @@ export default function InvoicesPage() {
                     <SelectItem value="SENT">Belum Bayar</SelectItem>
                     <SelectItem value="PARTIAL">Sebagian</SelectItem>
                     <SelectItem value="PAID">Lunas</SelectItem>
+                    <SelectItem value="OVERDUE">Terlambat</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <InvoiceTable
                 invoices={filteredInvoices}
+                isLoading={isLoading}
                 onView={handleViewInvoice}
                 onPayment={handlePaymentClick}
                 onPrint={handlePrintClick}
@@ -273,13 +229,13 @@ export default function InvoicesPage() {
               <DialogHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <DialogTitle>{selectedInvoice.nomor_invoice}</DialogTitle>
+                    <DialogTitle>{inv.nomor_invoice ?? inv.invoiceNumber}</DialogTitle>
                     <DialogDescription>
-                      Tanggal: {formatDate(selectedInvoice.tanggal)}
+                      Tanggal: {formatDate(inv.tanggal ?? inv.invoiceDate)}
                     </DialogDescription>
                   </div>
-                  <Badge variant={paymentStatusConfig[selectedInvoice.status].variant}>
-                    {paymentStatusConfig[selectedInvoice.status].label}
+                  <Badge variant={paymentStatusConfig[inv.status as InvoiceStatus]?.variant ?? "outline"}>
+                    {paymentStatusConfig[inv.status as InvoiceStatus]?.label ?? inv.status}
                   </Badge>
                 </div>
               </DialogHeader>
@@ -289,7 +245,7 @@ export default function InvoicesPage() {
                 <div className="p-4 rounded-lg bg-muted/30">
                   <p className="text-sm font-medium text-muted-foreground mb-1">Pelanggan</p>
                   <p className="font-medium">
-                    {selectedInvoice.spk?.customer?.nama || getCustomerById(selectedInvoice.spk?.customer_id || 0)?.nama}
+                    {inv.spk?.customer?.nama ?? inv.spk?.customer?.name ?? "-"}
                   </p>
                 </div>
 
@@ -297,59 +253,59 @@ export default function InvoicesPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal Jasa</span>
-                    <span>{formatCurrency(selectedInvoice.total_jasa)}</span>
+                    <span>{formatCurrency(Number(inv.total_jasa ?? inv.totalServiceCost ?? 0))}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal Sparepart</span>
-                    <span>{formatCurrency(selectedInvoice.total_sparepart)}</span>
+                    <span>{formatCurrency(Number(inv.total_sparepart ?? inv.totalPartsCost ?? 0))}</span>
                   </div>
-                  {selectedInvoice.diskon > 0 && (
+                  {Number(inv.diskon ?? inv.discountAmount ?? 0) > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>Diskon</span>
-                      <span>-{formatCurrency(selectedInvoice.diskon)}</span>
+                      <span>-{formatCurrency(Number(inv.diskon ?? inv.discountAmount ?? 0))}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">PPN (11%)</span>
-                    <span>{formatCurrency(selectedInvoice.ppn)}</span>
+                    <span className="text-muted-foreground">PPN</span>
+                    <span>{formatCurrency(Number(inv.ppn ?? inv.taxAmount ?? 0))}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>{formatCurrency(selectedInvoice.grand_total)}</span>
+                    <span>{formatCurrency(Number(inv.grand_total ?? inv.grandTotal ?? 0))}</span>
                   </div>
-                  {selectedInvoice.jumlah_dibayar > 0 && (
+                  {Number(inv.jumlah_dibayar ?? inv.amountPaid ?? 0) > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>Dibayar</span>
-                      <span>-{formatCurrency(selectedInvoice.jumlah_dibayar)}</span>
+                      <span>-{formatCurrency(Number(inv.jumlah_dibayar ?? inv.amountPaid ?? 0))}</span>
                     </div>
                   )}
-                  {selectedInvoice.status !== "PAID" && (
+                  {inv.status !== "PAID" && (
                     <div className="flex justify-between font-medium">
                       <span>Sisa</span>
                       <span className="text-orange-600">
-                        {formatCurrency(selectedInvoice.sisa_bayar)}
+                        {formatCurrency(Number(inv.sisa_bayar ?? inv.amountDue ?? 0))}
                       </span>
                     </div>
                   )}
                 </div>
 
-                {selectedInvoice.paymentMethod && (
+                {/* Payments history */}
+                {Array.isArray(inv.payments) && inv.payments.length > 0 && (
                   <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <p className="text-sm">
-                      Metode: <span className="font-medium">{selectedInvoice.paymentMethod}</span>
-                    </p>
-                    {selectedInvoice.paymentDate && (
-                      <p className="text-sm text-muted-foreground">
-                        Tanggal bayar: {formatDate(selectedInvoice.paymentDate)}
-                      </p>
-                    )}
+                    <p className="text-sm font-medium mb-2">Riwayat Pembayaran</p>
+                    {inv.payments.map((p: any, i: number) => (
+                      <div key={i} className="flex justify-between text-sm">
+                        <span>{p.metode ?? p.paymentMethod}</span>
+                        <span className="font-medium">{formatCurrency(Number(p.jumlah ?? p.amount ?? 0))}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
 
               <DialogFooter className="gap-2">
-                {selectedInvoice.status !== "PAID" && (
+                {inv.status !== "PAID" && inv.status !== "CANCELLED" && (
                   <Button onClick={() => {
                     setDetailDialogOpen(false)
                     handlePaymentClick(selectedInvoice)
@@ -367,61 +323,25 @@ export default function InvoicesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Invoice Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
+      {/* Payment Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Buat Invoice Baru</DialogTitle>
+            <DialogTitle>Input Pembayaran</DialogTitle>
             <DialogDescription>
-              Pilih SPK yang sudah selesai untuk dibuatkan invoice
+              {selectedInvoice
+                ? `Invoice #${(selectedInvoice as any).nomor_invoice ?? (selectedInvoice as any).invoiceNumber}`
+                : ""}
             </DialogDescription>
           </DialogHeader>
-
-          <div className="py-4">
-            <Select value={selectedSpkForInvoice} onValueChange={setSelectedSpkForInvoice}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih SPK" />
-              </SelectTrigger>
-              <SelectContent>
-                {completedSPKsWithoutInvoice.length === 0 ? (
-                  <SelectItem value="none" disabled>
-                    Tidak ada SPK yang tersedia
-                  </SelectItem>
-                ) : (
-                  completedSPKsWithoutInvoice.map((spk) => {
-                    const customer = getCustomerById(spk.customer_id)
-                    return (
-                      <SelectItem key={spk.id} value={String(spk.id)}>
-                        {spk.nomor_spk} - {customer?.nama} ({formatCurrency(Number(spk.total_biaya))})
-                      </SelectItem>
-                    )
-                  })
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              onClick={handleCreateInvoice}
-              disabled={!selectedSpkForInvoice || selectedSpkForInvoice === "none"}
-            >
-              Buat Invoice
-            </Button>
-          </DialogFooter>
+          {selectedInvoice && (
+            <PaymentForm
+              invoice={selectedInvoice as any}
+              onSubmit={handlePaymentSubmit}
+            />
+          )}
         </DialogContent>
       </Dialog>
-
-      {/* Payment Form */}
-      <PaymentForm
-        open={paymentDialogOpen}
-        onOpenChange={setPaymentDialogOpen}
-        invoice={selectedInvoice}
-        onSubmit={handlePaymentSubmit}
-      />
 
       {/* Hidden Print Template */}
       <div className="hidden">

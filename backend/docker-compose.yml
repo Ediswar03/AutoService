@@ -7,7 +7,7 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/autoservis?schema=public
+      - DATABASE_URL=mysql://root:password@db:3306/autoservis
       - REDIS_HOST=redis
       - S3_ENDPOINT=minio
     env_file:
@@ -20,15 +20,17 @@ services:
       - autoservis-network
 
   db:
-    image: postgres:15-alpine
+    image: mysql:8.0
+    restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: autoservis
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: autoservis
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     ports:
-      - "5432:5432"
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
     networks:
       - autoservis-network
 
@@ -56,7 +58,7 @@ services:
       - autoservis-network
 
 volumes:
-  postgres_data:
+  mysql_data:
   redis_data:
   minio_data:
 

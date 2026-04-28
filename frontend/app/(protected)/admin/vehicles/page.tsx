@@ -105,10 +105,12 @@ export default function VehiclesPage() {
                     Total {isLoading ? "..." : filteredVehicles.length} kendaraan terdaftar
                   </CardDescription>
                 </div>
-                <Button onClick={() => toast.info("Form tambah kendaraan segera hadir")}>
-                  <Plus className="mr-2 size-4" />
-                  Tambah Kendaraan
-                </Button>
+                <Link href="/admin/vehicles/create">
+                  <Button>
+                    <Plus className="mr-2 size-4" />
+                    Tambah Kendaraan
+                  </Button>
+                </Link>
               </div>
             </CardHeader>
             <CardContent>
@@ -229,9 +231,11 @@ export default function VehiclesPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => toast.info("Form edit kendaraan segera hadir")}>
-                                  <Edit className="mr-2 size-4" />
-                                  Edit
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/vehicles/create?edit=${vehicle.id}`} className="flex items-center w-full">
+                                    <Edit className="mr-2 size-4" />
+                                    Edit
+                                  </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem

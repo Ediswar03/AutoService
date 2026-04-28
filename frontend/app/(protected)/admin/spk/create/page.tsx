@@ -13,10 +13,10 @@ export default function CreateSPKPage() {
   const { post, isLoading } = useApiMutation<SPKFormData, SPK>()
 
   const handleSubmit = async (data: SPKFormData) => {
-    await post('/spk', data, {
+    await post('/work-orders', data, {
       onSuccess: (spk) => {
         toast.success('SPK berhasil dibuat')
-        invalidateCache('/spk')
+        invalidateCache('/work-orders')
         router.push(`/admin/spk/${spk.id}`)
       },
       onError: (error) => {

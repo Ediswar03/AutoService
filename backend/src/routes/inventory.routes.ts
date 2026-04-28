@@ -50,6 +50,10 @@ router.get('/spareparts/:id/movements', (req, res, next) =>
   inventoryController.getStockMovements(req, res, next)
 );
 
+router.get('/stock-movements', (req, res, next) =>
+  inventoryController.getAllStockMovements(req, res, next)
+);
+
 // Suppliers
 router.get('/suppliers', (req, res, next) =>
   inventoryController.findAllSuppliers(req, res, next)

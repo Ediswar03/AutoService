@@ -12,6 +12,9 @@ import useSWR from "swr"
 import { fetcher } from "@/lib/api-client"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "sonner"
+import { PartRequestDialog } from "@/components/mekanik/PartRequestDialog"
+import { format } from "date-fns"
+import { id } from "date-fns/locale"
 
 type RequestStatus = "all" | "PENDING" | "APPROVED" | "REJECTED" | "RECEIVED"
 
@@ -26,27 +29,44 @@ export default function PartsRequestPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<RequestStatus>("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false)
 
   // Ambil work orders mekanik yang statusnya WAITING_PARTS
-  const { data: woData, isLoading } = useSWR(
+  const { data: woData, isLoading, mutate } = useSWR(
     user ? `/work-orders?assignedMechanicId=${user.id}&limit=100&sortBy=createdAt&sortOrder=desc` : null,
     fetcher
   )
 
+  const { data: realRequestsRaw, mutate: mutateReal } = useSWR(
+    '/gudang/part-requests?limit=100',
+    fetcher
+  )
+
+  const realRequests: any[] = Array.isArray(realRequestsRaw?.data) ? realRequestsRaw.data : []
+
   const allJobs: any[] = Array.isArray(woData?.data) ? woData.data : []
 
   // Semua work order yang pernah ajukan parts (WAITING_PARTS = permintaan sedang berjalan)
-  const partsRequests = allJobs
-    .filter((j: any) => ["WAITING_PARTS", "IN_PROGRESS", "COMPLETED", "INVOICED"].includes(j.status))
-    .map((j: any) => {
-      // Map status WO ke status permintaan parts
-      let reqStatus = "PENDING"
-      if (j.status === "COMPLETED" || j.status === "INVOICED") reqStatus = "RECEIVED"
-      else if (j.status === "CANCELLED") reqStatus = "REJECTED"
-      else if (j.status === "IN_PROGRESS") reqStatus = "APPROVED"
-      else if (j.status === "WAITING_PARTS") reqStatus = "PENDING"
-      return { ...j, reqStatus }
-    })
+  const partsRequests = realRequests.map((r: any) => {
+    // Map status backend ke status UI
+    let reqStatus = r.status.toUpperCase()
+    if (reqStatus === 'APPROVED') reqStatus = 'APPROVED'
+    if (reqStatus === 'REJECTED') reqStatus = 'REJECTED'
+    if (reqStatus === 'FULFILLED') reqStatus = 'RECEIVED'
+    
+    return {
+      ...r,
+      reqStatus,
+      // Map data untuk UI
+      orderNumber: r.orderNumber,
+      customer: { name: r.workOrder?.customer?.name || '-' },
+      vehicle: r.workOrder?.vehicle || { brand: '-', model: '-', licensePlate: '-' },
+      spareparts: r.items.map((i: any) => ({
+        name: i.sparepart.name,
+        quantity: i.quantity,
+      })),
+    }
+  })
 
   const filtered = partsRequests.filter((req: any) => {
     const matchesStatus = activeTab === "all" || req.reqStatus === activeTab
@@ -84,11 +104,20 @@ export default function PartsRequestPage() {
         </div>
         <Button
           className="bg-primary text-black font-black rounded-xl px-4 shadow-[0_4px_20px_rgba(var(--primary),0.3)]"
-          onClick={() => toast.info("Form permintaan parts akan segera hadir")}
+          onClick={() => setRequestDialogOpen(true)}
         >
           <Plus className="h-5 w-5" />
         </Button>
       </div>
+
+      <PartRequestDialog 
+        open={requestDialogOpen} 
+        onOpenChange={setRequestDialogOpen} 
+        onSuccess={() => {
+          mutate()
+          mutateReal()
+        }}
+      />
 
       {/* Status Filter */}
       <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">

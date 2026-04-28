@@ -68,7 +68,7 @@ export default function GudangPermintaanPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { data, isLoading, mutate } = useSWR<PaginatedResponse<PartRequest>>(
-    `/gudang/part-requests?page=${page}&search=${search}`,
+    `/gudang/part-requests?page=${page}&search=${search}&limit=10`,
     fetcher
   )
 
@@ -99,7 +99,7 @@ export default function GudangPermintaanPage() {
     try {
       if (actionType === 'approve') {
         await apiClient.post(`/gudang/part-requests/${selectedRequest.id}/approve`)
-        toast.success('Permintaan disetujui')
+        toast.success('Permintaan disetujui dan stok telah dikurangi')
       } else {
         await apiClient.post(`/gudang/part-requests/${selectedRequest.id}/reject`, {
           reason: rejectReason,

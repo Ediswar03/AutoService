@@ -70,6 +70,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       const role = loggedInUser.role.toLowerCase()
       router.push(dashboardRoutes[role] || '/admin')
+    } catch (error) {
+      setIsLoading(false)
+      throw error  // re-throw agar form bisa tampilkan error
     } finally {
       setIsLoading(false)
     }

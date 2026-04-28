@@ -25,6 +25,7 @@ interface SPKDetailModalProps {
 }
 
 const statusConfig: Record<SPKStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  DRAFT: { label: "Draft", variant: "outline" },
   PENDING: { label: "Pending", variant: "secondary" },
   IN_PROGRESS: { label: "Dikerjakan", variant: "default" },
   WAITING_PARTS: { label: "Tunggu Parts", variant: "outline" },

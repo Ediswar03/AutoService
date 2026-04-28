@@ -48,7 +48,7 @@ export function getVehicleById(id: any): Vehicle | undefined {
 }
 
 export function getVehiclesByCustomerId(customerId: any): Vehicle[] {
-  return mockVehicles.filter((v) => v.customer_id === customerId)
+  return mockVehicles.filter((v) => v.customerId === customerId)
 }
 
 export function getMechanicById(id: any): Mechanic | undefined {

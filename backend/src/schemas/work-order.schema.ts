@@ -12,6 +12,16 @@ export const createWorkOrderSchema = z.object({
   customerComplaints: z.string().optional().nullable(),
   estimatedCompletion: z.string().datetime().optional().nullable(),
   internalNotes: z.string().optional().nullable(),
+  services: z.array(z.object({
+    serviceId: z.string().uuid(),
+    quantity: z.number().int().min(1).default(1),
+    discountPercent: z.number().min(0).max(100).default(0),
+  })).optional(),
+  spareparts: z.array(z.object({
+    sparepartId: z.string().uuid(),
+    quantity: z.number().int().min(1),
+    discountPercent: z.number().min(0).max(100).default(0),
+  })).optional(),
 });
 
 export const updateWorkOrderSchema = createWorkOrderSchema.partial();

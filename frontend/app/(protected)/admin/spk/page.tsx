@@ -30,16 +30,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  formatCurrency,
-  formatDate,
-} from "@/lib/mock-data"
+import { formatCurrency } from "@/lib/api-client"
+import { format } from "date-fns"
+import { id } from "date-fns/locale"
+
+const formatDate = (date: string | Date | number) => {
+  if (!date) return '-'
+  return format(new Date(date), 'dd MMMM yyyy', { locale: id })
+}
 import type { SPK, SPKStatus } from "@/types"
 import useSWR from "swr"
 import { fetcher, api } from "@/lib/api-client"
-import { Loader2 } from "lucide-react"
+import { Loader2, Plus, Search, MoreHorizontal, Eye, Play, CheckCircle, XCircle } from "lucide-react"
 
 const statusConfig: Record<SPKStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  DRAFT: { label: "Draft", variant: "secondary" },
   PENDING: { label: "Pending", variant: "secondary" },
   IN_PROGRESS: { label: "Dikerjakan", variant: "default" },
   WAITING_PARTS: { label: "Tunggu Parts", variant: "outline" },
@@ -78,7 +83,7 @@ export default function SPKPage() {
     return matchesSearch && matchesStatus && matchesMechanic
   })
 
-  const handleCreateSPK = async (data: SPKFormData) => {
+  const handleCreateSPK = async (data: any) => {
     try {
       await api.post("/work-orders", data)
       await mutateWO()

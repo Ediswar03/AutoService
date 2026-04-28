@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { getAccessToken, getRefreshToken, setAccessToken, setRefreshToken, clearAuthStorage, cookies } from './storage'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api/v1'
 
 // Create axios instance
 const apiClient = axios.create({
@@ -77,7 +77,7 @@ apiClient.interceptors.response.use(
 
       try {
         const response = await axios.post(`${API_URL}/auth/refresh`, {
-          refresh_token: refreshToken,
+          refreshToken: refreshToken,
         })
 
         const { accessToken, refreshToken: newRefreshToken } = response.data.data

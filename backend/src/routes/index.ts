@@ -10,6 +10,7 @@ import inventoryRoutes from './inventory.routes';
 import invoiceRoutes from './invoice.routes';
 import reportRoutes from './report.routes';
 import uploadRoutes from './upload.routes';
+import partRequestRoutes from './part-request.routes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/inventory', inventoryRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/reports', reportRoutes);
 router.use('/uploads', uploadRoutes);
+router.use('/gudang/part-requests', partRequestRoutes);
 
 export default router;

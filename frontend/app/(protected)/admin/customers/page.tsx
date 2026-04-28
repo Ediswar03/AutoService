@@ -201,7 +201,7 @@ export default function CustomersPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem asChild>
-                                <Link href={`/admin/customers/create?edit=${customer.id}`} className="flex items-center w-full">
+                                <Link href={`/admin/customers/${customer.id}/edit`} className="flex items-center w-full">
                                   <Edit className="mr-2 size-4" />
                                   Edit
                                 </Link>
