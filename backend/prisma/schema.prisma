@@ -571,3 +571,14 @@ enum NotificationType {
   LOW_STOCK
   SYSTEM
 }
+
+model Setting {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  value         String   @db.Text
+  group         String   @default("GENERAL")
+  description   String?
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

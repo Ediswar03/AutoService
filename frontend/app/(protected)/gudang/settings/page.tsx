@@ -7,7 +7,10 @@ import {
   Save,
   RotateCcw,
   Package,
+  Moon,
+  Sun,
 } from "lucide-react"
+import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GudangHeader } from "@/components/gudang/gudang-header"
 
 export default function GudangSettingsPage() {
+  const { theme, setTheme } = useTheme()
   const [hasChanges, setHasChanges] = React.useState(false)
 
   return (
@@ -45,6 +49,7 @@ export default function GudangSettingsPage() {
           <TabsList className="grid w-full grid-cols-1 lg:w-fit lg:grid-cols-2">
             <TabsTrigger value="notifications" className="gap-2"><Bell className="size-4" /><span className="hidden sm:inline">Notifikasi</span></TabsTrigger>
             <TabsTrigger value="inventory" className="gap-2"><Package className="size-4" /><span className="hidden sm:inline">Inventori</span></TabsTrigger>
+            <TabsTrigger value="appearance" className="gap-2"><Moon className="size-4" /><span className="hidden sm:inline">Tampilan</span></TabsTrigger>
           </TabsList>
 
           <TabsContent value="notifications" className="space-y-6">
@@ -75,6 +80,39 @@ export default function GudangSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5"><Label>Approval Otomatis Permintaan Mekanik</Label><p className="text-sm text-muted-foreground">Permintaan barang dengan jumlah sedikit otomatis disetujui</p></div>
                   <Switch defaultChecked={false} onChange={() => setHasChanges(true)} />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="appearance" className="space-y-6">
+            <Card>
+              <CardHeader><CardTitle>Tampilan Gudang</CardTitle><CardDescription>Atur preferensi tema untuk dashboard Gudang</CardDescription></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Mode Gelap</Label>
+                    <p className="text-sm text-muted-foreground">Ubah tampilan dashboard gudang menjadi gelap</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Sun className="h-4 w-4 text-muted-foreground" />
+                    <Switch
+                      checked={theme === "dark"}
+                      onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    />
+                    <Moon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </div>
+                <Separator />
+                <div className="rounded-lg border p-4 bg-muted/30 flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Sun className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">Sinkronisasi Lokal</p>
+                    <p className="text-xs text-muted-foreground">
+                      Pengaturan tema ini disimpan secara lokal dan hanya berlaku untuk dashboard Gudang.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

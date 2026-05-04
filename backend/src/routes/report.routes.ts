@@ -20,6 +20,12 @@ router.get(
 );
 
 router.get(
+  '/revenue-timeseries',
+  roleMiddleware('ADMIN', 'PIMPINAN'),
+  (req, res, next) => reportController.getRevenueTimeSeries(req, res, next)
+);
+
+router.get(
   '/mechanics',
   roleMiddleware('ADMIN', 'PIMPINAN'),
   (req, res, next) =>

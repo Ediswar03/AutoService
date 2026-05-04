@@ -1,7 +1,7 @@
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { GudangSidebar } from "@/components/gudang/gudang-sidebar"
+import type { Metadata } from "next"
+import { GudangLayoutClient } from "./layout-client"
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "AutoServis - Gudang Dashboard",
   description: "Sistem manajemen gudang otomotif",
 }
@@ -11,12 +11,5 @@ export default function GudangLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <SidebarProvider>
-      <GudangSidebar />
-      <SidebarInset className="flex flex-col relative w-full">
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
-  )
+  return <GudangLayoutClient>{children}</GudangLayoutClient>
 }

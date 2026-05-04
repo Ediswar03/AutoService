@@ -41,9 +41,10 @@ interface CustomerFormProps {
   initialData?: Customer
   onSubmit: (data: CustomerFormData) => Promise<void>
   isSubmitting?: boolean
+  onCancel?: () => void
 }
 
-export function CustomerForm({ initialData, onSubmit, isSubmitting }: CustomerFormProps) {
+export function CustomerForm({ initialData, onSubmit, isSubmitting, onCancel }: CustomerFormProps) {
   const {
     register,
     handleSubmit,
@@ -190,17 +191,21 @@ export function CustomerForm({ initialData, onSubmit, isSubmitting }: CustomerFo
       </div>
 
       <div className="mt-6 flex justify-end gap-3">
-        <Button type="button" variant="outline" onClick={() => window.history.back()}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel || (() => window.history.back())}
+        >
           Batal
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm font-bold px-8">
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Menyimpan...
             </>
           ) : (
-            'Simpan'
+            'Simpan Pelanggan'
           )}
         </Button>
       </div>

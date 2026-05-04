@@ -160,7 +160,7 @@ export default function SPKPage() {
                     {filteredSPKs.length} SPK ditemukan
                   </CardDescription>
                 </div>
-                <Button onClick={() => router.push('/admin/spk/create')}>
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm" onClick={() => router.push('/admin/spk/create')}>
                   <Plus className="mr-2 size-4" />
                   Buat SPK Baru
                 </Button>

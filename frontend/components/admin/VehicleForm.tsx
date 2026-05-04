@@ -327,10 +327,10 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
         <Button type="button" variant="outline" onClick={() => window.history.back()}>
           Batal
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm font-bold px-8">
           {isSubmitting ? (
             <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</>
-          ) : 'Simpan'}
+          ) : 'Simpan Kendaraan'}
         </Button>
       </div>
     </form>

@@ -10,6 +10,8 @@ import {
   UserCircle,
   LogOut,
   Gift,
+  ChevronUp,
+  User,
 } from "lucide-react"
 import {
   Sidebar,
@@ -24,6 +26,17 @@ import {
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"
 import { Logo } from "@/components/ui/logo"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { fetcher } from "@/lib/api-client"
+import useSWR from "swr"
+import { resolvePhotoUrl } from "@/lib/resolve-photo"
+import { cn } from "@/lib/utils"
 
 const navItems = [
   { title: "Dashboard", href: "/mekanik", icon: LayoutDashboard },
@@ -36,13 +49,26 @@ const navItems = [
 
 export function MekanikSidebar() {
   const pathname = usePathname()
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
+
+  // Fetch fresh profile from API
+  const { data: profileData } = useSWR(user ? "/auth/me" : null, fetcher)
+  const profile = profileData?.data || profileData || user
+
+  const rawPhoto = profile?.photoUrl || user?.photoUrl
+  const displayPhoto = resolvePhotoUrl(rawPhoto)
+  const displayName = profile?.name || user?.name || "Mekanik"
+  const initials = displayName.substring(0, 2).toUpperCase()
+
+  const isActive = (href: string) => {
+    return pathname === href || (href !== "/mekanik" && pathname.startsWith(href))
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border overflow-x-hidden">
       <SidebarHeader className="p-4">
         <Link href="/mekanik">
-          <Logo subtitle="Mekanik" />
+          <Logo subtitle="Mekanik" variant="white" />
         </Link>
       </SidebarHeader>
 
@@ -54,13 +80,24 @@ export function MekanikSidebar() {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname === item.href || (item.href !== "/mekanik" && pathname.startsWith(item.href))}
+                    isActive={isActive(item.href)}
                     tooltip={item.title}
-                    className="data-[active=true]:bg-[#FFC107] data-[active=true]:text-slate-900 data-[active=true]:font-bold transition-colors my-0.5 hover:bg-white/5 py-3.5 px-3 rounded-lg"
+                    className={cn(
+                      "relative transition-all duration-200 group/btn px-4 h-10 rounded-lg my-0.5",
+                      isActive(item.href) 
+                        ? "bg-primary/10 text-primary font-bold" 
+                        : "text-slate-400 hover:bg-white/5 hover:text-white"
+                    )}
                   >
                     <Link href={item.href} className="flex items-center gap-3">
-                      <item.icon className="size-[20px]" />
-                      <span className="font-semibold text-[14px] tracking-wide">{item.title}</span>
+                      <item.icon className={cn(
+                        "size-[18px] transition-all", 
+                        isActive(item.href) ? "text-primary scale-110" : "group-hover/btn:text-white"
+                      )} />
+                      <span className="font-medium text-[14px] tracking-wide">{item.title}</span>
+                      {isActive(item.href) && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-full shadow-[0_0_10px_rgba(249,115,22,0.6)]" />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -70,18 +107,54 @@ export function MekanikSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 pt-2 flex flex-col gap-2">
+      <SidebarFooter className="p-4 border-t border-white/5 bg-black/20">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              onClick={() => logout()}
-              className="hover:bg-red-500/10 transition-colors text-sidebar-foreground py-3.5 px-3 rounded-lg group"
-            >
-              <div className="flex items-center gap-3 w-full">
-                <LogOut className="size-[20px] group-hover:text-red-500 transition-colors" />
-                <span className="font-semibold text-[14px] tracking-wide group-hover:text-red-500 transition-colors">Keluar</span>
-              </div>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton className="h-14 w-full flex items-center gap-3 px-3 rounded-xl hover:bg-white/5 transition-colors group">
+                  <Avatar className="size-9 shrink-0 border-2 border-white/10 group-hover:border-primary transition-colors">
+                    {displayPhoto ? (
+                      <AvatarImage
+                        src={displayPhoto}
+                        alt={displayName}
+                        onError={(e) => {
+                          ;(e.currentTarget as HTMLImageElement).style.display = "none"
+                        }}
+                      />
+                    ) : null}
+                    <AvatarFallback className="bg-slate-800 text-primary font-bold text-xs">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden overflow-hidden ml-1">
+                    <span className="text-sm font-bold text-white truncate w-32">{displayName}</span>
+                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none">
+                      Mekanik
+                    </span>
+                  </div>
+                  <ChevronUp className="ml-auto size-4 text-slate-500 group-data-[collapsible=icon]:hidden" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                className="w-[--radix-popper-anchor-width] bg-slate-900 border-white/10 text-white p-2 rounded-xl mb-2 shadow-2xl"
+              >
+                <DropdownMenuItem asChild className="focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-3">
+                  <Link href="/mekanik/profile" className="flex items-center gap-2">
+                    <User className="size-4" />
+                    <span className="text-sm">Profil Saya</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => logout()}
+                  className="focus:bg-red-500/10 focus:text-red-500 rounded-lg cursor-pointer py-3 text-red-400"
+                >
+                  <LogOut className="size-4 mr-2" />
+                  <span className="text-sm">Keluar Sistem</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

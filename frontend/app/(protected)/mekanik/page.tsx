@@ -9,7 +9,7 @@ import { fetcher } from '@/lib/api-client'
 import { useAuth } from '@/context/AuthContext'
 import { Loader2 } from "lucide-react"
 import { ClipboardList, Package, Star, Clock, CheckCircle2, AlertCircle, ChevronRight, Wrench, Car } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -19,11 +19,9 @@ import {
   SheetTitle, 
   SheetTrigger 
 } from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
-import { User, Phone, Calendar, MessageSquare, X, Gift } from "lucide-react"
+import { User, Phone, Calendar, X } from "lucide-react"
 import SpecialPromo from "@/components/mekanik/SpecialPromo"
 
-// Mock data - replace with actual API calls
 const mockTodayJobs: any[] = []
 
 function getGreeting() {
@@ -35,18 +33,18 @@ function getGreeting() {
 }
 
 const statusConfig: Record<string, any> = {
-  PENDING: { label: "Pending", variant: "warning" as const, className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-  IN_PROGRESS: { label: "Dikerjakan", variant: "default" as const, className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-  WAITING_PARTS: { label: "Tunggu Parts", variant: "secondary" as const, className: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
-  QUALITY_CHECK: { label: "Cek Kualitas", variant: "secondary" as const, className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
-  COMPLETED: { label: "Selesai", variant: "default" as const, className: "bg-green-500/10 text-green-600 border-green-500/20" },
+  PENDING: { label: "Pending", className: "bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-500/20" },
+  IN_PROGRESS: { label: "Dikerjakan", className: "bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-500/20" },
+  WAITING_PARTS: { label: "Tunggu Parts", className: "bg-orange-500/10 text-orange-600 dark:text-orange-500 border-orange-500/20" },
+  QUALITY_CHECK: { label: "Cek Kualitas", className: "bg-purple-500/10 text-purple-600 dark:text-purple-500 border-purple-500/20" },
+  COMPLETED: { label: "Selesai", className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-500/20" },
 }
 
 const priorityConfig: Record<string, any> = {
-  LOW: { label: "Low", className: "bg-gray-100 text-gray-600" },
-  NORMAL: { label: "Normal", className: "bg-blue-100 text-blue-600" },
-  HIGH: { label: "High", className: "bg-orange-100 text-orange-600" },
-  URGENT: { label: "Urgent", className: "bg-red-100 text-red-600" },
+  LOW: { label: "Low", className: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400" },
+  NORMAL: { label: "Normal", className: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" },
+  HIGH: { label: "High", className: "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" },
+  URGENT: { label: "Urgent", className: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400" },
 }
 
 export default function MekanikDashboard() {
@@ -76,18 +74,18 @@ export default function MekanikDashboard() {
       {/* Greeting Card */}
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-transparent rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-700 ease-out"></div>
-        <Card className="bg-zinc-900/90 backdrop-blur-2xl border-white/5 overflow-hidden relative rounded-2xl shadow-xl">
-          <div className="absolute top-0 right-0 p-6 opacity-5">
-            <Wrench className="h-24 w-24 text-white rotate-12" />
+        <Card className="bg-white/80 dark:bg-zinc-900/90 backdrop-blur-2xl border-slate-200 dark:border-white/5 overflow-hidden relative rounded-2xl shadow-xl transition-colors duration-300">
+          <div className="absolute top-0 right-0 p-6 opacity-5 dark:opacity-5">
+            <Wrench className="h-24 w-24 text-slate-900 dark:text-white rotate-12" />
           </div>
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-40" />
           <CardContent className="pt-8 pb-8 px-6 relative z-10">
             <p className="text-primary text-[10px] font-black tracking-[0.2em] uppercase mb-1">{greeting || "Selamat Datang"},</p>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tighter text-white uppercase italic leading-none">
-              {firstName}<span className="text-zinc-500"> {lastName}</span>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase italic leading-none transition-colors duration-300">
+              {firstName}<span className="text-slate-400 dark:text-zinc-500"> {lastName}</span>
             </h2>
             <div className="h-1 w-12 bg-primary mt-4 rounded-full" />
-            <p className="text-zinc-500 text-[11px] mt-4 font-bold italic tracking-wide uppercase">Performance Mechanic</p>
+            <p className="text-slate-400 dark:text-zinc-500 text-[11px] mt-4 font-bold italic tracking-wide uppercase transition-colors duration-300">Performance Mechanic</p>
           </CardContent>
         </Card>
       </div>
@@ -98,18 +96,18 @@ export default function MekanikDashboard() {
       {/* Status Summary */}
       <div className="grid grid-cols-3 gap-2.5 sm:gap-4 px-0.5">
         {[
-          { label: "Pending", value: stats.pending, icon: AlertCircle, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-          { label: "Progres", value: stats.inProgress, icon: Wrench, color: "text-primary", bg: "bg-primary/10", border: "border-primary/20" },
-          { label: "Selesai", value: stats.completed, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+          { label: "Pending", value: stats.pending, icon: AlertCircle, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-500/10", border: "border-amber-200 dark:border-amber-500/20" },
+          { label: "Progres", value: stats.inProgress, icon: Wrench, color: "text-primary", bg: "bg-orange-50 dark:bg-primary/10", border: "border-primary/20" },
+          { label: "Selesai", value: stats.completed, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10", border: "border-emerald-200 dark:border-emerald-500/20" },
         ].map((item) => (
-          <Card key={item.label} className="bg-zinc-900/80 backdrop-blur-xl border-white/5 hover:bg-zinc-800/80 transition-all duration-300 cursor-pointer rounded-2xl group relative overflow-hidden active:scale-[0.97]">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <Card key={item.label} className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-zinc-800/80 transition-all duration-300 cursor-pointer rounded-2xl group relative overflow-hidden active:scale-[0.97] shadow-sm dark:shadow-none">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-white/10 to-transparent" />
             <CardContent className="pt-4 pb-4 text-center px-1">
               <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2 border transition-colors duration-300", item.bg, item.border, "group-hover:border-opacity-50")}>
                 <item.icon className={cn("h-5 w-5", item.color)} />
               </div>
-              <p className="text-2xl font-black italic text-zinc-100">{item.value}</p>
-              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 mt-0.5 opacity-80">{item.label}</p>
+              <p className="text-2xl font-black italic text-slate-900 dark:text-zinc-100 transition-colors duration-300">{item.value}</p>
+              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-zinc-500 mt-0.5 transition-colors duration-300">{item.label}</p>
             </CardContent>
           </Card>
         ))}
@@ -118,29 +116,29 @@ export default function MekanikDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 px-0.5">
         <Link href="/mekanik/jobs" className="outline-none group active:scale-[0.98] transition-transform">
-          <Card className="bg-zinc-900/50 backdrop-blur-md border-white/5 hover:border-primary/40 hover:bg-zinc-900/80 transition-all duration-300 relative overflow-hidden rounded-2xl h-full shadow-lg">
+          <Card className="bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border-slate-200 dark:border-white/5 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-white dark:hover:bg-zinc-900/80 transition-all duration-300 relative overflow-hidden rounded-2xl h-full shadow-sm dark:shadow-lg">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardContent className="p-4 flex items-center gap-3 relative z-10">
-              <div className="h-10 w-10 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center group-hover:bg-primary transition-all duration-300 shrink-0">
-                <ClipboardList className="h-5 w-5 text-zinc-400 group-hover:text-black transition-colors duration-300" />
+              <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-white/5 flex items-center justify-center group-hover:bg-primary transition-all duration-300 shrink-0">
+                <ClipboardList className="h-5 w-5 text-slate-500 dark:text-zinc-400 group-hover:text-white dark:group-hover:text-black transition-colors duration-300" />
               </div>
               <div>
-                <p className="font-black text-[12px] uppercase tracking-wider text-zinc-200 group-hover:text-white transition-colors leading-tight">Daftar SPK</p>
-                <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest mt-0.5">Buka Tugas</p>
+                <p className="font-black text-[12px] uppercase tracking-wider text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors leading-tight">Daftar SPK</p>
+                <p className="text-[8px] text-slate-400 dark:text-zinc-500 uppercase font-black tracking-widest mt-0.5">Buka Tugas</p>
               </div>
             </CardContent>
           </Card>
         </Link>
         <Link href="/mekanik/parts-request" className="outline-none group active:scale-[0.98] transition-transform">
-          <Card className="bg-zinc-900/50 backdrop-blur-md border-white/5 hover:border-primary/40 hover:bg-zinc-900/80 transition-all duration-300 relative overflow-hidden rounded-2xl h-full shadow-lg">
+          <Card className="bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border-slate-200 dark:border-white/5 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-white dark:hover:bg-zinc-900/80 transition-all duration-300 relative overflow-hidden rounded-2xl h-full shadow-sm dark:shadow-lg">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardContent className="p-4 flex items-center gap-3 relative z-10">
-              <div className="h-10 w-10 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center group-hover:bg-primary transition-all duration-300 shrink-0">
-                <Package className="h-5 w-5 text-zinc-400 group-hover:text-black transition-colors duration-300" />
+              <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-white/5 flex items-center justify-center group-hover:bg-primary transition-all duration-300 shrink-0">
+                <Package className="h-5 w-5 text-slate-500 dark:text-zinc-400 group-hover:text-white dark:group-hover:text-black transition-colors duration-300" />
               </div>
               <div>
-                <p className="font-black text-[12px] uppercase tracking-wider text-zinc-200 group-hover:text-white transition-colors leading-tight">Request Parts</p>
-                <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest mt-0.5">Pengajuan</p>
+                <p className="font-black text-[12px] uppercase tracking-wider text-slate-700 dark:text-zinc-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors leading-tight">Request Parts</p>
+                <p className="text-[8px] text-slate-400 dark:text-zinc-500 uppercase font-black tracking-widest mt-0.5">Pengajuan</p>
               </div>
             </CardContent>
           </Card>
@@ -150,7 +148,7 @@ export default function MekanikDashboard() {
       {/* Today Jobs */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
-          <h3 className="font-black italic uppercase tracking-widest text-sm flex items-center gap-2 text-zinc-200">
+          <h3 className="font-black italic uppercase tracking-widest text-sm flex items-center gap-2 text-slate-800 dark:text-zinc-200 transition-colors duration-300">
             <Clock className="h-4 w-4 text-primary" />
             Pekerjaan Hari Ini
           </h3>
@@ -160,21 +158,21 @@ export default function MekanikDashboard() {
         </div>
         <div className="space-y-3">
           {isLoading ? (
-            <div className="flex items-center justify-center p-8 text-zinc-500">
+            <div className="flex items-center justify-center p-8 text-slate-400 dark:text-zinc-500">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : jobs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center bg-zinc-900/50 rounded-2xl border border-white/5">
-              <ClipboardList className="h-10 w-10 text-zinc-600 mb-3" />
-              <p className="text-sm font-bold text-zinc-400">Tidak ada SPK aktif</p>
-              <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest font-black">Pekerjaan Kosong</p>
+            <div className="flex flex-col items-center justify-center p-8 text-center bg-white/60 dark:bg-zinc-900/50 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
+              <ClipboardList className="h-10 w-10 text-slate-300 dark:text-zinc-600 mb-3" />
+              <p className="text-sm font-bold text-slate-500 dark:text-zinc-400">Tidak ada SPK aktif</p>
+              <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 uppercase tracking-widest font-black">Pekerjaan Kosong</p>
             </div>
           ) : (
             jobs.map((job: any) => (
             <Sheet key={job.id}>
               <SheetTrigger asChild>
                 <div className="block outline-none group cursor-pointer">
-                  <Card className="bg-zinc-900/60 backdrop-blur-md border-white/5 hover:border-primary/30 hover:bg-zinc-900 transition-all duration-300 overflow-hidden rounded-2xl hover:shadow-lg">
+                  <Card className="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border-slate-200 dark:border-white/5 hover:border-primary/30 dark:hover:border-primary/30 hover:bg-white dark:hover:bg-zinc-900 transition-all duration-300 overflow-hidden rounded-2xl shadow-sm hover:shadow-lg dark:shadow-none">
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-primary transition-colors duration-300" />
                     <CardContent className="p-5 relative">
                       <div className="flex items-start justify-between gap-3">
@@ -187,15 +185,15 @@ export default function MekanikDashboard() {
                               {priorityConfig[job.priority || 'NORMAL']?.label}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-2 text-sm sm:text-base font-black text-zinc-100 mb-1.5 uppercase italic tracking-tight group-hover:text-white transition-colors">
-                            <Car className="h-4 w-4 sm:h-5 sm:w-5 text-zinc-500 group-hover:text-primary transition-colors" />
+                          <div className="flex items-center gap-2 text-sm sm:text-base font-black text-slate-800 dark:text-zinc-100 mb-1.5 uppercase italic tracking-tight group-hover:text-slate-950 dark:group-hover:text-white transition-colors">
+                            <Car className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 dark:text-zinc-500 group-hover:text-primary transition-colors" />
                             <span className="truncate">
                               {job.vehicle?.brand} {job.vehicle?.model}
                             </span>
                           </div>
-                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                            <span className="text-zinc-400">{job.vehicle?.licensePlate || job.vehicle?.plateNumber}</span>
-                            <span className="h-1 w-1 rounded-full bg-zinc-700" />
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                            <span className="text-slate-600 dark:text-zinc-400">{job.vehicle?.licensePlate || job.vehicle?.plateNumber}</span>
+                            <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
                             <span className="truncate">{job.customerComplaints || job.serviceType || 'Cek Kendaraan'}</span>
                           </p>
                         </div>
@@ -207,44 +205,44 @@ export default function MekanikDashboard() {
                   </Card>
                 </div>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[92vh] bg-zinc-950 border-x border-t border-white/10 rounded-t-[40px] p-0 overflow-hidden max-w-md mx-auto inset-x-0 outline-none">
+              <SheetContent side="bottom" className="h-[92vh] bg-white dark:bg-zinc-950 border-x border-t border-slate-200 dark:border-white/10 rounded-t-[40px] p-0 overflow-hidden max-w-md mx-auto inset-x-0 outline-none">
                 <div className="h-full flex flex-col">
-                  <div className="w-16 h-1.5 bg-white/10 rounded-full mx-auto mt-5 mb-2 shadow-inner" />
+                  <div className="w-16 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full mx-auto mt-5 mb-2 shadow-inner" />
                   
                   <div className="flex-1 overflow-y-auto px-6 pb-28 pt-4 space-y-7 custom-scrollbar">
                     <SheetHeader className="text-left space-y-4">
                       <div className="flex items-center justify-between">
                          <div className="space-y-1">
                              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary/80">Workshop Task Order</span>
-                            <SheetTitle className="text-4xl font-black italic uppercase tracking-tighter text-white leading-none flex items-center gap-3">
+                            <SheetTitle className="text-4xl font-black italic uppercase tracking-tighter text-slate-900 dark:text-white leading-none flex items-center gap-3">
                               {job.orderNumber || job.spkNumber}
                               <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                             </SheetTitle>
                          </div>
-                         <Badge variant="outline" className={cn("text-[11px] font-black uppercase italic border-0 px-4 h-8 flex items-center shadow-[inset_0_1px_10px_rgba(0,0,0,0.5)]", statusConfig[job.status]?.className || statusConfig['PENDING'].className)}>
+                         <Badge variant="outline" className={cn("text-[11px] font-black uppercase italic border-0 px-4 h-8 flex items-center shadow-[inset_0_1px_10px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_1px_10px_rgba(0,0,0,0.5)]", statusConfig[job.status]?.className || statusConfig['PENDING'].className)}>
                             <div className="h-1.5 w-1.5 rounded-full bg-current mr-2 opacity-50" />
                             {statusConfig[job.status]?.label || 'Pending'}
                          </Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-y border-white/5 py-3">
+                      <div className="flex items-center gap-4 text-[10px] font-mono text-slate-500 dark:text-zinc-500 uppercase tracking-widest border-y border-slate-200 dark:border-white/5 py-3">
                          <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {new Date(job.createdAt || Date.now()).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                         <span className="h-3 w-px bg-white/10" />
+                         <span className="h-3 w-px bg-slate-200 dark:bg-white/10" />
                          <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> {new Date(job.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </SheetHeader>
 
                     <div className="grid gap-6">
                       <div className="space-y-3">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2">
                           <User className="h-3 w-3 text-primary" /> Informasi Pemilik
                         </h4>
-                        <div className="bg-zinc-900/50 rounded-2xl border border-white/5 p-5 flex items-center justify-between">
+                        <div className="bg-slate-50 dark:bg-zinc-900/50 rounded-2xl border border-slate-200 dark:border-white/5 p-5 flex items-center justify-between">
                           <div className="space-y-1">
-                            <p className="text-xl font-black text-zinc-100 uppercase italic tracking-tight">{job.customer?.name || job.customer}</p>
-                            <p className="text-xs font-mono text-zinc-400 flex items-center gap-2">{job.customer?.phone || '0812-3456-7890'}</p>
+                            <p className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase italic tracking-tight">{job.customer?.name || job.customer}</p>
+                            <p className="text-xs font-mono text-slate-500 dark:text-zinc-400 flex items-center gap-2">{job.customer?.phone || '0812-3456-7890'}</p>
                           </div>
                           <a href={`tel:${job.customer?.phone || '081234567890'}`}>
-                            <Button size="icon" variant="outline" className="rounded-xl bg-zinc-950 border-white/10 text-primary">
+                            <Button size="icon" variant="outline" className="rounded-xl bg-white dark:bg-zinc-950 border-slate-200 dark:border-white/10 text-primary">
                               <Phone className="h-4 w-4" />
                             </Button>
                           </a>
@@ -252,36 +250,36 @@ export default function MekanikDashboard() {
                       </div>
 
                       <div className="space-y-3">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2">
                           <Car className="h-3 w-3 text-primary" /> Spesifikasi Unit
                         </h4>
-                        <div className="bg-zinc-900/50 rounded-2xl border border-white/5 p-3 grid grid-cols-2 xs:grid-cols-3 gap-2">
-                          <div className="bg-black/40 rounded-xl p-3 border border-white/5">
-                            <p className="text-[8px] text-zinc-500 font-bold uppercase mb-0.5">Merk/Model</p>
-                            <p className="text-[11px] font-black text-zinc-200 uppercase">{job.vehicle?.brand} {job.vehicle?.model}</p>
+                        <div className="bg-slate-50 dark:bg-zinc-900/50 rounded-2xl border border-slate-200 dark:border-white/5 p-3 grid grid-cols-2 xs:grid-cols-3 gap-2">
+                          <div className="bg-white dark:bg-black/40 rounded-xl p-3 border border-slate-200 dark:border-white/5">
+                            <p className="text-[8px] text-slate-500 dark:text-zinc-500 font-bold uppercase mb-0.5">Merk/Model</p>
+                            <p className="text-[11px] font-black text-slate-800 dark:text-zinc-200 uppercase">{job.vehicle?.brand} {job.vehicle?.model}</p>
                           </div>
-                          <div className="bg-black/40 rounded-xl p-3 border border-white/5">
-                            <p className="text-[8px] text-zinc-500 font-bold uppercase mb-0.5">Plat Nomor</p>
+                          <div className="bg-white dark:bg-black/40 rounded-xl p-3 border border-slate-200 dark:border-white/5">
+                            <p className="text-[8px] text-slate-500 dark:text-zinc-500 font-bold uppercase mb-0.5">Plat Nomor</p>
                             <p className="text-[11px] font-black text-primary font-mono">{job.vehicle?.licensePlate || job.vehicle?.plateNumber}</p>
                           </div>
-                          <div className="bg-black/40 rounded-xl p-3 border border-white/5 col-span-2 xs:col-span-1">
-                            <p className="text-[8px] text-zinc-500 font-bold uppercase mb-0.5">Tahun</p>
-                            <p className="text-[11px] font-black text-zinc-200">{job.vehicle?.year || '2020'}</p>
+                          <div className="bg-white dark:bg-black/40 rounded-xl p-3 border border-slate-200 dark:border-white/5 col-span-2 xs:col-span-1">
+                            <p className="text-[8px] text-slate-500 dark:text-zinc-500 font-bold uppercase mb-0.5">Tahun</p>
+                            <p className="text-[11px] font-black text-slate-800 dark:text-zinc-200">{job.vehicle?.year || '2020'}</p>
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-3">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2">
                           <Wrench className="h-3 w-3 text-primary" /> Instruksi Kerja
                         </h4>
-                        <div className="bg-zinc-900 rounded-3xl border border-white/5 overflow-hidden">
-                          <div className="bg-primary/10 px-5 py-3 border-b border-white/5">
+                        <div className="bg-slate-50 dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-white/5 overflow-hidden">
+                          <div className="bg-primary/10 px-5 py-3 border-b border-primary/10 dark:border-white/5">
                             <span className="text-xs font-black text-primary uppercase italic">{job.serviceType || 'Servis Kendaraan'}</span>
                           </div>
                           <div className="p-5">
-                            <div className="bg-black/30 rounded-2xl p-4 border border-white/5 border-dashed">
-                              <p className="text-sm text-zinc-300 italic font-medium leading-relaxed">
+                            <div className="bg-white dark:bg-black/30 rounded-2xl p-4 border border-slate-200 dark:border-white/5 border-dashed">
+                              <p className="text-sm text-slate-700 dark:text-zinc-300 italic font-medium leading-relaxed">
                                 &ldquo;{job.customerComplaints || 'Tidak ada keluhan tertulis, periksa secara menyeluruh.'}&rdquo;
                               </p>
                             </div>
@@ -291,14 +289,14 @@ export default function MekanikDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-zinc-950 border-t border-white/10 p-6 flex items-center gap-4">
+                  <div className="bg-white dark:bg-zinc-950 border-t border-slate-200 dark:border-white/10 p-6 flex items-center gap-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] dark:shadow-none">
                     <SheetTrigger asChild>
-                       <Button variant="ghost" className="h-14 w-14 rounded-2xl border border-white/5 text-zinc-500">
+                       <Button variant="ghost" className="h-14 w-14 rounded-2xl border border-slate-200 dark:border-white/5 text-slate-500 dark:text-zinc-500">
                           <X className="h-5 w-5" />
                        </Button>
                     </SheetTrigger>
                     <Link href={`/mekanik/jobs/${job.id}`} className="flex-1">
-                      <Button className="w-full bg-primary text-black font-black uppercase text-sm tracking-[0.15em] h-14 shadow-[0_4px_25px_rgba(var(--primary),0.3)] rounded-2xl">
+                      <Button className="w-full bg-primary text-white dark:text-black font-black uppercase text-sm tracking-[0.15em] h-14 shadow-[0_4px_25px_rgba(var(--primary),0.3)] rounded-2xl">
                          PREPARE WORKSPACE <ChevronRight className="h-4 w-4" />
                       </Button>
                     </Link>
@@ -312,26 +310,26 @@ export default function MekanikDashboard() {
       </div>
 
       {/* Rating Widget */}
-      <Link href="/mekanik/profile">
-        <Card className="bg-primary border-0 overflow-hidden relative group cursor-pointer rounded-3xl shadow-[0_10px_30px_-10px_rgba(var(--primary),0.6)] hover:-translate-y-1 transition-transform duration-300">
-          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <CardContent className="pt-6 pb-6 px-6 relative z-10">
+      <Link href="/mekanik/profile" className="block outline-none">
+        <Card className="bg-primary border-0 overflow-hidden relative group cursor-pointer rounded-[1.25rem] shadow-[0_8px_20px_-8px_rgba(var(--primary),0.5)] hover:-translate-y-0.5 transition-transform duration-300 active:scale-[0.98]">
+          <div className="absolute inset-0 bg-white/5 dark:bg-black/5 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardContent className="p-4 relative z-10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="h-14 w-14 rounded-2xl bg-black/15 flex items-center justify-center border border-black/10 shadow-inner group-hover:scale-105 transition-transform duration-300">
-                <Star className="h-7 w-7 text-black fill-black" />
+            <div className="flex items-center gap-3.5">
+              <div className="h-11 w-11 rounded-xl bg-white/10 dark:bg-black/15 flex items-center justify-center border border-white/20 dark:border-black/10 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
+                <Star className="h-5 w-5 text-white dark:text-black fill-white dark:fill-black" />
               </div>
-              <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-black/70 mb-1">Rating Mekanik</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-4xl font-black italic text-black leading-none drop-shadow-sm">{user?.rating || "5.0"}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-black/60 pt-1">Professional<br />Score</span>
+              <div className="flex flex-col justify-center">
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-white/80 dark:text-black/70 mb-0.5">Rating Mekanik</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black italic text-white dark:text-black leading-none drop-shadow-sm">{user?.rating || "5.0"}</span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-white/70 dark:text-black/60">Prof. Score</span>
                 </div>
               </div>
             </div>
-            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-black/5 group-hover:bg-black/10 transition-colors duration-300">
-              <ChevronRight className="h-5 w-5 text-black group-hover:translate-x-0.5 transition-transform" />
+            <div className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/5 group-hover:bg-white/20 dark:group-hover:bg-black/10 transition-colors duration-300 shrink-0">
+              <ChevronRight className="h-4 w-4 text-white dark:text-black group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
         </CardContent>

@@ -121,6 +121,27 @@ async function main() {
   });
   console.log('✅ Test supplier seeded');
 
+  // 4. Create Default Settings
+  const settingsData = [
+    { key: 'business_name', value: 'AutoServis', group: 'BUSINESS', description: 'Nama bengkel' },
+    { key: 'business_tagline', value: 'Bengkel Otomotif Terpercaya', group: 'BUSINESS', description: 'Tagline bengkel' },
+    { key: 'business_address', value: 'Jl. Raya Utama No. 123, Jakarta Selatan', group: 'BUSINESS', description: 'Alamat lengkap bengkel' },
+    { key: 'business_phone', value: '021-5551234', group: 'BUSINESS', description: 'Nomor telepon bengkel' },
+    { key: 'business_email', value: 'info@autoservis.id', group: 'BUSINESS', description: 'Email resmi bengkel' },
+    { key: 'tax_rate', value: '11', group: 'FINANCE', description: 'Tarif PPN (%)' },
+    { key: 'invoice_prefix', value: 'INV', group: 'FINANCE', description: 'Awalan nomor invoice' },
+    { key: 'spk_prefix', value: 'SPK', group: 'WORK_ORDER', description: 'Awalan nomor SPK' },
+  ];
+
+  for (const s of settingsData) {
+    await prisma.setting.upsert({
+      where: { key: s.key },
+      update: {},
+      create: s,
+    });
+  }
+  console.log('✅ Default settings seeded');
+
   console.log('✨ Seeding completed!');
 }
 

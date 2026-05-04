@@ -20,7 +20,7 @@ export class CustomerController {
         req.query as any
       );
 
-      const where: any = {};
+      const where: any = { isActive: true };
       if ((req.query.search as string) as string) {
         where.OR = [
           {
@@ -54,6 +54,7 @@ export class CustomerController {
           take: limit,
           orderBy: { [sortBy]: sortOrder },
           include: {
+            vehicles: true,
             _count: { select: { vehicles: true, workOrders: true } },
           },
         }),

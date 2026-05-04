@@ -123,10 +123,10 @@ export default function SuppliersPage() {
                 className="pl-9 h-11 bg-white border-slate-200 shadow-sm focus:ring-amber-400 rounded-xl"
               />
             </div>
-            <Button className="w-full sm:w-auto h-11 px-6 bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 font-black rounded-xl shadow-lg shadow-amber-200/50 transition-all active:scale-95" asChild>
+            <Button className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm" asChild>
               <Link href="/gudang/suppliers/add">
-                <Plus className="mr-2 size-5" />
-                TAMBAH SUPPLIER
+                <Plus className="mr-2 size-4" />
+                Tambah Supplier
               </Link>
             </Button>
           </div>

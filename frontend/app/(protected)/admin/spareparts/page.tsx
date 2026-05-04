@@ -361,7 +361,7 @@ export default function SparePartsPage() {
                   <CardTitle>Daftar Sparepart</CardTitle>
                   <CardDescription>{filtered.length} sparepart ditemukan</CardDescription>
                 </div>
-                <Button id="add-sparepart-btn" onClick={openCreate}>
+                <Button id="add-sparepart-btn" className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm" onClick={openCreate}>
                   <Plus className="mr-2 size-4" /> Tambah Sparepart
                 </Button>
               </div>
@@ -394,7 +394,7 @@ export default function SparePartsPage() {
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <Package className="size-12 text-muted-foreground/40" />
                   <p className="text-muted-foreground">Tidak ada sparepart ditemukan</p>
-                  <Button variant="outline" onClick={openCreate}><Plus className="mr-2 size-4" />Tambah Sparepart</Button>
+                  <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-50" onClick={openCreate}><Plus className="mr-2 size-4" />Tambah Sparepart</Button>
                 </div>
               ) : (
                 <div className="overflow-x-auto">

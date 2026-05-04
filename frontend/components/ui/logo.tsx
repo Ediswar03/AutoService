@@ -9,46 +9,49 @@ interface LogoProps {
   variant?: 'default' | 'white' | 'dark'
 }
 
-export function Logo({ 
-  className, 
-  iconSize = 24, 
-  textSize = "text-xl", 
+export function Logo({
+  className,
+  iconSize = 24,
+  textSize = "text-xl",
   subtitle,
   variant = 'default'
 }: LogoProps) {
   const isWhite = variant === 'white'
-  
+
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <div className="relative flex items-center justify-center shrink-0">
-        <Settings 
-          size={iconSize} 
-          className={cn(isWhite ? "text-white/80" : "text-yellow-400", "animate-spin-slow")} 
+        <Settings
+          size={iconSize}
+          className={cn(isWhite ? "text-white/80" : "text-primary", "animate-spin-slow")}
         />
-        <Wrench 
-          size={iconSize * 0.55} 
+        <Wrench
+          size={iconSize * 0.55}
           className={cn(
-            "absolute -rotate-45", 
+            "absolute -rotate-45",
             isWhite ? "text-white" : "text-white"
-          )} 
+          )}
         />
       </div>
-      <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden">
-        <span className={cn(
-          "font-black tracking-tighter leading-none whitespace-nowrap", 
+      <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden select-none">
+        <div className={cn(
+          "font-black tracking-tighter leading-tight whitespace-nowrap flex items-center italic",
           textSize,
-          isWhite ? "text-white" : "text-white"
+          variant === 'white' ? "text-white" : "text-slate-900 dark:text-white"
         )}>
-          <span className={isWhite ? "text-white" : "text-white"}>AUTO</span>{" "}
-          <span className={isWhite ? "text-white" : "text-yellow-400"}>SERVICE</span>
-        </span>
+          <span className="opacity-90">AUTO</span>
+          <span className="text-primary -ml-0.5">SERVIS</span>
+        </div>
         {subtitle && (
-          <span className={cn(
-            "text-[10px] font-bold tracking-[0.2em] uppercase leading-none mt-1 whitespace-nowrap",
-            isWhite ? "text-white/60" : "text-white/70"
-          )}>
-            {subtitle}
-          </span>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="h-[1px] w-3 bg-primary/40" />
+            <span className={cn(
+              "text-[9px] font-black tracking-[0.3em] uppercase leading-none whitespace-nowrap",
+              variant === 'white' ? "text-white/50" : "text-slate-500 dark:text-zinc-500"
+            )}>
+              {subtitle}
+            </span>
+          </div>
         )}
       </div>
     </div>

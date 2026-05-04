@@ -29,6 +29,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Initialize auth state
   useEffect(() => {
     const initAuth = async () => {
+      setIsLoading(true)
       try {
         const storedUser = authService.getCurrentUser()
         if (storedUser) {

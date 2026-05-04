@@ -10,11 +10,16 @@ import inventoryRoutes from './inventory.routes';
 import invoiceRoutes from './invoice.routes';
 import reportRoutes from './report.routes';
 import uploadRoutes from './upload.routes';
+import userRouter from './user.routes';
 import partRequestRoutes from './part-request.routes';
+import settingRoutes from './setting.routes';
+import aiRoutes from './ai.routes';
+import notificationRoutes from './notification.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/users', userRouter);
 router.use('/customers', customerRoutes);
 router.use('/vehicles', vehicleRoutes);
 router.use('/services', serviceRoutes);
@@ -24,5 +29,8 @@ router.use('/invoices', invoiceRoutes);
 router.use('/reports', reportRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/gudang/part-requests', partRequestRoutes);
+router.use('/settings', settingRoutes);
+router.use('/ai', aiRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

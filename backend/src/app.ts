@@ -45,7 +45,7 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 
 // Middleware
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = (process.env.CORS_ORIGIN || 'http://localhost:3000')

@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Save, Building2, Users, Wrench, Receipt, Bell } from "lucide-react"
+import { Save, Building2, Wrench, Receipt, Bell, Moon, Sun, Plus, Loader2 } from "lucide-react"
+import { useTheme } from "next-themes"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,10 +14,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field"
 import { useApiPaginated } from "@/hooks/useApi"
-import type { User } from "@/types"
+import type { User, Setting } from "@/types"
+import useSWR from "swr"
+import { fetcher, api } from "@/lib/api-client"
+import { toast } from "sonner"
 
 export default function SettingsPage() {
+  const { theme, setTheme } = useTheme()
   const { data: mechanics } = useApiPaginated<User>('/users', 1, 100, { role: 'MEKANIK' })
+  const { data: settings, mutate } = useSWR<Setting[]>('/settings', fetcher)
+  const [isSaving, setIsSaving] = useState(false)
 
   const [businessSettings, setBusinessSettings] = useState({
     name: "AutoServis",
@@ -24,7 +31,7 @@ export default function SettingsPage() {
     address: "Jl. Raya Utama No. 123, Jakarta Selatan",
     phone: "021-5551234",
     email: "info@autoservis.id",
-    taxRate: 10,
+    taxRate: 11,
     invoicePrefix: "INV",
     spkPrefix: "SPK",
   })
@@ -36,9 +43,47 @@ export default function SettingsPage() {
     dailyReports: false,
   })
 
-  const handleSaveSettings = () => {
-    // In a real app, this would save to the database
-    alert("Pengaturan berhasil disimpan!")
+  // Sync state with fetched settings
+  useEffect(() => {
+    if (settings) {
+      const getVal = (key: string, def: string) => settings.find(s => s.key === key)?.value || def
+      
+      setBusinessSettings({
+        name: getVal('business_name', "AutoServis"),
+        tagline: getVal('business_tagline', "Bengkel Otomotif Terpercaya"),
+        address: getVal('business_address', "Jl. Raya Utama No. 123, Jakarta Selatan"),
+        phone: getVal('business_phone', "021-5551234"),
+        email: getVal('business_email', "info@autoservis.id"),
+        taxRate: parseInt(getVal('tax_rate', "11")),
+        invoicePrefix: getVal('invoice_prefix', "INV"),
+        spkPrefix: getVal('spk_prefix', "SPK"),
+      })
+    }
+  }, [settings])
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true)
+    try {
+      const settingsPayload = [
+        { key: 'business_name', value: businessSettings.name, group: 'BUSINESS' },
+        { key: 'business_tagline', value: businessSettings.tagline, group: 'BUSINESS' },
+        { key: 'business_address', value: businessSettings.address, group: 'BUSINESS' },
+        { key: 'business_phone', value: businessSettings.phone, group: 'BUSINESS' },
+        { key: 'business_email', value: businessSettings.email, group: 'BUSINESS' },
+        { key: 'tax_rate', value: businessSettings.taxRate.toString(), group: 'FINANCE' },
+        { key: 'invoice_prefix', value: businessSettings.invoicePrefix, group: 'FINANCE' },
+        { key: 'spk_prefix', value: businessSettings.spkPrefix, group: 'WORK_ORDER' },
+      ]
+
+      await api.post('/settings/bulk', { settings: settingsPayload })
+      await mutate()
+      toast.success("Pengaturan berhasil disimpan!")
+    } catch (error) {
+      console.error(error)
+      toast.error("Gagal menyimpan pengaturan")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -48,7 +93,7 @@ export default function SettingsPage() {
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-4xl">
           <Tabs defaultValue="business" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="business" className="gap-2">
                 <Building2 className="size-4" />
                 <span className="hidden sm:inline">Bisnis</span>
@@ -59,11 +104,15 @@ export default function SettingsPage() {
               </TabsTrigger>
               <TabsTrigger value="invoices" className="gap-2">
                 <Receipt className="size-4" />
-                <span className="hidden sm:inline">Invoice</span>
+                <span className="hidden sm:inline">Finance</span>
               </TabsTrigger>
               <TabsTrigger value="notifications" className="gap-2">
                 <Bell className="size-4" />
                 <span className="hidden sm:inline">Notifikasi</span>
+              </TabsTrigger>
+              <TabsTrigger value="appearance" className="gap-2">
+                <Moon className="size-4" />
+                <span className="hidden sm:inline">Tampilan</span>
               </TabsTrigger>
             </TabsList>
 
@@ -137,8 +186,8 @@ export default function SettingsPage() {
                       </Field>
                     </div>
 
-                    <Button onClick={handleSaveSettings}>
-                      <Save className="mr-2 size-4" />
+                    <Button onClick={handleSaveSettings} disabled={isSaving}>
+                      {isSaving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
                       Simpan Perubahan
                     </Button>
                   </FieldGroup>
@@ -191,9 +240,9 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     ))}
-                    <Button asChild variant="outline" className="w-full">
+                    <Button asChild className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm">
                       <Link href="/admin/mechanics">
-                        + Tambah Mekanik Baru
+                        <Plus className="mr-2 size-4" /> Tambah Mekanik Baru
                       </Link>
                     </Button>
                   </div>
@@ -205,9 +254,9 @@ export default function SettingsPage() {
             <TabsContent value="invoices">
               <Card>
                 <CardHeader>
-                  <CardTitle>Pengaturan Invoice</CardTitle>
+                  <CardTitle>Pengaturan Finance</CardTitle>
                   <CardDescription>
-                    Konfigurasi format dan pengaturan invoice
+                    Konfigurasi format nomor dan pengaturan keuangan
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -282,8 +331,8 @@ export default function SettingsPage() {
                       </Button>
                     </div>
 
-                    <Button onClick={handleSaveSettings}>
-                      <Save className="mr-2 size-4" />
+                    <Button onClick={handleSaveSettings} disabled={isSaving}>
+                      {isSaving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}
                       Simpan Perubahan
                     </Button>
                   </FieldGroup>
@@ -380,11 +429,59 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    <Button onClick={handleSaveSettings}>
+                    <Button onClick={() => toast.info("Fitur notifikasi segera hadir!")}>
                       <Save className="mr-2 size-4" />
                       Simpan Perubahan
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            {/* Appearance Settings */}
+            <TabsContent value="appearance">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tampilan Sistem</CardTitle>
+                  <CardDescription>
+                    Atur preferensi tema untuk dashboard Admin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">Mode Gelap</p>
+                      <p className="text-sm text-muted-foreground">
+                        Gunakan tema gelap untuk mengurangi kelelahan mata
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Sun className="h-4 w-4 text-muted-foreground" />
+                      <Switch
+                        checked={theme === "dark"}
+                        onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                      />
+                      <Moon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="rounded-lg border p-4 bg-muted/30 flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Sun className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">Sinkronisasi Lokal</p>
+                      <p className="text-xs text-muted-foreground">
+                        Pengaturan tema ini disimpan secara lokal di browser Anda dan hanya berlaku untuk dashboard Admin.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button onClick={() => toast.success("Tema berhasil diterapkan!")}>
+                    <Save className="mr-2 size-4" />
+                    Simpan Preferensi
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>

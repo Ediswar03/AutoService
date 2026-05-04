@@ -133,9 +133,9 @@ export default function AdminInventoryPage() {
               <Filter className="size-4 mr-2" /> Kategori
             </Button>
           </div>
-          <Button asChild className="bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 w-full sm:w-auto font-bold shadow-sm">
+          <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto shadow-sm">
             <Link href="/admin/services">
-              <Plus className="size-4 mr-2 stroke-[3px]" /> Tambah Part
+              <Plus className="size-4 mr-2" /> Tambah Part
             </Link>
           </Button>
         </div>

@@ -89,13 +89,13 @@ export default function InvoicesPage() {
 
   const totalRevenue = invoices
     .filter((inv: any) => inv.status === "PAID")
-    .reduce((sum: number, inv: any) => sum + Number(inv.grand_total ?? inv.grandTotal ?? 0), 0)
+    .reduce((sum: number, inv: any) => sum + Number(inv.grandTotal ?? inv.grand_total ?? 0), 0)
 
   const pendingPayments = invoices
     .filter((inv: any) => inv.status !== "PAID" && inv.status !== "CANCELLED")
     .reduce((sum: number, inv: any) => {
-      const total = Number(inv.grand_total ?? inv.grandTotal ?? 0)
-      const paid = Number(inv.jumlah_dibayar ?? inv.amountPaid ?? 0)
+      const total = Number(inv.grandTotal ?? inv.grand_total ?? 0)
+      const paid = Number(inv.amountPaid ?? inv.jumlah_dibayar ?? 0)
       return sum + Math.max(0, total - paid)
     }, 0)
 
@@ -116,9 +116,9 @@ export default function InvoicesPage() {
     }, 100)
   }
 
-  const handlePaymentSubmit = async (data: PaymentFormData) => {
+  const handlePaymentSubmit = async (data: any) => {
     try {
-      await api.post("/payments", data)
+      await api.post("/invoices/payments", data)
       await mutate()
       setPaymentDialogOpen(false)
     } catch (error) {

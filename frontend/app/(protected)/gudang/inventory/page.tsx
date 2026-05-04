@@ -253,7 +253,7 @@ function InventoryContent() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button className="bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 font-bold" asChild>
+          <Button className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm" asChild>
             <Link href="/gudang/inventory/add">
               <Plus className="mr-2 size-4" />
               Tambah Part

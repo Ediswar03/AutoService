@@ -273,7 +273,7 @@ export default function GudangDashboard() {
                   <p className="text-slate-300 text-sm max-w-md">Akses menu utama untuk pengelolaan stok, supplier, dan laporan gudang secara instan.</p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-3">
-                  <Button className="bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 font-bold px-6 py-5 rounded-xl transition-all hover:scale-105" asChild>
+                  <Button className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-5 rounded-xl transition-all hover:scale-105" asChild>
                     <Link href="/gudang/inventory">
                       <Boxes className="mr-2 size-5" />
                       Data Inventori

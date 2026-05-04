@@ -162,7 +162,7 @@ export default function ServicesPage() {
                   <Package className="size-4" />Spare Parts
                 </TabsTrigger>
               </TabsList>
-              <Button onClick={handleAdd}>
+              <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm" onClick={handleAdd}>
                 <Plus className="mr-2 size-4" />
                 Tambah {activeTab === "services" ? "Layanan" : "Part"}
               </Button>
@@ -371,7 +371,7 @@ export default function ServicesPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSubmitting}>Batal</Button>
-            <Button onClick={handleSave} disabled={!formData.name || !formData.price || isSubmitting}>
+            <Button className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm" onClick={handleSave} disabled={!formData.name || !formData.price || isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {editingItem ? "Simpan" : "Tambah"}
             </Button>

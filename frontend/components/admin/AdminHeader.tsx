@@ -1,7 +1,7 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { Bell, Search, Calendar, ChevronDown, Moon, Sun } from "lucide-react"
+import { Bell, Search, Calendar, ChevronDown, Moon, Sun, CheckCircle2, AlertCircle, Info, Package } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,7 +21,10 @@ import { useAuth } from "@/context/AuthContext"
 import { api, fetcher } from "@/lib/api-client"
 import useSWR from "swr"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, Bot } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
+import { id as localeID } from "date-fns/locale"
+import { useUI } from "@/context/UIContext"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:3001"
 
@@ -33,7 +36,6 @@ function resolvePhotoUrl(photoUrl?: string | null): string | undefined {
     return `${BACKEND_URL}/api/v1/uploads/${key}`
   }
   
-  // Default to MinIO if it's just a filename/key
   const bucketName = "autoservis"
   const minioUrl = "http://localhost:9000"
   
@@ -54,12 +56,18 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const { user, logout, refreshUser } = useAuth()
+  const { toggleChat } = useUI()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Real Profile State
   const { data: profileData, mutate: mutateProfile } = useSWR(user ? "/auth/me" : null, fetcher)
   const profile = profileData?.data || profileData || user
   
+  const { data: notifications, mutate: mutateNotifications } = useSWR("/notifications", fetcher, {
+    refreshInterval: 30000 // Refresh every 30 seconds
+  })
+  
+  const unreadCount = Array.isArray(notifications) ? notifications.filter((n: any) => !n.isRead).length : 0
+
   const [isUploading, setIsUploading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -70,6 +78,15 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
     e.preventDefault()
     if (searchQuery.trim()) {
       router.push(`/admin/search?q=${encodeURIComponent(searchQuery)}`)
+    }
+  }
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await api.patch(`/notifications/${id}/read`)
+      mutateNotifications()
+    } catch (error) {
+      console.error("Failed to mark as read", error)
     }
   }
 
@@ -106,10 +123,21 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
     }
   }
 
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'LOW_STOCK': return <AlertCircle className="size-4 text-red-500" />
+      case 'PAYMENT_RECEIVED': return <CheckCircle2 className="size-4 text-green-500" />
+      case 'WORK_ORDER_UPDATE': return <Package className="size-4 text-blue-500" />
+      default: return <Info className="size-4 text-slate-400" />
+    }
+  }
+
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="h-6" />
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 shadow-sm transition-all duration-300">
+      <div className="flex items-center gap-2">
+        <SidebarTrigger className="-ml-1 text-slate-500 hover:text-primary transition-colors" />
+        <Separator orientation="vertical" className="h-6 mx-2 bg-slate-200 dark:bg-slate-800" />
+      </div>
 
       {title && (
         <div className="flex flex-col">
@@ -151,43 +179,63 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
           <Moon className="size-5 hidden dark:block text-slate-300" />
           <span className="sr-only">Toggle theme</span>
         </Button>
+        
+        {/* AI Chat Toggle */}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+          onClick={() => toggleChat()}
+        >
+          <Bot className="size-5 text-slate-700 dark:text-slate-300" />
+          <span className="sr-only">AI Chat</span>
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
               <Bell className="size-5 text-slate-700 dark:text-slate-300" />
-              <Badge
-                className="absolute -top-1 -right-1 size-4 rounded-full p-0 flex items-center justify-center bg-[#FFC107] text-slate-900 border-2 border-white dark:border-slate-900"
-              >
-                0
-              </Badge>
+              {unreadCount > 0 && (
+                <Badge
+                  className="absolute -top-1 -right-1 size-4 rounded-full p-0 flex items-center justify-center bg-[#FFC107] text-slate-900 border-2 border-white dark:border-slate-900"
+                >
+                  {unreadCount}
+                </Badge>
+              )}
               <span className="sr-only">Notifikasi</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifikasi</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto">
+            <DropdownMenuLabel className="flex justify-between items-center">
+              <span>Notifikasi</span>
+              {unreadCount > 0 && <span className="text-xs font-normal text-muted-foreground">{unreadCount} belum dibaca</span>}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-              <span className="font-medium">SPK Baru Dibuat</span>
-              <span className="text-sm text-muted-foreground">
-                SPK/2024/03/003 menunggu penugasan mekanik
-              </span>
-              <span className="text-xs text-muted-foreground">5 menit lalu</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-              <span className="font-medium">SPK Selesai</span>
-              <span className="text-sm text-muted-foreground">
-                SPK/2024/03/001 telah selesai dikerjakan
-              </span>
-              <span className="text-xs text-muted-foreground">1 jam lalu</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 cursor-pointer">
-              <span className="font-medium">Pembayaran Diterima</span>
-              <span className="text-sm text-muted-foreground">
-                INV/2024/03/001 telah dibayar lunas
-              </span>
-              <span className="text-xs text-muted-foreground">2 jam lalu</span>
-            </DropdownMenuItem>
+            {Array.isArray(notifications) && notifications.length > 0 ? (
+              notifications.map((notif: any) => (
+                <DropdownMenuItem 
+                  key={notif.id} 
+                  className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${!notif.isRead ? "bg-primary/5 dark:bg-primary/10" : ""}`}
+                  onClick={() => handleMarkAsRead(notif.id)}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    {getNotificationIcon(notif.type)}
+                    <span className="font-medium flex-1">{notif.title}</span>
+                    {!notif.isRead && <div className="size-2 rounded-full bg-primary" />}
+                  </div>
+                  <span className="text-sm text-muted-foreground line-clamp-2">
+                    {notif.message}
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: localeID })}
+                  </span>
+                </DropdownMenuItem>
+              ))
+            ) : (
+              <div className="p-8 text-center text-sm text-muted-foreground">
+                Belum ada notifikasi
+              </div>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 

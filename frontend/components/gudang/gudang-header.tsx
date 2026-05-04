@@ -1,7 +1,7 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { Bell, Search, Calendar, ChevronDown, Moon, Sun } from "lucide-react"
+import { Bell, Search, Calendar, ChevronDown, Moon, Sun, CheckCircle2, AlertCircle, Info, Bot } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -19,35 +19,13 @@ import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { api, fetcher } from "@/lib/api-client"
+import { useUI } from "@/context/UIContext"
 import useSWR from "swr"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:3002"
-
-function resolvePhotoUrl(photoUrl?: string | null): string | undefined {
-  if (!photoUrl) return undefined
-  if (photoUrl.startsWith("http")) return photoUrl
-  
-  // Handle local: prefix used by the backend when Minio is down
-  if (photoUrl.startsWith("local:")) {
-    const key = photoUrl.replace("local:", "")
-    return `${BACKEND_URL}/api/v1/uploads/${key}`
-  }
-  
-  // If it's just a filename or path (like avatars/...), try backend uploads first
-  // then fallback to MinIO logic if that's what was intended
-  if (photoUrl.includes('/') || photoUrl.length > 20) {
-     return `${BACKEND_URL}/api/v1/uploads/${photoUrl}`
-  }
-
-  try {
-    const url = new URL(BACKEND_URL || "http://localhost:3002")
-    return `http://${url.hostname}:9000/autoservis/${photoUrl}`
-  } catch {
-    return `http://localhost:9000/autoservis/${photoUrl}`
-  }
-}
+import { resolvePhotoUrl } from "@/lib/resolve-photo"
+import { formatDistanceToNow } from "date-fns"
+import { id as localeID } from "date-fns/locale"
 
 interface GudangHeaderProps {
   title?: string
@@ -58,21 +36,30 @@ export function GudangHeader({ title, description }: GudangHeaderProps) {
   const { theme, setTheme } = useTheme()
   const router = useRouter()
   const { user, logout, refreshUser } = useAuth()
+  const { toggleChat } = useUI()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Real Profile State
   const { data: profileData, mutate: mutateProfile } = useSWR(user ? "/auth/me" : null, fetcher)
   const profile = profileData?.data || profileData || user
-  
+
+  const { data: notifications, mutate: mutateNotifications } = useSWR("/notifications", fetcher, {
+    refreshInterval: 30000
+  })
+  const unreadCount = Array.isArray(notifications) ? notifications.filter((n: any) => !n.isRead).length : 0
+
   const [isUploading, setIsUploading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Add timestamp to photo URL to bypass cache
-  const photoUrl = profile?.photoUrl || user?.photoUrl
-  const displayPhoto = resolvePhotoUrl(photoUrl) 
-    ? `${resolvePhotoUrl(photoUrl)}?t=${new Date().getTime()}`
-    : undefined
+  const rawPhoto = profile?.photoUrl || user?.photoUrl
+  const displayPhoto = resolvePhotoUrl(rawPhoto)
   const displayName = profile?.name || user?.name || "Staf Gudang"
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await api.patch(`/notifications/${id}/read`)
+      mutateNotifications()
+    } catch {}
+  }
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -110,14 +97,24 @@ export function GudangHeader({ title, description }: GudangHeaderProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      router.push(`/gudang/inventory?search=${encodeURIComponent(searchQuery)}`)
+      router.push(`/gudang/stok?search=${encodeURIComponent(searchQuery)}`)
+    }
+  }
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'LOW_STOCK': return <AlertCircle className="size-4 text-red-500" />
+      case 'PAYMENT_RECEIVED': return <CheckCircle2 className="size-4 text-green-500" />
+      default: return <Info className="size-4 text-slate-400" />
     }
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="h-6" />
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 shadow-sm transition-all duration-300">
+      <div className="flex items-center gap-2">
+        <SidebarTrigger className="-ml-1 text-slate-500 hover:text-primary transition-colors" />
+        <Separator orientation="vertical" className="h-6 mx-2 bg-slate-200 dark:bg-slate-800" />
+      </div>
 
       {title && (
         <div className="flex flex-col">
@@ -129,7 +126,7 @@ export function GudangHeader({ title, description }: GudangHeaderProps) {
       )}
 
       <div className="ml-auto flex items-center gap-4">
-        {/* Search Form */}
+        {/* Search */}
         <form onSubmit={handleSearch} className="relative hidden md:flex items-center">
           <Search className="absolute left-2.5 size-4 text-slate-400" />
           <input
@@ -141,7 +138,7 @@ export function GudangHeader({ title, description }: GudangHeaderProps) {
           />
         </form>
 
-        {/* Date Button */}
+        {/* Date */}
         <Button variant="outline" className="hidden md:flex gap-2 text-slate-600 dark:text-slate-300 font-normal rounded-full">
           <Calendar className="size-4" />
           {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -149,57 +146,66 @@ export function GudangHeader({ title, description }: GudangHeaderProps) {
         </Button>
 
         {/* Theme Toggle */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="rounded-full relative hover:bg-slate-100 dark:hover:bg-slate-800"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         >
           <Sun className="size-5 dark:hidden text-slate-700" />
           <Moon className="size-5 hidden dark:block text-slate-300" />
-          <span className="sr-only">Toggle theme</span>
         </Button>
 
+        {/* AI Chat */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+          onClick={() => toggleChat()}
+        >
+          <Bot className="size-5 text-slate-700 dark:text-slate-300" />
+          <span className="sr-only">AI Chat</span>
+        </Button>
+
+        {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
               <Bell className="size-5 text-slate-700 dark:text-slate-300" />
-              <Badge
-                className="absolute -top-1 -right-1 size-4 rounded-full p-0 flex items-center justify-center bg-[#FFC107] text-slate-900 border-2 border-white dark:border-slate-900"
-              >
-                5
-              </Badge>
-              <span className="sr-only">Notifikasi</span>
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 size-4 rounded-full p-0 flex items-center justify-center bg-[#FFC107] text-slate-900 border-2 border-white dark:border-slate-900">
+                  {unreadCount}
+                </Badge>
+              )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifikasi</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto">
+            <DropdownMenuLabel className="flex justify-between items-center">
+              <span>Notifikasi</span>
+              {unreadCount > 0 && <span className="text-xs font-normal text-muted-foreground">{unreadCount} belum dibaca</span>}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 px-4 cursor-pointer">
-              <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full bg-red-500" />
-                <span className="font-medium text-sm">Stok Kritis: Engine Oil 5W-30</span>
-              </div>
-              <span className="text-xs text-muted-foreground ml-4">Sisa 8 unit - Minimum 15 unit</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 px-4 cursor-pointer">
-              <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full bg-red-500" />
-                <span className="font-medium text-sm">Stok Kritis: Car Battery 12V</span>
-              </div>
-              <span className="text-xs text-muted-foreground ml-4">Sisa 5 unit - Minimum 8 unit</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 px-4 cursor-pointer">
-              <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full bg-amber-500" />
-                <span className="font-medium text-sm">3 Nota Menunggu Validasi</span>
-              </div>
-              <span className="text-xs text-muted-foreground ml-4">1 urgent, 2 normal</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-center text-sm text-amber-600 font-medium cursor-pointer">
-              Lihat Semua Notifikasi
-            </DropdownMenuItem>
+            {Array.isArray(notifications) && notifications.length > 0 ? (
+              notifications.map((notif: any) => (
+                <DropdownMenuItem
+                  key={notif.id}
+                  className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${!notif.isRead ? "bg-primary/5" : ""}`}
+                  onClick={() => handleMarkAsRead(notif.id)}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    {getNotificationIcon(notif.type)}
+                    <span className="font-medium flex-1 text-sm">{notif.title}</span>
+                    {!notif.isRead && <div className="size-2 rounded-full bg-primary" />}
+                  </div>
+                  <span className="text-xs text-muted-foreground line-clamp-2">{notif.message}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: localeID })}
+                  </span>
+                </DropdownMenuItem>
+              ))
+            ) : (
+              <div className="p-8 text-center text-sm text-muted-foreground">Belum ada notifikasi</div>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -244,12 +250,12 @@ export function GudangHeader({ title, description }: GudangHeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          accept="image/*" 
-          onChange={handlePhotoUpload} 
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="image/*"
+          onChange={handlePhotoUpload}
         />
       </div>
     </header>

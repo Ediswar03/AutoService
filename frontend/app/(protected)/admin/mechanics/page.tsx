@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { Plus, Search, Filter, Wrench, Star, MoreVertical, Edit, Trash2, Eye, Loader2 } from "lucide-react"
 import { AdminHeader } from "@/components/admin/AdminHeader"
@@ -100,8 +101,10 @@ export default function MechanicsPage() {
               <Filter className="size-4 mr-2" /> Filter
             </Button>
           </div>
-          <Button className="bg-[#FFC107] hover:bg-[#e0a800] text-slate-900 w-full sm:w-auto font-bold shadow-sm">
-            <Plus className="size-4 mr-2 stroke-[3px]" /> Tambah Mekanik Baru
+          <Button asChild className="bg-orange-500 hover:bg-orange-600 text-white w-full sm:w-auto shadow-sm">
+            <Link href="/admin/mechanics/create">
+              <Plus className="size-4 mr-2" /> Tambah mekanik baru
+            </Link>
           </Button>
         </div>
 

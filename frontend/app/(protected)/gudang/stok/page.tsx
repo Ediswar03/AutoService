@@ -54,18 +54,18 @@ export default function GudangStokPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { data, isLoading, mutate } = useSWR<PaginatedResponse<Sparepart>>(
-    `/spareparts?page=${page}&search=${search}&category=${category !== 'all' ? category : ''}&stock_filter=${stockFilter !== 'all' ? stockFilter : ''}`,
+    `/inventory/spareparts?page=${page}&search=${search}&category=${category !== 'all' ? category : ''}&stock_filter=${stockFilter !== 'all' ? stockFilter : ''}`,
     fetcher
   )
 
-  const { data: categories } = useSWR<string[]>('/spareparts/categories', fetcher)
+  const { data: categories } = useSWR<string[]>('/inventory/spareparts/categories', fetcher)
 
   const getStockBadge = (stock: number, minStock: number) => {
     if (stock === 0) {
       return <Badge variant="destructive">Habis</Badge>
     }
-    if (stock <= minStock) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Stok Rendah</Badge>
+    if ((stock ?? 0) <= (minStock ?? 0)) {
+      return <Badge className="bg-red-100 text-red-800">Stok Rendah</Badge>
     }
     return <Badge className="bg-green-100 text-green-800">Tersedia</Badge>
   }
@@ -78,7 +78,7 @@ export default function GudangStokPage() {
     setIsSubmitting(true)
 
     try {
-      await apiClient.put(`/spareparts/${editItem.id}`, {
+      await apiClient.put(`/inventory/spareparts/${editItem.id}`, {
         stock: Number(formData.get('stock')),
         min_stock: Number(formData.get('min_stock')),
         buy_price: Number(formData.get('buy_price')),
@@ -101,8 +101,8 @@ export default function GudangStokPage() {
           <h1 className="text-3xl font-bold tracking-tight">Stok Barang</h1>
           <p className="text-muted-foreground">Kelola inventori sparepart</p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm">
+          <Plus className="mr-2 size-4" />
           Tambah Item
         </Button>
       </div>
@@ -181,32 +181,32 @@ export default function GudangStokPage() {
                   </TableHeader>
                   <TableBody>
                     {data.data.map((item) => (
-                      <TableRow key={item.id} className={item.stok <= item.stok_minimum ? 'bg-yellow-50' : ''}>
+                      <TableRow key={item.id} className={(item.stok ?? item.stockQuantity ?? 0) <= (item.stok_minimum ?? item.minStock ?? 0) ? 'bg-red-50/50' : ''}>
                         <TableCell className="font-mono font-medium">
                           {item.kode}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            {item.stok <= item.stok_minimum && (
-                              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                            {(item.stok ?? item.stockQuantity ?? 0) <= (item.stok_minimum ?? item.minStock ?? 0) && (
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
                             )}
-                            {item.nama}
+                            {item.nama || item.name}
                           </div>
                         </TableCell>
-                        <TableCell>{item.category?.nama}</TableCell>
+                        <TableCell>{item.category}</TableCell>
                         <TableCell className="text-right font-medium">
-                          {item.stok} {item.satuan}
+                          {item.stok ?? item.stockQuantity ?? 0} {item.satuan || item.unit}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {item.stok_minimum} {item.satuan}
+                          {item.stok_minimum ?? item.minStock ?? 0} {item.satuan || item.unit}
                         </TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(item.harga_beli)}
+                          {formatCurrency(item.harga_beli ?? item.buyPrice ?? 0)}
                         </TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(item.harga_jual)}
+                          {formatCurrency(item.harga_jual ?? item.sellPrice ?? 0)}
                         </TableCell>
-                        <TableCell>{getStockBadge(item.stok, item.stok_minimum)}</TableCell>
+                        <TableCell>{getStockBadge(item.stok ?? item.stockQuantity ?? 0, item.stok_minimum ?? item.minStock ?? 0)}</TableCell>
                         <TableCell>
                           <div className="flex justify-end">
                             <Button
@@ -293,7 +293,7 @@ export default function GudangStokPage() {
               <Button type="button" variant="outline" onClick={() => setEditItem(null)}>
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Simpan
               </Button>

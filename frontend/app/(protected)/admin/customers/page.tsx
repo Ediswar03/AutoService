@@ -42,6 +42,7 @@ import {
 import { toast } from "sonner"
 import useSWR from "swr"
 import { fetcher, api } from "@/lib/api-client"
+import { cn } from "@/lib/utils"
 import Link from "next/link"
 
 export default function CustomersPage() {
@@ -95,7 +96,7 @@ export default function CustomersPage() {
                   </CardDescription>
                 </div>
                 <Link href="/admin/customers/create">
-                  <Button>
+                  <Button className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm">
                     <Plus className="mr-2 size-4" />
                     Tambah Pelanggan
                   </Button>

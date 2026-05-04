@@ -1,8 +1,7 @@
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AdminSidebar } from "@/components/admin/AdminSidebar"
-import { ChatBot } from "@/components/admin/chatbot"
+import type { Metadata } from "next"
+import { AdminLayoutClient } from "./layout-client"
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "AutoServis - Admin Dashboard",
   description: "Sistem manajemen bengkel otomotif",
 }
@@ -12,13 +11,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <SidebarProvider>
-      <AdminSidebar />
-      <SidebarInset className="flex flex-col relative w-full">
-        {children}
-        <ChatBot />
-      </SidebarInset>
-    </SidebarProvider>
-  )
+  return <AdminLayoutClient>{children}</AdminLayoutClient>
 }

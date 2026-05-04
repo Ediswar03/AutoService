@@ -89,6 +89,42 @@ export class ReportService {
     };
   }
 
+  async getRevenueTimeSeries(startDate: Date, endDate: Date) {
+    const payments = await prisma.payment.findMany({
+      where: {
+        paymentDate: { gte: startDate, lte: endDate },
+      },
+      select: {
+        paymentDate: true,
+        amount: true,
+      },
+      orderBy: {
+        paymentDate: 'asc',
+      },
+    });
+
+    // Group by date
+    const dailyData: Record<string, number> = {};
+    
+    // Fill gaps with 0
+    const curr = new Date(startDate);
+    while (curr <= endDate) {
+      const dateStr = curr.toISOString().split('T')[0];
+      dailyData[dateStr] = 0;
+      curr.setDate(curr.getDate() + 1);
+    }
+
+    payments.forEach((p) => {
+      const dateStr = p.paymentDate.toISOString().split('T')[0];
+      dailyData[dateStr] = (dailyData[dateStr] || 0) + Number(p.amount);
+    });
+
+    return Object.entries(dailyData).map(([date, value]) => ({
+      date: date.split('-').slice(1).reverse().join('/'), // Format to DD/MM
+      value,
+    }));
+  }
+
   async getMechanicPerformance(startDate: Date, endDate: Date) {
     const mechanics = await prisma.user.findMany({
       where: { role: 'MEKANIK', isActive: true },

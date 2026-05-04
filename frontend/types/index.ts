@@ -11,11 +11,17 @@ export interface ApiResponse<T> {
 
 export interface PaginatedResponse<T> {
   data: T[]
-  meta: {
+  meta?: {
     current_page: number
     last_page: number
     per_page: number
     total: number
+  }
+  pagination?: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
   }
 }
 
@@ -384,45 +390,77 @@ export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'PARTIAL' | 'OVERDUE' | 
 export type PaymentMethod = 'cash' | 'transfer' | 'debit' | 'credit' | 'qris'
 
 export interface Invoice {
-  id: number
-  nomor_invoice: string
-  spk_id: number
-  tanggal: string
+  id: string
+  invoiceNumber: string
+  nomor_invoice?: string
+  workOrderId: string
+  spk_id?: string
+  customerId?: string
+  invoiceDate?: string
+  tanggal?: string
+  dueDate?: string
   jatuh_tempo?: string
-  total_jasa: number
-  total_sparepart: number
-  diskon: number
-  ppn: number
-  grand_total: number
-  jumlah_dibayar: number
-  sisa_bayar: number
+  totalServiceCost?: number
+  total_jasa?: number
+  totalPartsCost?: number
+  total_sparepart?: number
+  discountAmount?: number
+  diskon?: number
+  taxAmount?: number
+  ppn?: number
+  grandTotal: number
+  grand_total?: number
+  amountPaid: number
+  jumlah_dibayar?: number
+  amountDue: number
+  sisa_bayar?: number
   status: InvoiceStatus
+  notes?: string
   catatan?: string
-  created_by: number
-  created_at: string
-  updated_at: string
+  createdById?: string
+  created_by?: string
+  createdAt: string
+  created_at?: string
+  updatedAt?: string
+  updated_at?: string
+  workOrder?: SPK
   spk?: SPK
+  customer?: Customer
   payments?: Payment[]
 }
 
 export interface Payment {
-  id: number
-  invoice_id: number
-  tanggal: string
-  jumlah: number
-  metode: PaymentMethod
+  id: string
+  invoiceId: string
+  invoice_id?: string
+  amount: number
+  jumlah?: number
+  paymentMethod: PaymentMethod | string
+  metode?: string
+  referenceNumber?: string
   referensi?: string
+  paymentDate?: string
+  tanggal?: string
+  notes?: string
   catatan?: string
-  created_by: number
-  created_at: string
+  receivedById?: string
+  created_by?: string
+  createdAt: string
+  created_at?: string
 }
 
 export interface PaymentFormData {
-  invoice_id: number
-  tanggal: string
-  jumlah: number
-  metode: PaymentMethod
+  invoiceId: string
+  invoice_id?: string
+  amount: number
+  jumlah?: number
+  paymentMethod: PaymentMethod | string
+  metode?: string
+  referenceNumber?: string
   referensi?: string
+  paymentDate?: string
+  tanggal?: string
+  notes?: string
   catatan?: string
 }
 
@@ -579,4 +617,16 @@ export interface PartRequestFormData {
     quantity: number
     notes?: string
   }[]
+}
+// ==========================================
+// SYSTEM SETTINGS TYPES
+// ==========================================
+
+export interface Setting {
+  id: string
+  key: string
+  value: string
+  group: string
+  description?: string
+  updatedAt: string
 }

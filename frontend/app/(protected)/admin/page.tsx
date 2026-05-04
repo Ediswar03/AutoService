@@ -13,9 +13,12 @@ import {
   Users,
   Package,
   BarChart3,
-  Gift,
+  TrendingUp,
+  ArrowUpRight,
+  Clock,
 } from "lucide-react"
 import SpecialPromo from "@/components/mekanik/SpecialPromo"
+import { PromoCarousel } from "@/components/admin/PromoCarousel"
 import Link from "next/link"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 import { StatsCard } from "@/components/admin/stats-card"
@@ -39,26 +42,22 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from "recharts"
 import useSWR from 'swr'
 import { fetcher, formatCurrency } from '@/lib/api-client'
 import { Loader2 } from "lucide-react"
-
-const chartData = [
-  { date: "14/05", value: 5000000 },
-  { date: "15/05", value: 8000000 },
-  { date: "16/05", value: 14000000 },
-  { date: "17/05", value: 11000000 },
-  { date: "18/05", value: 15500000 },
-  { date: "19/05", value: 18000000 },
-  { date: "20/05", value: 23000000 },
-]
+import { cn } from "@/lib/utils"
 
 export default function AdminDashboard() {
   const { data: dashboardData, isLoading: isDashboardLoading } = useSWR('/reports/dashboard', fetcher)
   const { data: recentOrdersData, isLoading: isOrdersLoading } = useSWR('/work-orders?limit=5&sortBy=createdAt&sortOrder=desc', fetcher)
   const { data: lowStockData, isLoading: isLowStockLoading } = useSWR('/inventory/spareparts/low-stock', fetcher)
   const { data: mechanicsData, isLoading: isMechanicsLoading } = useSWR('/reports/mechanics?startDate=2024-01-01&endDate=2025-12-31', fetcher)
+  const { data: revenueTimeSeries, isLoading: isRevenueLoading } = useSWR('/reports/revenue-timeseries', fetcher)
+
+  const chartData = revenueTimeSeries || []
 
   const stats = dashboardData || {
     todayWorkOrders: 0,
@@ -75,91 +74,219 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <AdminHeader title="Dashboard" description="Ringkasan aktivitas bengkel" />
+      <AdminHeader title="Admin Dashboard" description="Selamat datang kembali di sistem manajemen AutoServis." />
 
-      <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
-        <div className="mx-auto max-w-7xl space-y-6">
-          {/* Stats Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsCard
-              title="Total Order Servis"
-              value={isDashboardLoading ? "..." : stats.todayWorkOrders.toString()}
-              description="Hari Ini"
-              icon={ClipboardList}
-            />
-            <StatsCard
-              title="Pendapatan Bulan Ini"
-              value={isDashboardLoading ? "..." : formatCurrency(stats.monthlyRevenue)}
-              trend={{ value: 0, isPositive: true }}
-              icon={Receipt}
-            />
-            <StatsCard
-              title="Order Dalam Proses"
-              value={isDashboardLoading ? "..." : stats.activeWorkOrders.toString()}
-              description="Lihat detail di SPK"
-              icon={Wrench}
-            />
-            <StatsCard
-              title="Total Pelanggan"
-              value={isDashboardLoading ? "..." : stats.totalCustomers.toString()}
-              icon={Users}
-            />
+      <div className="flex-1 overflow-auto p-6 bg-slate-50/40 dark:bg-slate-950/40">
+        <div className="mx-auto max-w-7xl space-y-8">
+          
+          {/* Stats Grid - Premium Cards */}
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="relative overflow-hidden border-none shadow-sm bg-white dark:bg-slate-900 group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Order</p>
+                    <h3 className="text-3xl font-bold mt-1">{isDashboardLoading ? "..." : stats.todayWorkOrders}</h3>
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                      <TrendingUp className="size-3 text-emerald-500" />
+                      <span className="text-emerald-500 font-semibold">+4%</span> dari kemarin
+                    </p>
+                  </div>
+                  <div className="size-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                    <ClipboardList className="size-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden border-none shadow-sm bg-white dark:bg-slate-900 group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Pendapatan</p>
+                    <h3 className="text-2xl font-bold mt-1 truncate max-w-[150px]">
+                      {isDashboardLoading ? "..." : formatCurrency(stats.monthlyRevenue)}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                      <TrendingUp className="size-3 text-emerald-500" />
+                      <span className="text-emerald-500 font-semibold">+12%</span> bulan ini
+                    </p>
+                  </div>
+                  <div className="size-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                    <Receipt className="size-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden border-none shadow-sm bg-white dark:bg-slate-900 group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-orange-500" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Dalam Proses</p>
+                    <h3 className="text-3xl font-bold mt-1">{isDashboardLoading ? "..." : stats.activeWorkOrders}</h3>
+                    <p className="text-xs text-slate-400 mt-1">Antrian mekanik</p>
+                  </div>
+                  <div className="size-12 rounded-2xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
+                    <Wrench className="size-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden border-none shadow-sm bg-white dark:bg-slate-900 group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Pelanggan</p>
+                    <h3 className="text-3xl font-bold mt-1">{isDashboardLoading ? "..." : stats.totalCustomers}</h3>
+                    <p className="text-xs text-slate-400 mt-1">Database aktif</p>
+                  </div>
+                  <div className="size-12 rounded-2xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                    <Users className="size-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-4">
-            
-            {/* Main Content (Left, takes 3 columns on large screens) */}
-            <div className="xl:col-span-3 space-y-6">
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Main Area: Recent Orders and Revenue Chart */}
+            <div className="lg:col-span-2 space-y-8">
               
-              <div className="grid gap-6 lg:grid-cols-3">
-                {/* Order Servis Terbaru */}
-                <Card className="lg:col-span-2 shadow-sm border-slate-200">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg">Order Servis Terbaru</CardTitle>
-                <Link href="/admin/spk" className="flex text-sm text-blue-600 hover:underline">
-                  Lihat Semua
-                </Link>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
+              {/* Revenue Chart Section */}
+              <Card className="border-none shadow-sm bg-white dark:bg-slate-900 overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-lg">Analisis Pendapatan</CardTitle>
+                    <CardDescription>Tren pendapatan 7 hari terakhir</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="h-8 text-xs">7 Hari</Button>
+                    <Button variant="ghost" size="sm" className="h-8 text-xs">30 Hari</Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px] w-full relative">
+                    {isRevenueLoading ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 z-10">
+                        <Loader2 className="size-8 animate-spin text-primary" />
+                      </div>
+                    ) : chartData.length === 0 ? (
+                      <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm italic">
+                        Belum ada data transaksi untuk periode ini
+                      </div>
+                    ) : null}
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#F97316" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#F97316" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="date" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fontSize: 12, fill: "#94a3b8" }} 
+                          dy={10} 
+                        />
+                        <YAxis 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fontSize: 12, fill: "#94a3b8" }} 
+                          tickFormatter={(val) => `Rp${val / 1000000}jt`} 
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            borderRadius: '12px', 
+                            border: 'none', 
+                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                            backgroundColor: '#0f172a',
+                            color: '#fff'
+                          }}
+                          itemStyle={{ color: '#fff' }}
+                          formatter={(value: number) => [formatCurrency(value), 'Pendapatan']}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="value" 
+                          stroke="#F97316" 
+                          strokeWidth={3} 
+                          fillOpacity={1} 
+                          fill="url(#colorValue)" 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Orders Table */}
+              <Card className="border-none shadow-sm bg-white dark:bg-slate-900">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-lg">Order Servis Terbaru</CardTitle>
+                  <Button variant="ghost" size="sm" asChild className="text-primary hover:text-primary/80">
+                    <Link href="/admin/spk" className="flex items-center gap-1">
+                      Lihat Semua <ArrowUpRight className="size-4" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-none hover:bg-transparent">
-                        <TableHead className="font-semibold text-slate-900">No. Order</TableHead>
-                        <TableHead className="font-semibold text-slate-900">Pelanggan</TableHead>
-                        <TableHead className="font-semibold text-slate-900">Kendaraan</TableHead>
-                        <TableHead className="font-semibold text-slate-900">Jenis Servis</TableHead>
-                        <TableHead className="font-semibold text-slate-900">Mekanik</TableHead>
-                        <TableHead className="font-semibold text-slate-900">Status</TableHead>
+                      <TableRow className="bg-slate-50/50 dark:bg-slate-800/50 hover:bg-transparent">
+                        <TableHead className="font-semibold text-xs">NO. ORDER</TableHead>
+                        <TableHead className="font-semibold text-xs">PELANGGAN</TableHead>
+                        <TableHead className="font-semibold text-xs">KENDARAAN</TableHead>
+                        <TableHead className="font-semibold text-xs">MEKANIK</TableHead>
+                        <TableHead className="font-semibold text-xs text-right">TOTAL</TableHead>
+                        <TableHead className="font-semibold text-xs text-center">STATUS</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {isOrdersLoading ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center text-slate-500">
-                            <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Memuat data...
+                          <TableCell colSpan={6} className="h-32 text-center">
+                            <Loader2 className="h-6 w-6 animate-spin inline mr-2 text-slate-300" />
                           </TableCell>
                         </TableRow>
                       ) : recentOrders.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center text-slate-500">
-                            Belum ada order servis
-                          </TableCell>
+                          <TableCell colSpan={6} className="h-32 text-center text-slate-400">Belum ada order hari ini</TableCell>
                         </TableRow>
                       ) : (
                         recentOrders.map((order: any) => (
-                          <TableRow key={order.id}>
-                            <TableCell className="font-medium text-slate-700">{order.orderNumber}</TableCell>
-                            <TableCell>{order.customer?.name || '-'}</TableCell>
-                            <TableCell>{order.vehicle?.brand} {order.vehicle?.model}</TableCell>
-                            <TableCell>{formatCurrency(order.grandTotal)}</TableCell>
-                            <TableCell>{order.assignedMechanic?.name || '-'}</TableCell>
+                          <TableRow key={order.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <TableCell className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">{order.orderNumber}</TableCell>
+                            <TableCell className="text-sm font-medium">{order.customer?.name || '-'}</TableCell>
+                            <TableCell className="text-xs text-slate-500">
+                              {order.vehicle?.brand} {order.vehicle?.model}
+                            </TableCell>
                             <TableCell>
-                              <Badge className={`border-none shadow-none font-medium ${
-                                order.status === 'COMPLETED' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' :
-                                order.status === 'IN_PROGRESS' ? 'bg-amber-400 hover:bg-amber-500 text-slate-900' :
-                                'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                              }`}>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="size-6 border border-slate-200">
+                                  <AvatarFallback className="text-[10px]">{order.assignedMechanic?.name?.substring(0, 1)}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs">{order.assignedMechanic?.name || '-'}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-sm">
+                              {formatCurrency(Number(order.grandTotal))}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge className={cn(
+                                "border-none shadow-none text-[10px] font-bold px-2 py-0.5",
+                                order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                                order.status === 'IN_PROGRESS' ? 'bg-orange-100 text-orange-700' :
+                                'bg-slate-100 text-slate-600'
+                              )}>
                                 {order.status}
                               </Badge>
                             </TableCell>
@@ -168,318 +295,122 @@ export default function AdminDashboard() {
                       )}
                     </TableBody>
                   </Table>
-                </div>
-                <Button asChild variant="outline" className="w-full mt-4 text-amber-500 border-amber-200 hover:bg-amber-50 hover:text-amber-600 border-dashed">
-                  <Link href="/admin/spk/create">
-                    + Order Baru
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Grafik Pendapatan */}
-            <Card className="shadow-sm border-slate-200 flex flex-col items-center relative overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 w-full">
-                <CardTitle className="text-lg">Grafik Pendapatan</CardTitle>
-                <div className="text-sm border rounded-md px-2 py-1 text-slate-600 bg-white">7 Hari Terakhir ⌄</div>
-              </CardHeader>
-              <CardContent className="w-full flex-1 flex flex-col">
-                <div className="mb-4">
-                  <p className="text-sm text-slate-500">Total Pendapatan</p>
-                  <h3 className="text-2xl font-bold">Rp 78.650.000</h3>
-                  <p className="text-xs font-semibold text-emerald-500 mt-1">+12% <span className="text-slate-400 font-normal">dari periode sebelumnya</span></p>
-                </div>
-                <div className="flex-1 w-full min-h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#64748B" }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#64748B" }} tickFormatter={(val) => `${val / 1000000}M`} />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [`Rp ${value.toLocaleString('id-ID')}`, 'Pendapatan']}
-                      />
-                      <Line type="monotone" dataKey="value" stroke="#FBBF24" strokeWidth={3} dot={{ r: 4, fill: "#FBBF24", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 6 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-              {/* Optional background gradient effect as shown in design */}
-              <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-amber-100/30 to-transparent pointer-events-none"></div>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Stok Barang */}
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg">Stok Barang</CardTitle>
-                <Link href="/admin/inventory" className="flex text-sm text-blue-600 hover:underline">
-                  Lihat Semua
-                </Link>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-none hover:bg-transparent">
-                      <TableHead className="font-semibold text-slate-900">Nama Barang</TableHead>
-                      <TableHead className="font-semibold text-slate-900">Kategori</TableHead>
-                      <TableHead className="font-semibold text-slate-900 text-center">Stok</TableHead>
-                      <TableHead className="font-semibold text-slate-900">Satuan</TableHead>
-                      <TableHead className="font-semibold text-slate-900 text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLowStockLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center text-slate-500">
-                          <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Memuat data...
-                        </TableCell>
-                      </TableRow>
-                    ) : lowStockItems.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center text-slate-500">
-                          Tidak ada barang menipis
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      lowStockItems.map((item: any) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium text-slate-700">{item.name}</TableCell>
-                          <TableCell>{item.category}</TableCell>
-                          <TableCell className="text-center font-bold text-red-500">{item.stock_quantity}</TableCell>
-                          <TableCell>{item.unit}</TableCell>
-                          <TableCell className="text-right">
-                            <Link href="/admin/inventory">
-                              <Button variant="ghost" size="icon" className="h-6 w-6"><Pencil className="size-3 text-slate-500" /></Button>
-                            </Link>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            {/* Aktivitas Mekanik */}
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg">Aktivitas Mekanik</CardTitle>
-                <Link href="/admin/mechanics" className="flex text-sm text-blue-600 hover:underline">
-                  Lihat Semua
-                </Link>
-              </CardHeader>
-              <CardContent className="flex flex-col h-full space-y-5 pt-3">
-                
-                {isMechanicsLoading ? (
-                  <div className="flex items-center justify-center h-24">
-                    <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-                  </div>
-                ) : topMechanics.length === 0 ? (
-                  <div className="flex items-center justify-center h-24 text-sm text-slate-500">
-                    Belum ada data mekanik aktif
-                  </div>
-                ) : (
-                  topMechanics.map((mechanic: any, index: number) => (
-                    <div key={mechanic.id} className="flex items-center gap-3">
-                      <Avatar className="size-10">
-                        <AvatarImage src={`https://i.pravatar.cc/150?u=${mechanic.id}`} />
-                        <AvatarFallback>{mechanic.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-slate-900">{mechanic.name}</p>
-                        <p className="text-xs text-amber-500 font-medium">{mechanic.inProgress} SPK aktif</p>
-                        <p className="text-xs text-slate-500 truncate">{mechanic.completed} SPK terselesaikan</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-sm text-slate-900">{formatCurrency(mechanic.totalRevenue)}</p>
-                        <p className="text-[10px] text-slate-500">Hasilkan</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-
-                <div className="mt-auto pt-4">
-                  <Button asChild variant="outline" className="w-full text-amber-500 border-amber-200">
-                    <Link href="/admin/mechanics">
-                      Lihat Semua Mekanik
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pengingat */}
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg">Pengingat</CardTitle>
-                <Link href="/admin/reports" className="flex text-sm text-blue-600 hover:underline">
-                  Lihat Semua
-                </Link>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-3">
-                <Link href="/admin/inventory" className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-red-100 text-red-500 shrink-0">
-                    <AlertTriangle className="size-6" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-slate-900">Stok Oli Mesin Shell AX7</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Tersisa 12 Botol</p>
-                  </div>
-                  <ChevronRight className="size-5 text-slate-300" />
-                </Link>
-
-                <Link href="/admin/schedule" className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-amber-100 text-amber-500 shrink-0">
-                    <CalendarClock className="size-6" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-slate-900">Jadwal Servis Berkala</p>
-                    <p className="text-xs text-slate-500 mt-0.5">5 kendaraan perlu servis berkala</p>
-                  </div>
-                  <ChevronRight className="size-5 text-slate-300" />
-                </Link>
-
-                <Link href="/admin/invoices" className="flex items-center gap-4 bg-white p-2 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100">
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shrink-0">
-                    <Receipt className="size-6" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-slate-900">Pembayaran Tertunda</p>
-                    <p className="text-xs text-slate-500 mt-0.5">3 order belum lunas</p>
-                  </div>
-                  <ChevronRight className="size-5 text-slate-300" />
-                </Link>
-              </CardContent>
-            </Card>
-
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Right Column Content */}
-            <div className="space-y-6">
-              <SpecialPromo />
+            {/* Side Column: Sidebar Tools, Mechanics, Low Stock */}
+            <div className="space-y-8">
               
-              {/* Menu Cepat */}
-              <Card className="shadow-sm border-slate-200">
-                <CardHeader className="pb-3 border-b border-slate-100">
-                  <CardTitle className="text-lg">Menu Cepat</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 px-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Link href="/admin/spk" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
-                      <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
-                        <ClipboardList className="size-5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-700">Order Servis</span>
-                    </Link>
+              {/* Promo Menarik */}
+              <PromoCarousel />
 
-                    <Link href="/admin/schedule" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
-                      <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
-                        <Calendar className="size-5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-700">Jadwal</span>
-                    </Link>
-
-                    <Link href="/admin/customers" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
-                      <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
-                        <Users className="size-5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-700">Pelanggan</span>
-                    </Link>
-
-                    <Link href="/admin/inventory" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
-                      <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
-                        <Package className="size-5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-700">Stok Barang</span>
-                    </Link>
-
-                    <Link href="/admin/invoices" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
-                      <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
-                        <Receipt className="size-5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-700">Pembayaran</span>
-                    </Link>
-
-                    <Link href="/admin/reports" className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer text-center group">
-                      <div className="bg-slate-900 rounded-lg p-2 text-[#FFC107] mb-2 group-hover:scale-110 transition-transform">
-                        <BarChart3 className="size-5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-700">Laporan</span>
-                    </Link>
+              {/* Low Stock Alerts */}
+              <Card className="border-none shadow-sm bg-white dark:bg-slate-900">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Stok Kritis</CardTitle>
+                    <CardDescription>Barang perlu segera diorder</CardDescription>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Ringkasan Hari Ini */}
-              <Card className="shadow-sm border-slate-200">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100">
-                  <CardTitle className="text-lg">Ringkasan Hari Ini</CardTitle>
-                  <Link href="/admin/reports" className="flex text-[11px] text-blue-600 hover:underline font-medium">
-                    Lihat Detail
-                  </Link>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-                    <div>
-                      <h4 className="text-xl font-bold">{isDashboardLoading ? "..." : stats.todayWorkOrders}</h4>
-                      <p className="text-[11px] text-slate-500">Total Order</p>
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold">{isDashboardLoading ? "..." : stats.activeWorkOrders}</h4>
-                      <p className="text-[11px] text-slate-500">Dalam Proses</p>
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold">{isDashboardLoading ? "..." : stats.totalCustomers}</h4>
-                      <p className="text-[11px] text-slate-500">Total Pelanggan</p>
-                    </div>
-                    <div>
-                      <h4 className="text-[17px] font-bold">{isDashboardLoading ? "..." : formatCurrency(stats.monthlyRevenue)}</h4>
-                      <p className="text-[11px] text-slate-500">Pendapatan Bulanan</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Order Terbaru (Side Panel) */}
-              <Card className="shadow-sm border-slate-200">
-                <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100">
-                  <CardTitle className="text-lg">Order Terbaru</CardTitle>
-                  <Link href="/admin/spk" className="flex text-[11px] text-blue-600 hover:underline font-medium">
-                    Lihat Semua
-                  </Link>
+                  <Badge variant="destructive" className="animate-pulse">
+                    {stats.lowStockCount} Item
+                  </Badge>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-4">
-                  {isOrdersLoading ? (
-                    <div className="flex items-center justify-center p-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-                    </div>
-                  ) : recentOrders.length === 0 ? (
-                    <div className="text-center p-4 text-sm text-slate-500">Belum ada order</div>
+                  {isLowStockLoading ? (
+                    <div className="flex justify-center p-4"><Loader2 className="size-5 animate-spin" /></div>
+                  ) : lowStockItems.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">Semua stok aman</p>
                   ) : (
-                    recentOrders.map((order: any) => (
-                      <div key={order.id} className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-bold text-slate-900">{order.orderNumber}</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5">{order.customer?.name}</p>
+                    lowStockItems.map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between group">
+                        <div className="flex gap-3 items-center">
+                          <div className="size-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500">
+                            <Package className="size-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold truncate max-w-[120px]">{item.name}</p>
+                            <p className="text-[10px] text-slate-400 uppercase font-semibold">{item.category}</p>
+                          </div>
                         </div>
-                        <Badge className={`border-none shadow-none text-[10px] px-2 py-0 ${
-                          order.status === 'COMPLETED' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' :
-                          order.status === 'IN_PROGRESS' ? 'bg-[#FFC107] hover:bg-[#FFC107]/90 text-slate-900' :
-                          'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                        }`}>
-                          {order.status}
-                        </Badge>
+                        <div className="text-right">
+                          <p className="text-sm font-black text-red-600">{item.stockQuantity ?? item.stock_quantity}</p>
+                          <p className="text-[10px] text-slate-400">{item.unit}</p>
+                        </div>
                       </div>
                     ))
                   )}
+                  <Button variant="outline" className="w-full mt-2 text-xs border-dashed" asChild>
+                    <Link href="/admin/inventory">Lihat Semua Inventori</Link>
+                  </Button>
                 </CardContent>
               </Card>
 
-            </div>
+              {/* Performance Mechanics */}
+              <Card className="border-none shadow-sm bg-white dark:bg-slate-900">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Kinerja Mekanik</CardTitle>
+                  <CardDescription>3 Mekanik terbaik bulan ini</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5 pt-4">
+                  {isMechanicsLoading ? (
+                    <div className="flex justify-center p-4"><Loader2 className="size-5 animate-spin" /></div>
+                  ) : topMechanics.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">Data tidak tersedia</p>
+                  ) : (
+                    topMechanics.map((mechanic: any, index: number) => (
+                      <div key={mechanic.id} className="flex items-center gap-4">
+                        <div className="relative">
+                          <Avatar className="size-12 border-2 border-white shadow-sm">
+                            <AvatarImage src={`https://i.pravatar.cc/150?u=${mechanic.id}`} />
+                            <AvatarFallback>{mechanic.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="absolute -bottom-1 -right-1 size-5 bg-amber-400 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white shadow-sm">
+                            {index + 1}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate">{mechanic.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Badge variant="outline" className="text-[10px] py-0 px-1 border-emerald-200 text-emerald-600">
+                              {mechanic.completed} Selesai
+                            </Badge>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {mechanic.inProgress} Aktif
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-black text-slate-900">{formatCurrency(mechanic.totalRevenue)}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <Button variant="ghost" className="w-full mt-2 text-xs text-slate-500 hover:text-primary" asChild>
+                    <Link href="/admin/mechanics">Analisis Performa Mekanik</Link>
+                  </Button>
+                </CardContent>
+              </Card>
 
+              {/* Quick Reminders */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="border-none shadow-sm bg-blue-600 text-white p-4">
+                  <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center mb-3">
+                    <Clock className="size-4" />
+                  </div>
+                  <h4 className="text-xl font-black">{stats.activeWorkOrders}</h4>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-blue-100">Sedang Antre</p>
+                </Card>
+                <Card className="border-none shadow-sm bg-amber-500 text-white p-4">
+                  <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center mb-3">
+                    <AlertTriangle className="size-4" />
+                  </div>
+                  <h4 className="text-xl font-black">{stats.pendingInvoices}</h4>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-100">Belum Lunas</p>
+                </Card>
+              </div>
+
+            </div>
           </div>
         </div>
       </div>

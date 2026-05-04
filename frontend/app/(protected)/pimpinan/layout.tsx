@@ -1,7 +1,7 @@
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { PimpinanSidebar } from "@/components/pimpinan/pimpinan-sidebar"
+import type { Metadata } from "next"
+import { PimpinanLayoutClient } from "./layout-client"
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "AutoServis - Pimpinan Dashboard",
   description: "Dashboard pimpinan bengkel otomotif",
 }
@@ -11,12 +11,5 @@ export default function PimpinanLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <SidebarProvider>
-      <PimpinanSidebar />
-      <SidebarInset className="flex flex-col relative w-full">
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
-  )
+  return <PimpinanLayoutClient>{children}</PimpinanLayoutClient>
 }

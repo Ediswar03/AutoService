@@ -19,18 +19,21 @@ import { id as localeId } from "date-fns/locale"
 import { PartRequestDialog } from "@/components/mekanik/PartRequestDialog"
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  PENDING: { label: "Pending", className: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-  IN_PROGRESS: { label: "Dikerjakan", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
-  WAITING_PARTS: { label: "Tunggu Parts", className: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
-  COMPLETED: { label: "Selesai", className: "bg-green-500/10 text-green-600 border-green-500/20" },
-  CANCELLED: { label: "Dibatalkan", className: "bg-red-500/10 text-red-600 border-red-500/20" },
+  DRAFT:         { label: "Draft", className: "bg-slate-100 dark:bg-zinc-500/10 text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-500/20" },
+  PENDING:       { label: "Menunggu", className: "bg-amber-100 dark:bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-500/20" },
+  IN_PROGRESS:   { label: "Dikerjakan", className: "bg-blue-100 dark:bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-500/20" },
+  WAITING_PARTS: { label: "Tunggu Part", className: "bg-orange-100 dark:bg-orange-500/10 text-orange-600 border-orange-200 dark:border-orange-500/20" },
+  QUALITY_CHECK: { label: "Pengecekan", className: "bg-purple-100 dark:bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-500/20" },
+  COMPLETED:     { label: "Selesai", className: "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-500/20" },
+  INVOICED:      { label: "Selesai (Invoiced)", className: "bg-teal-100 dark:bg-teal-500/10 text-teal-600 border-teal-200 dark:border-teal-500/20" },
+  CANCELLED:     { label: "Dibatalkan", className: "bg-red-100 dark:bg-red-500/10 text-red-600 border-red-200 dark:border-red-500/20" },
 }
 
 const priorityConfig: Record<string, { label: string; className: string }> = {
-  LOW: { label: "Low", className: "text-zinc-500" },
-  NORMAL: { label: "Normal", className: "text-blue-400" },
-  HIGH: { label: "High", className: "text-amber-400" },
-  URGENT: { label: "Urgent", className: "text-red-400" },
+  LOW:    { label: "Low", className: "text-slate-500 dark:text-zinc-500" },
+  NORMAL: { label: "Normal", className: "text-blue-500 dark:text-blue-400" },
+  HIGH:   { label: "High", className: "text-amber-500 dark:text-amber-400" },
+  URGENT: { label: "Urgent", className: "text-red-500 dark:text-red-400" },
 }
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,7 +61,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
         <Loader2 className="size-8 animate-spin text-primary" />
-        <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Loading Job Data...</p>
+        <p className="text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-widest text-xs">Loading Job Data...</p>
       </div>
     )
   }
@@ -66,15 +69,15 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   if (error || !job) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-6 px-6 text-center">
-        <div className="size-20 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
+        <div className="size-20 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center border border-red-200 dark:border-red-500/20">
           <AlertTriangle className="size-10 text-red-500" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-xl font-black uppercase italic text-white">Job Not Found</h3>
-          <p className="text-zinc-500 text-sm">SPK tidak ditemukan atau Anda tidak memiliki akses.</p>
+          <h3 className="text-xl font-black uppercase italic text-slate-900 dark:text-white">Job Not Found</h3>
+          <p className="text-slate-500 dark:text-zinc-500 text-sm">SPK tidak ditemukan atau Anda tidak memiliki akses.</p>
         </div>
         <Link href="/mekanik/jobs">
-          <Button variant="outline" className="rounded-xl border-white/10 text-zinc-400 uppercase font-black text-xs h-12 px-8">
+          <Button variant="outline" className="rounded-xl border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400 uppercase font-black text-xs h-12 px-8">
             Back to Jobs
           </Button>
         </Link>
@@ -82,16 +85,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     )
   }
 
-  const status = statusConfig[job.status] || { label: job.status, className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" }
-  const priority = priorityConfig[job.priority] || { label: job.priority, className: "text-zinc-500" }
+  const status = statusConfig[job.status] || { label: job.status, className: "bg-slate-100 dark:bg-zinc-500/10 text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-500/20" }
+  const priority = priorityConfig[job.priority] || { label: job.priority, className: "text-slate-500 dark:text-zinc-500" }
 
   return (
     <div className="space-y-6 pb-20">
       {/* Detail Header Info */}
       <div className="flex items-center justify-between px-1">
         <div className="space-y-1">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Workshop Task</span>
-          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white leading-none">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-zinc-500">Workshop Task</span>
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900 dark:text-white leading-none">
             {job.orderNumber}
           </h2>
         </div>
@@ -101,12 +104,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </Badge>
       </div>
 
-      <div className="flex items-center gap-4 text-[10px] font-mono text-zinc-500 uppercase tracking-widest border-y border-white/5 py-3 px-1">
+      <div className="flex items-center gap-4 text-[10px] font-mono text-slate-500 dark:text-zinc-500 uppercase tracking-widest border-y border-slate-200 dark:border-white/5 py-3 px-1">
          <span className="flex items-center gap-1.5">
            <Clock className="h-3 w-3" /> 
            {format(new Date(job.createdAt), 'HH:mm', { locale: localeId })} WIB
          </span>
-         <span className="h-3 w-px bg-white/10" />
+         <span className="h-3 w-px bg-slate-200 dark:bg-white/10" />
          <span className="flex items-center gap-1.5">
            <Calendar className="h-3 w-3" /> 
            {format(new Date(job.createdAt), 'dd MMM yyyy', { locale: localeId })}
@@ -117,19 +120,19 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       {/* Customer & Vehicle Grid */}
       <div className="grid gap-6">
         <div className="space-y-3">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2 px-1">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2 px-1">
             <User className="h-3 w-3 text-primary" /> Informasi Pemilik
           </h4>
-          <Card className="bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden">
+          <Card className="bg-white dark:bg-zinc-900/50 rounded-2xl border border-slate-200 dark:border-white/5 overflow-hidden shadow-sm dark:shadow-none">
             <CardContent className="p-5 flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xl font-black text-zinc-100 uppercase italic tracking-tight">{job.customer?.name}</p>
-                <p className="text-xs font-mono text-zinc-400 flex items-center gap-1.5 leading-none">
-                  <Phone className="h-3 w-3" /> {job.customer?.phone}
+                <p className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase italic tracking-tight">{job.customer?.name}</p>
+                <p className="text-xs font-mono text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 leading-none">
+                  <Phone className="h-3 w-3" /> {job.customer?.phone || "-"}
                 </p>
-                <p className="text-[10px] text-zinc-500 font-medium">{job.customer?.email || 'No email provided'}</p>
+                <p className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">{job.customer?.email || 'No email provided'}</p>
               </div>
-              <Button size="icon" variant="outline" className="rounded-xl bg-zinc-950 border-white/10 text-primary active:scale-90 transition-transform">
+              <Button size="icon" variant="outline" className="rounded-xl bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-white/10 text-primary active:scale-90 transition-transform">
                 <Phone className="h-4 w-4" />
               </Button>
             </CardContent>
@@ -137,37 +140,37 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </div>
 
         <div className="space-y-3">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2 px-1">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2 px-1">
             <Car className="h-3 w-3 text-primary" /> Spesifikasi Unit
           </h4>
-          <div className="bg-zinc-900/50 rounded-3xl border border-white/5 p-4 grid grid-cols-2 gap-3">
+          <div className="bg-white dark:bg-zinc-900/50 rounded-3xl border border-slate-200 dark:border-white/5 p-4 grid grid-cols-2 gap-3 shadow-sm dark:shadow-none">
             {[
               { label: "Merk/Model", value: `${job.vehicle?.brand} ${job.vehicle?.model}`, icon: Info },
               { label: "Plat Nomor", value: job.vehicle?.licensePlate, icon: ShieldCheck, isPrimary: true },
-              { label: "Warna", value: job.vehicle?.color, icon: Info },
+              { label: "Warna", value: job.vehicle?.color || "-", icon: Info },
               { label: "Kilometer In", value: `${(job.odometerIn || 0).toLocaleString()} KM`, icon: Clock },
             ].map((item, idx) => (
-              <div key={idx} className="bg-black/40 rounded-2xl p-4 border border-white/5 flex flex-col justify-center">
-                <p className="text-[8px] text-zinc-600 font-black uppercase mb-1">{item.label}</p>
-                <p className={cn("text-[11px] font-black uppercase truncate", item.isPrimary ? "text-primary font-mono" : "text-zinc-200")}>{item.value}</p>
+              <div key={idx} className="bg-slate-50 dark:bg-black/40 rounded-2xl p-4 border border-slate-100 dark:border-white/5 flex flex-col justify-center">
+                <p className="text-[8px] text-slate-500 dark:text-zinc-600 font-black uppercase mb-1">{item.label}</p>
+                <p className={cn("text-[11px] font-black uppercase truncate", item.isPrimary ? "text-primary font-mono" : "text-slate-800 dark:text-zinc-200")}>{item.value}</p>
               </div>
             ))}
-            <div className="bg-black/40 rounded-2xl p-4 border border-white/5 col-span-2">
-              <p className="text-[8px] text-zinc-600 font-black uppercase mb-1">Nomor Rangka (VIN)</p>
-              <p className="text-[11px] font-black text-zinc-400 font-mono tracking-wider">{job.vehicle?.vin || '-'}</p>
+            <div className="bg-slate-50 dark:bg-black/40 rounded-2xl p-4 border border-slate-100 dark:border-white/5 col-span-2">
+              <p className="text-[8px] text-slate-500 dark:text-zinc-600 font-black uppercase mb-1">Nomor Rangka (VIN)</p>
+              <p className="text-[11px] font-black text-slate-600 dark:text-zinc-400 font-mono tracking-wider">{job.vehicle?.vin || '-'}</p>
             </div>
           </div>
         </div>
 
         <div className="space-y-3">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2 px-1">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2 px-1">
             <Wrench className="h-3 w-3 text-primary" /> Instruksi Kerja
           </h4>
-          <div className="bg-zinc-900 rounded-[32px] border border-white/5 overflow-hidden">
-            <div className="bg-primary/10 px-6 py-4 border-b border-white/5 flex items-center justify-between">
+          <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-200 dark:border-white/5 overflow-hidden shadow-sm dark:shadow-none">
+            <div className="bg-primary/10 px-6 py-4 border-b border-primary/20 dark:border-white/5 flex items-center justify-between">
               <span className="text-sm font-black text-primary uppercase italic tracking-tight">Main Complaint</span>
               {job.estimatedCompletion && (
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest">
                   Est. {format(new Date(job.estimatedCompletion), 'dd MMM')}
                 </span>
               )}
@@ -175,12 +178,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <div className="p-6 space-y-5">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="h-3 w-3 text-zinc-500" />
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Keluhan Pelanggan</span>
+                  <MessageSquare className="h-3 w-3 text-slate-400 dark:text-zinc-500" />
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-wider">Keluhan Pelanggan</span>
                 </div>
-                <div className="bg-black/30 rounded-2xl p-5 border border-white/5 border-dashed">
-                  <p className="text-sm text-zinc-300 italic font-medium leading-relaxed">
-                    &ldquo;{job.customerComplaints}&rdquo;
+                <div className="bg-slate-50 dark:bg-black/30 rounded-2xl p-5 border border-slate-200 dark:border-white/5 border-dashed">
+                  <p className="text-sm text-slate-700 dark:text-zinc-300 italic font-medium leading-relaxed">
+                    &ldquo;{job.customerComplaints || '-'}&rdquo;
                   </p>
                 </div>
               </div>
@@ -189,10 +192,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 <div>
                   <div className="flex items-center gap-2 mb-2 font-black">
                     <AlertTriangle className="h-3 w-3 text-amber-500" />
-                    <span className="text-[10px] font-bold text-amber-500/70 uppercase tracking-wider">Catatan Service Advisor</span>
+                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-500/70 uppercase tracking-wider">Catatan Service Advisor</span>
                   </div>
-                  <div className="bg-amber-500/5 rounded-2xl p-5 border border-amber-500/10">
-                    <p className="text-sm text-amber-200/70 font-medium italic">
+                  <div className="bg-amber-50 dark:bg-amber-500/5 rounded-2xl p-5 border border-amber-200 dark:border-amber-500/10">
+                    <p className="text-sm text-amber-700 dark:text-amber-200/70 font-medium italic">
                       &ldquo;{job.internalNotes}&rdquo;
                     </p>
                   </div>
@@ -209,7 +212,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <Button 
             disabled={isUpdating}
             onClick={() => handleUpdateStatus('IN_PROGRESS')}
-            className="w-full h-14 bg-primary text-black font-black uppercase text-sm tracking-[0.2em] shadow-[0_8px_30px_rgba(var(--primary),0.3)] rounded-2xl border-b-4 border-black/20 active:border-b-0 active:translate-y-1 transition-all"
+            className="w-full h-14 bg-primary text-white dark:text-black font-black uppercase text-sm tracking-[0.2em] shadow-[0_8px_30px_rgba(var(--primary),0.3)] rounded-2xl border-b-4 border-black/10 dark:border-black/20 active:border-b-0 active:translate-y-1 transition-all"
           >
             {isUpdating ? <Loader2 className="animate-spin size-5" /> : <Play className="size-5 mr-3" />}
             MULAI KERJAKAN
@@ -218,25 +221,35 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
         {job.status === "IN_PROGRESS" && (
           <>
-            <Button 
-              disabled={isUpdating}
-              onClick={() => handleUpdateStatus('COMPLETED')}
-              className="w-full h-14 bg-primary text-black font-black uppercase text-sm tracking-[0.2em] shadow-[0_8px_30px_rgba(var(--primary),0.3)] rounded-2xl border-b-4 border-black/20 active:border-b-0 active:translate-y-1 transition-all"
-            >
-              {isUpdating ? <Loader2 className="animate-spin size-5" /> : <CheckCircle2 className="h-5 w-5 mr-3" />}
-              SELESAIKAN PEKERJAAN
-            </Button>
+            <div className="grid grid-cols-1 gap-3">
+              <Button 
+                disabled={isUpdating}
+                onClick={() => handleUpdateStatus('QUALITY_CHECK')}
+                className="w-full h-14 bg-purple-600 text-white font-black uppercase text-sm tracking-[0.2em] shadow-lg rounded-2xl border-b-4 border-purple-800 active:border-b-0 active:translate-y-1 transition-all"
+              >
+                {isUpdating ? <Loader2 className="animate-spin size-5" /> : <ClipboardCheck className="h-5 w-5 mr-3" />}
+                AJUKAN PENGECEKAN (QC)
+              </Button>
+              <Button 
+                disabled={isUpdating}
+                onClick={() => handleUpdateStatus('COMPLETED')}
+                className="w-full h-14 bg-orange-500 text-white font-black uppercase text-sm tracking-[0.2em] shadow-lg rounded-2xl border-b-4 border-orange-700 active:border-b-0 active:translate-y-1 transition-all"
+              >
+                {isUpdating ? <Loader2 className="animate-spin size-5" /> : <CheckCircle2 className="h-5 w-5 mr-3" />}
+                SELESAI (LANGSUNG)
+              </Button>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <Button 
                 variant="outline" 
                 onClick={() => setRequestDialogOpen(true)}
-                className="w-full h-14 bg-zinc-900 border-white/5 text-zinc-300 font-black uppercase text-[10px] tracking-widest rounded-2xl"
+                className="w-full h-14 bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 text-slate-700 dark:text-zinc-300 font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-sm dark:shadow-none"
               >
                 <Package className="h-4 w-4 mr-2" />
                 Request Parts
               </Button>
-              <Link href={`/mekanik/jobs/${id}/inspection`}>
-                <Button variant="outline" className="w-full h-14 bg-zinc-900 border-white/5 text-zinc-300 font-black uppercase text-[10px] tracking-widest rounded-2xl">
+              <Link href={`/mekanik/jobs/${id}/inspection`} className="w-full">
+                <Button variant="outline" className="w-full h-14 bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 text-slate-700 dark:text-zinc-300 font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-sm dark:shadow-none">
                   <ClipboardCheck className="h-4 w-4 mr-2" />
                   Inspeksi
                 </Button>
@@ -245,14 +258,22 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </>
         )}
 
+        {job.status === "QUALITY_CHECK" && (
+          <div className="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-2xl p-6 text-center">
+            <Clock className="h-10 w-10 text-purple-500 mx-auto mb-4 animate-pulse" />
+            <h4 className="text-purple-700 dark:text-white font-bold uppercase tracking-widest">Menunggu Pengecekan</h4>
+            <p className="text-purple-600/70 dark:text-zinc-500 text-xs mt-1">Pekerjaan sedang diverifikasi oleh Supervisor/Admin.</p>
+          </div>
+        )}
+
         {job.status === "WAITING_PARTS" && (
           <Button 
             disabled={isUpdating}
             onClick={() => handleUpdateStatus('IN_PROGRESS')}
-            className="w-full h-14 bg-amber-500 text-black font-black uppercase text-sm tracking-[0.2em] shadow-[0_8px_30px_rgba(245,158,11,0.3)] rounded-2xl border-b-4 border-black/20 active:border-b-0 active:translate-y-1 transition-all"
+            className="w-full h-14 bg-amber-500 text-white dark:text-black font-black uppercase text-sm tracking-[0.2em] shadow-lg rounded-2xl border-b-4 border-amber-600 dark:border-amber-700 active:border-b-0 active:translate-y-1 transition-all"
           >
             {isUpdating ? <Loader2 className="animate-spin size-5" /> : <Wrench className="size-5 mr-3" />}
-            PARTS READY: LANJUTKAN
+            PART TERSEDIA: LANJUTKAN
           </Button>
         )}
       </div>

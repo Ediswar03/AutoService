@@ -35,7 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { InputGroup, InputGroupInput, InputGroupAddon } from '@/components/ui/input-group'
 import { Pagination } from '@/components/shared/Pagination'
 import { fetcher, formatCurrency } from '@/lib/api-client'
 import type { Invoice, PaginatedResponse } from '@/types'
@@ -52,12 +51,14 @@ export default function KasirPage() {
   )
 
   const getStatusBadge = (invoiceStatus: string) => {
-    switch (invoiceStatus) {
-      case 'paid':
+    const status = invoiceStatus.toUpperCase();
+    switch (status) {
+      case 'PAID':
         return <Badge className="bg-green-100 text-green-800"><CheckCircle className="mr-1 h-3 w-3" />Lunas</Badge>
-      case 'partial':
+      case 'PARTIAL':
         return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="mr-1 h-3 w-3" />Sebagian</Badge>
-      case 'unpaid':
+      case 'SENT':
+      case 'DRAFT':
         return <Badge className="bg-red-100 text-red-800"><AlertCircle className="mr-1 h-3 w-3" />Belum Bayar</Badge>
       default:
         return <Badge variant="secondary">{invoiceStatus}</Badge>
@@ -66,12 +67,12 @@ export default function KasirPage() {
 
   // Stats calculation
   const stats = {
-    totalUnpaid: data?.data.filter(i => i.status === 'unpaid').length || 0,
-    totalPartial: data?.data.filter(i => i.status === 'partial').length || 0,
-    totalPaid: data?.data.filter(i => i.status === 'paid').length || 0,
+    totalUnpaid: data?.data.filter(i => i.status === 'SENT' || i.status === 'DRAFT').length || 0,
+    totalPartial: data?.data.filter(i => i.status === 'PARTIAL').length || 0,
+    totalPaid: data?.data.filter(i => i.status === 'PAID').length || 0,
     pendingAmount: data?.data
-      .filter(i => i.status !== 'paid')
-      .reduce((sum, i) => sum + (i.grand_total - i.jumlah_dibayar), 0) || 0,
+      .filter(i => i.status !== 'PAID')
+      .reduce((sum, i) => sum + (Number(i.grandTotal) - Number(i.amountPaid)), 0) || 0,
   }
 
   return (
@@ -135,28 +136,27 @@ export default function KasirPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 md:flex-row md:items-center mb-6">
-            <InputGroup className="flex-1">
-              <InputGroupAddon>
-                <Search className="h-4 w-4" />
-              </InputGroupAddon>
-              <InputGroupInput
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 placeholder="Cari no. invoice, pelanggan..."
+                className="pl-9"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value)
                   setPage(1)
                 }}
               />
-            </InputGroup>
+            </div>
             <Select value={status} onValueChange={(val) => { setStatus(val); setPage(1); }}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="unpaid">Belum Bayar</SelectItem>
-                <SelectItem value="partial">Bayar Sebagian</SelectItem>
-                <SelectItem value="paid">Lunas</SelectItem>
+                <SelectItem value="SENT">Belum Bayar</SelectItem>
+                <SelectItem value="PARTIAL">Bayar Sebagian</SelectItem>
+                <SelectItem value="PAID">Lunas</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -191,24 +191,24 @@ export default function KasirPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.data.map((invoice) => (
+                    {data.data.map((invoice: any) => (
                       <TableRow key={invoice.id}>
                         <TableCell className="font-mono font-medium">
-                          {invoice.nomor_invoice}
+                          {invoice.invoiceNumber}
                         </TableCell>
                         <TableCell>
-                          {format(new Date(invoice.created_at), 'dd MMM yyyy', { locale: id })}
+                          {format(new Date(invoice.createdAt), 'dd MMM yyyy', { locale: id })}
                         </TableCell>
-                        <TableCell>{invoice.spk?.customer?.nama || '-'}</TableCell>
-                        <TableCell className="font-mono">{invoice.spk?.vehicle?.nomor_polisi || '-'}</TableCell>
+                        <TableCell>{invoice.customer?.name || '-'}</TableCell>
+                        <TableCell className="font-mono">{invoice.workOrder?.vehicle?.licensePlate || '-'}</TableCell>
                         <TableCell className="text-right font-medium">
-                          {formatCurrency(invoice.grand_total)}
+                          {formatCurrency(Number(invoice.grandTotal))}
                         </TableCell>
                         <TableCell className="text-right text-green-600">
-                          {formatCurrency(invoice.jumlah_dibayar)}
+                          {formatCurrency(Number(invoice.amountPaid))}
                         </TableCell>
                         <TableCell className="text-right text-red-600">
-                          {formatCurrency(invoice.grand_total - invoice.jumlah_dibayar)}
+                          {formatCurrency(Number(invoice.grandTotal) - Number(invoice.amountPaid))}
                         </TableCell>
                         <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                         <TableCell>
@@ -220,7 +220,7 @@ export default function KasirPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {invoice.status !== 'paid' && (
+                            {invoice.status !== 'PAID' && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -240,10 +240,10 @@ export default function KasirPage() {
                 </Table>
               </div>
 
-              {data.meta && (
+              {data.pagination && (
                 <Pagination
-                  currentPage={data.meta.current_page}
-                  totalPages={data.meta.last_page}
+                  currentPage={data.pagination.page}
+                  totalPages={data.pagination.totalPages}
                   onPageChange={setPage}
                 />
               )}

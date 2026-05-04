@@ -106,7 +106,7 @@ export default function VehiclesPage() {
                   </CardDescription>
                 </div>
                 <Link href="/admin/vehicles/create">
-                  <Button>
+                  <Button className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm">
                     <Plus className="mr-2 size-4" />
                     Tambah Kendaraan
                   </Button>

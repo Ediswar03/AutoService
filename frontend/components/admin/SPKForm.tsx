@@ -126,7 +126,7 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
   const items = watch('items')
   const estimatedCompletion = watch('estimatedCompletion')
 
-  const selectedCustomer = (customers as any)?.data?.find((c: any) => c.id === selectedCustomerId)
+  const selectedCustomer = (customers as any)?.find((c: any) => c.id === selectedCustomerId)
   const customerVehicles = selectedCustomer?.vehicles || []
 
   const formatCurrency = (value: number) => {
@@ -179,10 +179,10 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
 
   const getItemName = (item: any) => {
     if (item.tipe === 'jasa') {
-      const svc = (services as any)?.data?.find((s: any) => s.id === item.item_id)
+      const svc = (services as any)?.find((s: any) => s.id === item.item_id)
       return svc?.name ?? '-'
     }
-    const part = (spareparts as any)?.data?.find((s: any) => s.id === item.item_id)
+    const part = (spareparts as any)?.find((s: any) => s.id === item.item_id)
     return part?.name ?? '-'
   }
 
@@ -242,7 +242,7 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                       <CommandList>
                         <CommandEmpty>Tidak ditemukan</CommandEmpty>
                         <CommandGroup>
-                          {(customers as any)?.data?.map((customer: any) => (
+                          {(customers as any)?.map((customer: any) => (
                             <CommandItem
                               key={customer.id}
                               onSelect={() => {
@@ -331,7 +331,7 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                     <SelectValue placeholder="Pilih mekanik (opsional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(mekaniks as any)?.data?.map((mekanik: any) => (
+                    {(mekaniks as any)?.map((mekanik: any) => (
                       <SelectItem key={mekanik.id} value={mekanik.id}>
                         {mekanik.name}
                       </SelectItem>
@@ -402,7 +402,7 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                     <CommandList>
                       <CommandEmpty>Tidak ditemukan</CommandEmpty>
                       <CommandGroup>
-                        {(services as any)?.data?.map((service: any) => (
+                        {(services as any)?.map((service: any) => (
                           <CommandItem key={service.id} onSelect={() => addService(service)}>
                             <div className="flex-1">
                               <div>{service.name}</div>
@@ -431,7 +431,7 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
                     <CommandList>
                       <CommandEmpty>Tidak ditemukan</CommandEmpty>
                       <CommandGroup>
-                        {(spareparts as any)?.data?.map((part: any) => (
+                        {(spareparts as any)?.map((part: any) => (
                           <CommandItem key={part.id} onSelect={() => addSparepart(part)}>
                             <div className="flex-1">
                               <div>{part.name}</div>
@@ -550,7 +550,7 @@ export function SPKForm({ initialData, onSubmit, isSubmitting }: SPKFormProps) {
           <Button type="button" variant="outline" onClick={() => window.history.back()}>
             Batal
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm font-bold px-8">
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

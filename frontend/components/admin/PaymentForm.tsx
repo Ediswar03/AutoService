@@ -27,26 +27,26 @@ import { cn } from '@/lib/utils'
 import type { Invoice, PaymentFormData, PaymentMethod } from '@/types'
 
 const paymentSchema = z.object({
-  invoice_id: z.number(),
-  tanggal: z.string().min(1, 'Tanggal wajib diisi'),
-  jumlah: z.number().min(1, 'Jumlah pembayaran wajib diisi'),
-  metode: z.enum(['cash', 'transfer', 'debit', 'credit', 'qris']),
-  referensi: z.string().optional(),
-  catatan: z.string().optional(),
+  invoiceId: z.string(),
+  paymentDate: z.string().min(1, 'Tanggal wajib diisi'),
+  amount: z.number().min(1, 'Jumlah pembayaran wajib diisi'),
+  paymentMethod: z.enum(['CASH', 'TRANSFER', 'DEBIT_CARD', 'CREDIT_CARD', 'QRIS', 'E_WALLET', 'CREDIT']),
+  referenceNumber: z.string().optional(),
+  notes: z.string().optional(),
 })
 
 interface PaymentFormProps {
   invoice: Invoice
-  onSubmit: (data: PaymentFormData) => Promise<void>
+  onSubmit: (data: any) => Promise<void>
   isSubmitting?: boolean
 }
 
-const paymentMethods: { value: PaymentMethod; label: string; icon: React.ElementType }[] = [
-  { value: 'cash', label: 'Tunai', icon: Banknote },
-  { value: 'transfer', label: 'Transfer Bank', icon: Building },
-  { value: 'debit', label: 'Kartu Debit', icon: CreditCard },
-  { value: 'credit', label: 'Kartu Kredit', icon: CreditCard },
-  { value: 'qris', label: 'QRIS', icon: Smartphone },
+const paymentMethods: { value: string; label: string; icon: React.ElementType }[] = [
+  { value: 'CASH', label: 'Tunai', icon: Banknote },
+  { value: 'TRANSFER', label: 'Transfer Bank', icon: Building },
+  { value: 'DEBIT_CARD', label: 'Kartu Debit', icon: CreditCard },
+  { value: 'CREDIT_CARD', label: 'Kartu Kredit', icon: CreditCard },
+  { value: 'QRIS', label: 'QRIS', icon: Smartphone },
 ]
 
 export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProps) {
@@ -62,21 +62,21 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
     watch,
     setValue,
     formState: { errors },
-  } = useForm<PaymentFormData>({
+  } = useForm<any>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
-      invoice_id: invoiceId,
-      tanggal: format(new Date(), 'yyyy-MM-dd'),
-      jumlah: sisaBayar,
-      metode: 'cash',
-      referensi: '',
-      catatan: '',
+      invoiceId: invoiceId,
+      paymentDate: format(new Date(), 'yyyy-MM-dd'),
+      amount: sisaBayar,
+      paymentMethod: 'CASH',
+      referenceNumber: '',
+      notes: '',
     },
   })
 
-  const tanggal = watch('tanggal')
-  const metode = watch('metode')
-  const jumlah = watch('jumlah')
+  const paymentDate = watch('paymentDate')
+  const paymentMethod = watch('paymentMethod')
+  const amount = watch('amount')
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -113,11 +113,11 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
                   {formatCurrency(sisaBayar)}
                 </span>
               </div>
-              {jumlah > 0 && (
+              {amount > 0 && (
                 <div className="flex justify-between py-2 bg-muted rounded-md px-3">
                   <span className="text-muted-foreground">Setelah Pembayaran Ini</span>
                   <span className="font-bold text-green-600">
-                    {formatCurrency(Math.max(0, sisaBayar - jumlah))}
+                    {formatCurrency(Math.max(0, sisaBayar - amount))}
                   </span>
                 </div>
               )}
@@ -142,20 +142,20 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
                       className={cn("w-full justify-start text-left font-normal")}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {tanggal ? format(new Date(tanggal), 'dd MMMM yyyy') : 'Pilih tanggal'}
+                      {paymentDate ? format(new Date(paymentDate), 'dd MMMM yyyy') : 'Pilih tanggal'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={tanggal ? new Date(tanggal) : undefined}
+                      selected={paymentDate ? new Date(paymentDate) : undefined}
                       onSelect={(date) => {
-                        if (date) setValue('tanggal', format(date, 'yyyy-MM-dd'))
+                        if (date) setValue('paymentDate', format(date, 'yyyy-MM-dd'))
                       }}
                     />
                   </PopoverContent>
                 </Popover>
-                {errors.tanggal && <FieldError>{errors.tanggal.message}</FieldError>}
+                {errors.paymentDate && <FieldError>{String(errors.paymentDate.message)}</FieldError>}
               </Field>
 
               <Field>
@@ -164,19 +164,19 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
                   type="number"
                   min={1}
                   max={sisaBayar}
-                  {...register('jumlah', { valueAsNumber: true })}
+                  {...register('amount', { valueAsNumber: true })}
                 />
                 <p className="text-xs text-muted-foreground">
                   Maksimal: {formatCurrency(sisaBayar)}
                 </p>
-                {errors.jumlah && <FieldError>{errors.jumlah.message}</FieldError>}
+                {errors.amount && <FieldError>{String(errors.amount.message)}</FieldError>}
               </Field>
 
               <Field>
                 <FieldLabel>Metode Pembayaran</FieldLabel>
                 <Select
-                  value={metode}
-                  onValueChange={(value: PaymentMethod) => setValue('metode', value)}
+                  value={paymentMethod}
+                  onValueChange={(value: string) => setValue('paymentMethod', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih metode pembayaran" />
@@ -192,17 +192,17 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.metode && <FieldError>{errors.metode.message}</FieldError>}
+                {errors.paymentMethod && <FieldError>{String(errors.paymentMethod.message)}</FieldError>}
               </Field>
 
-              {metode !== 'cash' && (
+              {paymentMethod !== 'CASH' && (
                 <Field>
                   <FieldLabel>Nomor Referensi</FieldLabel>
                   <Input
                     placeholder="No. transaksi/approval code"
-                    {...register('referensi')}
+                    {...register('referenceNumber')}
                   />
-                  {errors.referensi && <FieldError>{errors.referensi.message}</FieldError>}
+                  {errors.referenceNumber && <FieldError>{String(errors.referenceNumber.message)}</FieldError>}
                 </Field>
               )}
 
@@ -211,7 +211,7 @@ export function PaymentForm({ invoice, onSubmit, isSubmitting }: PaymentFormProp
                 <Textarea
                   placeholder="Catatan tambahan..."
                   rows={2}
-                  {...register('catatan')}
+                  {...register('notes')}
                 />
               </Field>
             </FieldGroup>

@@ -34,8 +34,8 @@ function resolvePhotoUrl(photoUrl?: string | null): string | undefined {
 }
 
 const menuItems = [
-  { icon: Settings, label: "Pengaturan",  href: "/mekanik/settings",       color: "text-zinc-400",  bg: "bg-zinc-800" },
-  { icon: Award,    label: "Sertifikasi", href: "/mekanik/certifications",  color: "text-amber-400", bg: "bg-amber-500/10" },
+  { icon: Settings, label: "Pengaturan",  href: "/mekanik/settings",       color: "text-slate-500 dark:text-zinc-400",  bg: "bg-slate-100 dark:bg-zinc-800" },
+  { icon: Award,    label: "Sertifikasi", href: "/mekanik/certifications",  color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
 ]
 
 export default function ProfilePage() {
@@ -135,13 +135,13 @@ export default function ProfilePage() {
       />
 
       {/* Profile Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-zinc-900 border border-white/5 p-6">
+      <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 p-6 shadow-sm dark:shadow-none">
         <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="relative z-10 flex items-center gap-5">
           {/* Avatar with upload */}
           <div className="relative shrink-0">
             <div
-              className="h-20 w-20 rounded-2xl bg-zinc-950 border border-white/10 flex items-center justify-center shadow-xl ring-2 ring-primary/20 overflow-hidden cursor-pointer group"
+              className="h-20 w-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-800 dark:to-zinc-900 border border-slate-300 dark:border-white/10 flex items-center justify-center shadow-lg dark:shadow-xl ring-2 ring-primary/20 overflow-hidden cursor-pointer group relative"
               onClick={handlePhotoClick}
             >
               {isUploading ? (
@@ -150,45 +150,56 @@ export default function ProfilePage() {
                 <img
                   src={previewImg || displayPhoto}
                   alt="avatar"
-                  className="h-full w-full object-cover group-hover:opacity-70 transition-opacity"
+                  className="h-full w-full object-cover group-hover:opacity-60 transition-opacity"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    e.currentTarget.parentElement?.classList.add('fallback-initials');
+                  }}
                 />
-              ) : (
-                <User className="h-10 w-10 text-primary group-hover:opacity-70 transition-opacity" />
+              ) : null}
+              
+              {/* Initials Fallback */}
+              {!isUploading && !(previewImg || displayPhoto) && (
+                <span className="text-2xl font-black text-slate-700 dark:text-zinc-300 uppercase tracking-widest group-hover:opacity-60 transition-opacity">
+                  {displayName !== "—" ? displayName.split(" ").map((n: string) => n[0]).join("").substring(0, 2) : "ME"}
+                </span>
               )}
+
               {/* Camera overlay */}
-              <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera className="h-6 w-6 text-white" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1">
+                <Camera className="h-5 w-5 text-white" />
+                <span className="text-[8px] font-black text-white uppercase tracking-widest">Ubah</span>
               </div>
             </div>
-            <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 rounded-full border-2 border-zinc-900 shadow-[0_0_12px_rgba(16,185,129,0.6)]" />
+            <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900 shadow-[0_0_12px_rgba(16,185,129,0.4)] dark:shadow-[0_0_12px_rgba(16,185,129,0.6)]" />
           </div>
 
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/80 mb-0.5">Performance Mechanic</p>
-            <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none truncate">
+            <h2 className="text-2xl font-black italic uppercase tracking-tighter text-slate-900 dark:text-white leading-none truncate">
               {displayName}
             </h2>
-            <p className="text-[10px] font-mono text-zinc-500 mt-1">
+            <p className="text-[10px] font-mono text-slate-500 dark:text-zinc-500 mt-1">
               {user?.role || "MEKANIK"}
             </p>
             <div className="flex items-center gap-1.5 mt-2">
               <Star className="h-3.5 w-3.5 text-primary fill-primary" />
-              <span className="font-black text-sm text-zinc-100">{profile?.rating || "5.0"}</span>
-              <span className="text-[10px] text-zinc-500">(rating mekanik)</span>
+              <span className="font-black text-sm text-slate-800 dark:text-zinc-100">{profile?.rating || "5.0"}</span>
+              <span className="text-[10px] text-slate-500 dark:text-zinc-500">(rating mekanik)</span>
             </div>
           </div>
 
           {/* Edit Button */}
           <button
             onClick={handleOpenEdit}
-            className="shrink-0 h-9 w-9 rounded-xl border border-white/10 bg-zinc-800 flex items-center justify-center hover:border-primary/40 hover:bg-primary/10 transition-all"
+            className="shrink-0 h-9 w-9 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 flex items-center justify-center hover:border-primary/40 hover:bg-primary/10 transition-all shadow-sm dark:shadow-none"
           >
-            <Edit3 className="h-4 w-4 text-zinc-400" />
+            <Edit3 className="h-4 w-4 text-slate-500 dark:text-zinc-400" />
           </button>
         </div>
 
         {/* Contact Info */}
-        <div className="relative z-10 mt-5 pt-5 border-t border-white/5 space-y-2.5">
+        <div className="relative z-10 mt-5 pt-5 border-t border-slate-100 dark:border-white/5 space-y-2.5">
           {[
             { icon: Mail,     value: displayEmail },
             { icon: Phone,    value: displayPhone !== "—" ? displayPhone : "Belum diisi" },
@@ -197,8 +208,8 @@ export default function ProfilePage() {
                 : "Data tidak tersedia"
             },
           ].map(({ icon: Icon, value }) => (
-            <div key={value} className="flex items-center gap-3 text-[11px] text-zinc-400">
-              <Icon className="h-3.5 w-3.5 text-zinc-600 shrink-0" />
+            <div key={value} className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-zinc-400">
+              <Icon className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-600 shrink-0" />
               <span className="font-medium">{value}</span>
             </div>
           ))}
@@ -209,14 +220,14 @@ export default function ProfilePage() {
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: "Total Pekerjaan",  value: totalJobs.toString(),     color: "text-primary" },
-          { label: "Tingkat Selesai",  value: `${completionRate}%`,     color: "text-emerald-400" },
-          { label: "Rating",           value: (profile?.rating || "5.0").toString(), color: "text-amber-400" },
-          { label: "Sudah Selesai",    value: completedJobs.toString(), color: "text-blue-400" },
+          { label: "Tingkat Selesai",  value: `${completionRate}%`,     color: "text-emerald-500 dark:text-emerald-400" },
+          { label: "Rating",           value: (profile?.rating || "5.0").toString(), color: "text-amber-500 dark:text-amber-400" },
+          { label: "Sudah Selesai",    value: completedJobs.toString(), color: "text-blue-500 dark:text-blue-400" },
         ].map((stat) => (
-          <Card key={stat.label} className="bg-zinc-900/80 border-white/5 rounded-2xl">
+          <Card key={stat.label} className="bg-white/80 dark:bg-zinc-900/80 border-slate-200 dark:border-white/5 rounded-2xl shadow-sm dark:shadow-none">
             <CardContent className="pt-4 pb-4 text-center">
               <p className={cn("text-2xl font-black italic", stat.color)}>{stat.value}</p>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 mt-0.5">{stat.label}</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-zinc-600 mt-0.5">{stat.label}</p>
             </CardContent>
           </Card>
         ))}
@@ -224,15 +235,15 @@ export default function ProfilePage() {
 
       {/* Role Badge */}
       <div className="space-y-3">
-        <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center gap-2 px-1">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2 px-1">
           <Wrench className="h-3 w-3 text-primary" /> Role & Akses
         </h4>
         <div className="flex flex-wrap gap-2">
-          <Badge className="bg-primary/10 text-primary border-primary/20 font-black uppercase text-[10px] tracking-wider px-3 py-1 rounded-xl">
+          <Badge className="bg-primary/10 text-primary border-primary/20 font-black uppercase text-[10px] tracking-wider px-3 py-1 rounded-xl shadow-sm dark:shadow-none">
             {profile?.role || user?.role || "MEKANIK"}
           </Badge>
           {profile?.isActive !== false && (
-            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-black uppercase text-[10px] tracking-wider px-3 py-1 rounded-xl">
+            <Badge className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 font-black uppercase text-[10px] tracking-wider px-3 py-1 rounded-xl shadow-sm dark:shadow-none">
               Aktif
             </Badge>
           )}
@@ -245,14 +256,14 @@ export default function ProfilePage() {
           const Icon = item.icon
           return (
             <Link key={index} href={item.href}>
-              <div className="flex items-center justify-between bg-zinc-900/60 border border-white/5 hover:border-white/10 hover:bg-zinc-900 transition-all duration-300 rounded-2xl p-4 group cursor-pointer active:scale-[0.98]">
+              <div className="flex items-center justify-between bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all duration-300 rounded-2xl p-4 group cursor-pointer active:scale-[0.98] shadow-sm hover:shadow-md dark:shadow-none">
                 <div className="flex items-center gap-4">
-                  <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center border border-white/5", item.bg)}>
+                  <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center border border-slate-100 dark:border-white/5", item.bg)}>
                     <Icon className={cn("h-5 w-5", item.color)} />
                   </div>
-                  <span className="font-bold text-sm text-zinc-200 uppercase tracking-wide">{item.label}</span>
+                  <span className="font-bold text-sm text-slate-800 dark:text-zinc-200 uppercase tracking-wide">{item.label}</span>
                 </div>
-                <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-primary transition-colors" />
+                <ChevronRight className="h-4 w-4 text-slate-400 dark:text-zinc-600 group-hover:text-primary transition-colors" />
               </div>
             </Link>
           )
@@ -263,7 +274,7 @@ export default function ProfilePage() {
       <Button
         onClick={() => logout()}
         variant="ghost"
-        className="w-full h-12 rounded-2xl border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all font-black uppercase tracking-wider text-sm"
+        className="w-full h-12 rounded-2xl bg-white dark:bg-transparent border border-red-200 dark:border-red-500/20 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-300 transition-all font-black uppercase tracking-wider text-sm shadow-sm dark:shadow-none"
       >
         <LogOut className="h-4 w-4 mr-2" />
         Keluar
@@ -271,48 +282,48 @@ export default function ProfilePage() {
 
       {/* Edit Profile Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-sm">
+        <DialogContent className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white max-w-sm rounded-3xl">
           <DialogHeader>
             <DialogTitle className="font-black uppercase tracking-tight">Edit Profil</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nama Lengkap</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-500">Nama Lengkap</Label>
               <Input
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="bg-zinc-800 border-white/10 focus:border-primary/50 rounded-xl"
+                className="bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-white/10 focus:border-primary/50 rounded-xl"
                 placeholder="Nama Lengkap"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">No. HP</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-500">No. HP</Label>
               <Input
                 value={editForm.phone}
                 onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                className="bg-zinc-800 border-white/10 focus:border-primary/50 rounded-xl"
+                className="bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-white/10 focus:border-primary/50 rounded-xl"
                 placeholder="0812-xxxx-xxxx"
                 type="tel"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Alamat</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-500">Alamat</Label>
               <Input
                 value={editForm.address}
                 onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                className="bg-zinc-800 border-white/10 focus:border-primary/50 rounded-xl"
+                className="bg-slate-50 dark:bg-zinc-800 border-slate-200 dark:border-white/10 focus:border-primary/50 rounded-xl"
                 placeholder="Alamat lengkap"
               />
             </div>
           </div>
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setEditOpen(false)} className="border border-white/10 text-zinc-400">
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setEditOpen(false)} className="border border-slate-200 dark:border-white/10 text-slate-500 dark:text-zinc-400 rounded-xl">
               Batal
             </Button>
             <Button
               onClick={handleSaveProfile}
               disabled={isSaving}
-              className="bg-primary text-black font-black rounded-xl"
+              className="bg-primary hover:bg-primary/90 text-white dark:text-black font-black rounded-xl"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               Simpan

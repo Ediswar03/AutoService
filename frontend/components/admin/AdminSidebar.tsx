@@ -73,11 +73,8 @@ const mainMenuItems = [
 const transactionMenuItems = [
   {
     title: 'SPK',
+    url: '/admin/spk',
     icon: FileText,
-    items: [
-      { title: 'Daftar SPK', url: '/admin/spk' },
-      { title: 'Buat SPK Baru', url: '/admin/spk/create' },
-    ],
   },
   {
     title: 'Invoice & Pembayaran',
@@ -127,14 +124,14 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border overflow-x-hidden">
       <SidebarHeader className="p-4">
         <Link href="/admin">
-          <Logo subtitle="System" />
+          <Logo subtitle="System" variant="white" />
         </Link>
       </SidebarHeader>
 
       <SidebarContent className="overflow-x-hidden pt-2">
         {/* Main Menu */}
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Menu Utama</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems.map((item) => (
@@ -143,10 +140,22 @@ export function AdminSidebar() {
                     asChild 
                     isActive={isActive(item.url)}
                     tooltip={item.title}
+                    className={cn(
+                      "relative transition-all duration-200 group/btn px-4 h-10 rounded-lg",
+                      isActive(item.url) 
+                        ? "bg-primary/10 text-primary font-bold" 
+                        : "text-slate-400 hover:bg-white/5 hover:text-white"
+                    )}
                   >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className="flex items-center gap-3">
+                      <item.icon className={cn(
+                        "h-4.5 w-4.5 transition-all", 
+                        isActive(item.url) ? "text-primary scale-110" : "group-hover/btn:text-white"
+                      )} />
+                      <span className="font-medium">{item.title}</span>
+                      {isActive(item.url) && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-full shadow-[0_0_10px_rgba(249,115,22,0.6)]" />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -157,47 +166,89 @@ export function AdminSidebar() {
 
         {/* Transactions */}
         <SidebarGroup>
-          <SidebarGroupLabel>Transaksi</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Transaksi</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {transactionMenuItems.map((item) => (
-                <Collapsible
-                  key={item.title}
-                  asChild
-                  defaultOpen={item.items.some(sub => isActive(sub.url))}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip={item.title}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                        <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+              {transactionMenuItems.map((item) => {
+                if (!item.items) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive(item.url!)}
+                        tooltip={item.title}
+                        className={cn(
+                          "relative transition-all duration-200 group/btn px-4 h-10 rounded-lg",
+                          isActive(item.url!) 
+                            ? "bg-primary/10 text-primary font-bold" 
+                            : "text-slate-400 hover:bg-white/5 hover:text-white"
+                        )}
+                      >
+                        <Link href={item.url!} className="flex items-center gap-3">
+                          <item.icon className={cn(
+                            "h-4.5 w-4.5 transition-all", 
+                            isActive(item.url!) ? "text-primary scale-110" : "group-hover/btn:text-white"
+                          )} />
+                          <span className="font-medium">{item.title}</span>
+                          {isActive(item.url!) && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-full shadow-[0_0_10px_rgba(249,115,22,0.6)]" />
+                          )}
+                        </Link>
                       </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.items.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                              <Link href={subItem.url}>
-                                <span>{subItem.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              ))}
+                    </SidebarMenuItem>
+                  )
+                }
+
+                const hasActiveChild = item.items.some(sub => isActive(sub.url))
+
+                return (
+                  <Collapsible
+                    key={item.title}
+                    asChild
+                    defaultOpen={hasActiveChild}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton tooltip={item.title} className="group/btn text-slate-400 hover:bg-white/5 hover:text-white transition-all duration-200 px-4 h-10 rounded-lg">
+                          <item.icon className="h-4.5 w-4.5 transition-colors group-hover/btn:text-white" />
+                          <span className="font-medium">{item.title}</span>
+                          <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub className="border-l border-white/5 ml-6 pl-2 space-y-1 mt-1">
+                          {item.items.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton 
+                                asChild 
+                                isActive={isActive(subItem.url)}
+                                className={cn(
+                                  "transition-all h-9 rounded-md px-3",
+                                  isActive(subItem.url) 
+                                    ? "text-primary bg-primary/5 font-bold" 
+                                    : "text-slate-500 hover:text-white hover:bg-white/5"
+                                )}
+                              >
+                                <Link href={subItem.url}>
+                                  <span className="text-sm">{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         {/* Inventory */}
         <SidebarGroup>
-          <SidebarGroupLabel>Inventori & Jasa</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Inventori & Jasa</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {inventoryMenuItems.map((item) => (
@@ -206,10 +257,22 @@ export function AdminSidebar() {
                     asChild 
                     isActive={isActive(item.url)}
                     tooltip={item.title}
+                    className={cn(
+                      "relative transition-all duration-200 group/btn px-4 h-10 rounded-lg",
+                      isActive(item.url) 
+                        ? "bg-primary/10 text-primary font-bold" 
+                        : "text-slate-400 hover:bg-white/5 hover:text-white"
+                    )}
                   >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className="flex items-center gap-3">
+                      <item.icon className={cn(
+                        "h-4.5 w-4.5 transition-all", 
+                        isActive(item.url) ? "text-primary scale-110" : "group-hover/btn:text-white"
+                      )} />
+                      <span className="font-medium">{item.title}</span>
+                      {isActive(item.url) && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-full shadow-[0_0_10px_rgba(249,115,22,0.6)]" />
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -219,42 +282,42 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 border-t border-white/5 bg-black/20">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  className="data-[state=open]:bg-white/5 data-[state=open]:text-white rounded-xl transition-all"
                 >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">
+                  <Avatar className="h-9 w-9 rounded-lg border border-white/10">
+                    <AvatarFallback className="rounded-lg bg-slate-800 text-primary font-bold">
                       {getInitials(user?.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                    <span className="truncate font-semibold">{user?.name || 'User'}</span>
-                    <span className="truncate text-xs text-muted-foreground capitalize">{user?.role || 'Admin'}</span>
+                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden ml-2">
+                    <span className="truncate font-bold text-white">{user?.name || 'User'}</span>
+                    <span className="truncate text-[10px] text-slate-500 uppercase tracking-widest font-black">{user?.role || 'Admin'}</span>
                   </div>
-                  <ChevronDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                  <ChevronDown className="ml-auto size-4 text-slate-500 group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="bottom"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl bg-slate-900 border-white/10 text-white"
+                side="top"
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="focus:bg-white/10 focus:text-white rounded-lg py-2.5">
                   <Link href="/admin/settings" className="flex items-center gap-2">
                     <Settings className="size-4" />
                     Pengaturan
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-white/5" />
                 <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
+                  className="text-red-400 focus:bg-red-500/10 focus:text-red-500 rounded-lg py-2.5"
                   onClick={() => logout()}
                 >
                   <LogOut className="mr-2 size-4" />

@@ -30,6 +30,23 @@ export class ReportController {
     }
   }
 
+  async getRevenueTimeSeries(req: Request, res: Response, next: NextFunction) {
+    try {
+      const now = new Date();
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(now.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      const startDate = (req.query.startDate as string) ? new Date(req.query.startDate as string) : sevenDaysAgo;
+      const endDate = (req.query.endDate as string) ? new Date(req.query.endDate as string) : now;
+
+      const report = await reportService.getRevenueTimeSeries(startDate, endDate);
+      sendSuccess(res, report);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getMechanicPerformance(
     req: Request,
     res: Response,

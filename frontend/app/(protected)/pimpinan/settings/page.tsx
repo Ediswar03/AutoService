@@ -227,7 +227,7 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
-                <Button className="mt-4"><Users className="mr-2 size-4" /> Tambah Anggota Tim</Button>
+                <Button className="mt-4 bg-orange-500 hover:bg-orange-600 text-white shadow-sm"><Users className="mr-2 size-4" /> Tambah Anggota Tim</Button>
               </CardContent>
             </Card>
           </TabsContent>
