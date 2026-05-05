@@ -30,12 +30,15 @@ export class InvoiceService {
     return `INV-${dateStr}-${sequence.toString().padStart(3, '0')}`;
   }
 
-  async findAll(query: PaginationQuery & { status?: string }) {
+  async findAll(query: PaginationQuery & { status?: string; workOrderId?: string }) {
     const { page, limit, skip, sortBy, sortOrder } = parsePagination(query);
 
     const where: any = {};
     if (query.status) {
       where.status = query.status;
+    }
+    if (query.workOrderId) {
+      where.workOrderId = query.workOrderId;
     }
     if (query.search) {
       where.OR = [

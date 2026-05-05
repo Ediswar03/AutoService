@@ -31,85 +31,97 @@ const mostRequestedParts = [
 
 export function DashboardCharts() {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-8 lg:grid-cols-2">
       {/* Stock Movement Chart */}
-      <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle>Pergerakan Stok 7 Hari Terakhir</CardTitle>
-          <CardDescription>Perbandingan barang masuk dan keluar</CardDescription>
+      <Card className="col-span-1 bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="p-8 pb-2">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">PERGERAKAN STOK</p>
+          <CardTitle className="text-xl font-black uppercase italic tracking-tighter">7-Day Analytics</CardTitle>
+          <CardDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inventory flow comparison</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
+        <CardContent className="p-8">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stockMovementData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <BarChart data={stockMovementData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
                 <XAxis 
                   dataKey="name" 
-                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
-                  axisLine={{ stroke: 'var(--color-border)' }}
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={10}
                 />
                 <YAxis 
-                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
-                  axisLine={{ stroke: 'var(--color-border)' }}
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
+                  axisLine={false}
+                  tickLine={false}
                 />
                 <Tooltip
+                  cursor={{ fill: 'rgba(0,0,0,0.02)' }}
                   contentStyle={{
-                    backgroundColor: 'var(--color-card)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '8px',
-                    color: 'var(--color-foreground)'
+                    backgroundColor: '#0A0A0B',
+                    border: 'none',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+                    padding: '12px'
                   }}
+                  itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                  labelStyle={{ fontSize: '10px', fontWeight: 900, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase' }}
                 />
-                <Bar dataKey="inbound" name="Masuk" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="outbound" name="Keluar" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="inbound" name="In" fill="#10b981" radius={[6, 6, 0, 0]} barSize={12} />
+                <Bar dataKey="outbound" name="Out" fill="#f59e0b" radius={[6, 6, 0, 0]} barSize={12} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-4 flex items-center justify-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="size-3 rounded-sm bg-success" />
-              <span className="text-sm text-muted-foreground">Barang Masuk</span>
+          <div className="mt-8 flex items-center justify-center gap-8">
+            <div className="flex items-center gap-3">
+              <div className="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inbound Flow</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="size-3 rounded-sm bg-primary" />
-              <span className="text-sm text-muted-foreground">Barang Keluar</span>
+            <div className="flex items-center gap-3">
+              <div className="size-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Outbound Flow</span>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Most Requested Parts */}
-      <Card className="col-span-1">
-        <CardHeader>
-          <CardTitle>Parts Paling Sering Diminta</CardTitle>
-          <CardDescription>Berdasarkan jumlah permintaan bulan ini</CardDescription>
+      <Card className="col-span-1 bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="p-8 pb-2">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">DATA PERMINTAAN</p>
+          <CardTitle className="text-xl font-black uppercase italic tracking-tighter">Hot Spareparts</CardTitle>
+          <CardDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">High-demand items this month</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
+        <CardContent className="p-8">
+          <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mostRequestedParts} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <BarChart data={mostRequestedParts} layout="vertical" margin={{ top: 0, right: 20, left: 40, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(0,0,0,0.05)" />
                 <XAxis 
                   type="number"
-                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
-                  axisLine={{ stroke: 'var(--color-border)' }}
+                  hide
                 />
                 <YAxis 
                   dataKey="name" 
                   type="category"
-                  width={120}
-                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }}
-                  axisLine={{ stroke: 'var(--color-border)' }}
+                  tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 900 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={100}
                 />
                 <Tooltip
+                  cursor={{ fill: 'rgba(0,0,0,0.02)' }}
                   contentStyle={{
-                    backgroundColor: 'var(--color-card)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '8px',
-                    color: 'var(--color-foreground)'
+                    backgroundColor: '#0A0A0B',
+                    border: 'none',
+                    borderRadius: '16px',
+                    padding: '12px'
                   }}
+                  itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}
+                  labelStyle={{ display: 'none' }}
                 />
-                <Bar dataKey="requests" name="Permintaan" fill="var(--color-chart-1)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="requests" name="Qty" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -117,24 +129,25 @@ export function DashboardCharts() {
       </Card>
 
       {/* Category Distribution */}
-      <Card className="col-span-1 lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Distribusi Stok per Kategori</CardTitle>
-          <CardDescription>Jumlah jenis parts berdasarkan kategori</CardDescription>
+      <Card className="col-span-1 lg:col-span-2 bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="p-8 pb-2">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">DISTRIBUSI KATEGORI</p>
+          <CardTitle className="text-xl font-black uppercase italic tracking-tighter text-slate-900 dark:text-white">Inventory Structure</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="h-[250px]">
+        <CardContent className="p-8">
+          <div className="grid gap-12 md:grid-cols-2">
+            <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={categoryData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
+                    innerRadius={70}
                     outerRadius={100}
-                    paddingAngle={2}
+                    paddingAngle={8}
                     dataKey="value"
+                    stroke="none"
                   >
                     {categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -142,26 +155,27 @@ export function DashboardCharts() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--color-card)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '8px',
-                      color: 'var(--color-foreground)'
+                      backgroundColor: '#0A0A0B',
+                      border: 'none',
+                      borderRadius: '16px',
+                      padding: '12px'
                     }}
+                    itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex flex-col justify-center gap-3">
+            <div className="flex flex-col justify-center space-y-4">
               {categoryData.map((category, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div key={index} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-black/20 border border-slate-100 dark:border-white/5">
+                  <div className="flex items-center gap-4">
                     <div 
-                      className="size-3 rounded-sm" 
-                      style={{ backgroundColor: category.fill }}
+                      className="size-3 rounded-full" 
+                      style={{ backgroundColor: category.fill, boxShadow: `0 0 10px ${category.fill}66` }}
                     />
-                    <span className="text-sm">{category.name}</span>
+                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">{category.name}</span>
                   </div>
-                  <span className="font-medium">{category.value} items</span>
+                  <span className="text-sm font-black italic tracking-tighter text-slate-900 dark:text-white">{category.value} <span className="text-[9px] font-bold text-slate-400 not-italic uppercase ml-1">Items</span></span>
                 </div>
               ))}
             </div>

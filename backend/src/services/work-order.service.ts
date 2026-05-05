@@ -33,7 +33,7 @@ export class WorkOrderService {
   }
 
   // List work orders with pagination
-  async findAll(query: PaginationQuery & { status?: string, assignedMechanicId?: string }) {
+  async findAll(query: PaginationQuery & { status?: string, assignedMechanicId?: string, date?: string }) {
     const { page, limit, skip, sortBy, sortOrder } = parsePagination(query);
 
     const where: any = {};
@@ -42,6 +42,16 @@ export class WorkOrderService {
     }
     if (query.assignedMechanicId) {
       where.assignedMechanicId = query.assignedMechanicId;
+    }
+    if (query.date) {
+      const start = new Date(query.date);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(query.date);
+      end.setHours(23, 59, 59, 999);
+      where.createdAt = {
+        gte: start,
+        lte: end,
+      };
     }
     if (query.search) {
       where.OR = [
@@ -380,6 +390,29 @@ export class WorkOrderService {
     await this.recalculateTotals(workOrderId);
   }
 
+  // Update work order details
+  async update(workOrderId: string, data: any, userId: string) {
+    const workOrder = await prisma.workOrder.findUnique({
+      where: { id: workOrderId },
+    });
+
+    if (!workOrder) {
+      throw new AppError('Work order not found', 404);
+    }
+
+    return prisma.workOrder.update({
+      where: { id: workOrderId },
+      data: {
+        ...data,
+        updatedById: userId,
+      },
+      include: {
+        customer: true,
+        vehicle: true,
+      },
+    });
+  }
+
   // Update work order status
   async updateStatus(
     workOrderId: string,
@@ -392,6 +425,10 @@ export class WorkOrderService {
 
     if (!workOrder) {
       throw new AppError('Work order not found', 404);
+    }
+
+    if (workOrder.status === newStatus) {
+      return workOrder;
     }
 
     // Validate status transitions

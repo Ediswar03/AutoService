@@ -67,8 +67,14 @@ export default function InvoicesPage() {
     contentRef: printRef,
   })
 
+  const spkId = searchParams.get('spk')
+  
+  const fetchUrl = spkId 
+    ? `/invoices?workOrderId=${spkId}&limit=100`
+    : `/invoices?limit=100&sortBy=createdAt&sortOrder=desc`
+
   const { data: invoiceData, isLoading, mutate } = useSWR(
-    '/invoices?limit=100&sortBy=createdAt&sortOrder=desc',
+    fetchUrl,
     fetcher
   )
   const invoices: Invoice[] = Array.isArray(invoiceData?.data)
@@ -77,9 +83,16 @@ export default function InvoicesPage() {
     ? invoiceData
     : []
 
+  // Tambahkan fetching data SPK jika ada spkId untuk verifikasi
+  const { data: spkData, isLoading: isLoadingSPK } = useSWR(
+    spkId ? `/work-orders/${spkId}` : null,
+    fetcher
+  )
+  const spk = spkData?.data
+
   const filteredInvoices = invoices.filter((invoice: any) => {
-    const nomor = invoice.nomor_invoice ?? invoice.invoiceNumber ?? ""
-    const customerName = invoice.spk?.customer?.nama ?? invoice.spk?.customer?.name ?? ""
+    const nomor = invoice.invoiceNumber ?? invoice.nomor_invoice ?? ""
+    const customerName = invoice.customer?.name ?? invoice.customer?.nama ?? invoice.workOrder?.customer?.name ?? ""
     const matchesSearch =
       nomor.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customerName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -111,9 +124,23 @@ export default function InvoicesPage() {
 
   const handlePrintClick = (invoice: Invoice) => {
     setSelectedInvoice(invoice)
+    // Berikan waktu lebih lama untuk render template sebelum print (terutama di Next.js 15+)
     setTimeout(() => {
-      handlePrint()
-    }, 100)
+      if (handlePrint) {
+        handlePrint()
+      }
+    }, 300)
+  }
+
+  const handleGenerateInvoice = async () => {
+    if (!spkId) return
+    try {
+      await api.post("/invoices", { workOrderId: spkId, dueDays: 30 })
+      await mutate()
+    } catch (error: any) {
+      console.error("Gagal membuat invoice:", error)
+      alert(error.response?.data?.message || "Gagal membuat invoice")
+    }
   }
 
   const handlePaymentSubmit = async (data: any) => {
@@ -130,7 +157,10 @@ export default function InvoicesPage() {
 
   return (
     <>
-      <AdminHeader title="Kasir / Invoice" description="Kelola invoice dan pembayaran" />
+      <AdminHeader 
+        title="Kasir / Invoice" 
+        description={spkId ? `Menampilkan invoice untuk SPK #${spkId.substring(0,8)}...` : "Kelola invoice dan pembayaran"} 
+      />
 
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-7xl space-y-6">
@@ -176,6 +206,16 @@ export default function InvoicesPage() {
                   <CardTitle>Daftar Invoice</CardTitle>
                   <CardDescription>
                     {filteredInvoices.length} invoice ditemukan
+                    {spkId && (
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="h-auto p-0 ml-2" 
+                        onClick={() => window.location.href = '/admin/invoices'}
+                      >
+                        Reset Filter SPK
+                      </Button>
+                    )}
                   </CardDescription>
                 </div>
               </div>
@@ -216,6 +256,23 @@ export default function InvoicesPage() {
                 onPayment={handlePaymentClick}
                 onPrint={handlePrintClick}
               />
+
+              {!isLoading && spkId && filteredInvoices.length === 0 && (
+                <div className="mt-8 text-center p-8 border-2 border-dashed rounded-xl bg-muted/20">
+                  <FileText className="mx-auto size-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Invoice Belum Dibuat</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    SPK <span className="font-mono font-bold text-foreground">#{spk?.orderNumber}</span> ({spk?.customer?.name}) telah selesai namun belum memiliki invoice.
+                  </p>
+                  <Button 
+                    className="bg-orange-500 hover:bg-orange-600 text-white"
+                    onClick={handleGenerateInvoice}
+                  >
+                    <Plus className="mr-2 size-4" />
+                    Buat Invoice Sekarang
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -245,7 +302,7 @@ export default function InvoicesPage() {
                 <div className="p-4 rounded-lg bg-muted/30">
                   <p className="text-sm font-medium text-muted-foreground mb-1">Pelanggan</p>
                   <p className="font-medium">
-                    {inv.spk?.customer?.nama ?? inv.spk?.customer?.name ?? "-"}
+                    {inv.customer?.name ?? inv.customer?.nama ?? inv.workOrder?.customer?.name ?? "-"}
                   </p>
                 </div>
 
@@ -344,10 +401,11 @@ export default function InvoicesPage() {
       </Dialog>
 
       {/* Hidden Print Template */}
-      <div className="hidden">
-        {selectedInvoice && (
-          <InvoicePrintTemplate ref={printRef} invoice={selectedInvoice} />
-        )}
+      <div className="absolute opacity-0 pointer-events-none -z-50 overflow-hidden h-0 w-0">
+        <InvoicePrintTemplate 
+          ref={printRef} 
+          invoice={selectedInvoice || ({} as any)} 
+        />
       </div>
     </>
   )

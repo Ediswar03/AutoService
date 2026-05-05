@@ -1,5 +1,6 @@
 'use client'
 
+import { use } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ArrowLeft, Loader2 } from 'lucide-react'
@@ -9,9 +10,9 @@ import { api, fetcher } from '@/lib/api-client'
 import useSWR from 'swr'
 import type { CustomerFormData } from '@/types'
 
-export default function EditCustomerPage({ params }: { params: { id: string } }) {
+export default function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const { id } = params
+  const { id } = use(params)
 
   // Fetch customer data
   const { data: rawData, isLoading } = useSWR(`/customers/${id}`, fetcher)

@@ -39,4 +39,10 @@ router.get(
     reportController.getWorkOrderStats(req, res, next)
 );
 
+router.get(
+  '/export',
+  roleMiddleware('ADMIN', 'PIMPINAN'),
+  (req, res, next) => reportController.exportReport(req, res, next)
+);
+
 export default router;

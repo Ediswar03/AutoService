@@ -7,19 +7,29 @@ interface UIContextType {
   openChat: () => void
   closeChat: () => void
   toggleChat: () => void
+  selectedDate: Date
+  setSelectedDate: (date: Date) => void
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined)
 
 export function UIProvider({ children }: { children: ReactNode }) {
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   const openChat = () => setIsChatOpen(true)
   const closeChat = () => setIsChatOpen(false)
   const toggleChat = () => setIsChatOpen((prev) => !prev)
 
   return (
-    <UIContext.Provider value={{ isChatOpen, openChat, closeChat, toggleChat }}>
+    <UIContext.Provider value={{ 
+      isChatOpen, 
+      openChat, 
+      closeChat, 
+      toggleChat, 
+      selectedDate, 
+      setSelectedDate 
+    }}>
       {children}
     </UIContext.Provider>
   )

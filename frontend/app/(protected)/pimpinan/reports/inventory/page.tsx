@@ -10,6 +10,10 @@ import {
   Plus,
   ArrowUpRight,
   ArrowDownRight,
+  Loader2,
+  ChevronDown,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react"
 import {
   Bar,
@@ -37,6 +41,15 @@ import {
 import { ChartContainer } from "@/components/ui/chart"
 import { Progress } from "@/components/ui/progress"
 import { PimpinanHeader } from "@/components/pimpinan/pimpinan-header"
+import { apiClient } from "@/lib/api-client"
+import { toast } from "sonner"
+import { useState } from "react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const inventoryItems = [
   { id: 1, name: "Oli Mesin 10W-40", sku: "OIL-10W40-001", category: "Oli", stock: 45, minStock: 20, maxStock: 100, unit: "Liter", price: 85000, value: 3825000, status: "normal" },
@@ -79,7 +92,32 @@ function formatRupiah(amount: number): string {
 }
 
 export default function InventoryReportPage() {
+  const [isExporting, setIsExporting] = useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
+
+  const handleExport = async (format: 'pdf' | 'excel') => {
+    setIsExporting(true)
+    try {
+      const response = await apiClient.get(
+        `/reports/export?type=inventory&format=${format}`,
+        { responseType: 'blob' }
+      )
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `laporan-inventory.${format === 'pdf' ? 'pdf' : 'xlsx'}`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      toast.success('Laporan berhasil diunduh')
+    } catch (error) {
+      toast.error('Gagal mengunduh laporan')
+    } finally {
+      setIsExporting(false)
+    }
+  }
   const filteredItems = inventoryItems.filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.sku.toLowerCase().includes(searchQuery.toLowerCase()))
   const totalValue = inventoryItems.reduce((sum, item) => sum + item.value, 0)
   const lowStockCount = inventoryItems.filter((item) => item.status === "low").length
@@ -99,7 +137,32 @@ export default function InventoryReportPage() {
             <Select defaultValue="all"><SelectTrigger className="w-[150px]"><SelectValue placeholder="Kategori" /></SelectTrigger>
               <SelectContent><SelectItem value="all">Semua Kategori</SelectItem><SelectItem value="oli">Oli & Pelumas</SelectItem><SelectItem value="filter">Filter</SelectItem><SelectItem value="rem">Rem</SelectItem><SelectItem value="kelistrikan">Kelistrikan</SelectItem></SelectContent>
             </Select>
-            <Button><Download className="mr-2 size-4" /> Export</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  disabled={isExporting}
+                  className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest px-4 rounded-lg shadow-lg shadow-primary/20 text-[10px]"
+                >
+                  {isExporting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Download className="mr-2 size-4" />}
+                  Export Data
+                  <ChevronDown className="ml-2 size-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 p-2 rounded-2xl bg-zinc-950 border-white/10 text-white shadow-2xl">
+                <DropdownMenuItem onClick={() => handleExport('excel')} className="flex items-center gap-3 px-4 h-12 rounded-xl focus:bg-white/10 cursor-pointer transition-all">
+                  <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                    <FileSpreadsheet className="size-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Excel (.xlsx)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('pdf')} className="flex items-center gap-3 px-4 h-12 rounded-xl focus:bg-white/10 cursor-pointer transition-all">
+                  <div className="size-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+                    <FileText className="size-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">PDF Document (.pdf)</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

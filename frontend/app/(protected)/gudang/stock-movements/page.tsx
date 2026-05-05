@@ -27,6 +27,9 @@ import { fetcher } from '@/lib/api-client'
 import { format } from 'date-fns'
 import { id as idLocale } from 'date-fns/locale'
 
+import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
+
 export default function StockMovementsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -67,109 +70,108 @@ export default function StockMovementsPage() {
 
   return (
     <>
-      <GudangHeader title="Pergerakan Stok" description="Riwayat transaksi barang masuk dan keluar dari gudang" />
+      <GudangHeader title="Log Pergerakan" description="Riwayat lengkap barang masuk dan keluar dari gudang" />
       
-      <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
-        <div className="mx-auto max-w-7xl space-y-6">
+      <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-50/50 dark:bg-black/20">
+        <div className="mx-auto max-w-7xl space-y-8">
           
           {/* Stats Grid */}
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Transaksi</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-slate-900">{isLoading ? '...' : movements.length}</div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Transaksi Terkini</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-2xl overflow-hidden group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20">
+                  <Package className="size-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Transaksi</p>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-none">{isLoading ? '...' : movements.length}</h3>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm border-emerald-100 bg-emerald-50/30">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Barang Masuk</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <ArrowDownRight className="size-5 text-emerald-600" />
-                  <span className="text-3xl font-bold text-emerald-600">+{isLoading ? '...' : inboundCount}</span>
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-2xl overflow-hidden group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center border border-emerald-100 dark:border-emerald-500/20">
+                  <ArrowDownRight className="size-6 text-emerald-600" />
                 </div>
-                <p className="text-[10px] text-emerald-600/80 font-bold uppercase mt-1">Unit diterima</p>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Masuk</p>
+                  <h3 className="text-2xl font-black text-emerald-600 leading-none">+{isLoading ? '...' : inboundCount}</h3>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm border-blue-100 bg-blue-50/30">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-bold text-blue-600 uppercase tracking-widest">Barang Keluar</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <ArrowUpRight className="size-5 text-blue-600" />
-                  <span className="text-3xl font-bold text-blue-600">-{isLoading ? '...' : outboundCount}</span>
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-2xl overflow-hidden group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center border border-rose-100 dark:border-rose-500/20">
+                  <ArrowUpRight className="size-6 text-rose-600" />
                 </div>
-                <p className="text-[10px] text-blue-600/80 font-bold uppercase mt-1">Unit dikeluarkan</p>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Keluar</p>
+                  <h3 className="text-2xl font-black text-rose-600 leading-none">-{isLoading ? '...' : outboundCount}</h3>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest">Net Movement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-3xl font-bold ${isLoading ? 'text-slate-400' : (inboundCount - outboundCount >= 0 ? 'text-emerald-600' : 'text-red-500')}`}>
-                  {isLoading ? '...' : (inboundCount - outboundCount >= 0 ? '+' : '')}{isLoading ? '' : inboundCount - outboundCount}
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-2xl overflow-hidden group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center border border-slate-200 dark:border-white/10">
+                  <div className={cn(
+                    "size-2.5 rounded-full",
+                    inboundCount - outboundCount >= 0 ? "bg-emerald-500" : "bg-rose-500"
+                  )} />
                 </div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Selisih bersih</p>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Net Movement</p>
+                  <h3 className={cn(
+                    "text-2xl font-black leading-none",
+                    isLoading ? "text-slate-400" : (inboundCount - outboundCount >= 0 ? "text-emerald-600" : "text-rose-600")
+                  )}>
+                    {isLoading ? '...' : (inboundCount - outboundCount >= 0 ? '+' : '')}{isLoading ? '' : inboundCount - outboundCount}
+                  </h3>
+                </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Filters Area */}
-          <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider">Filter Transaksi</CardTitle>
-                <Button variant="outline" size="sm" className="h-8 text-xs font-bold border-slate-200 bg-white">
-                  <Download className="mr-2 size-3" />
-                  Export CSV
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
+          <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-[2rem] overflow-hidden">
+            <CardContent className="p-6">
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="relative md:col-span-2">
-                  <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                   <Input
                     type="search"
-                    placeholder="Cari part, kode, atau referensi..."
+                    placeholder="Cari part, kode, atau referensi transaksi..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-slate-50 border-slate-200 focus:bg-white transition-colors h-10"
+                    className="h-12 pl-11 rounded-2xl bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/5 focus:ring-primary/20 transition-all text-sm font-medium"
                   />
                 </div>
                 
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="h-10 bg-slate-50 border-slate-200 font-semibold text-xs">
-                    <SelectValue placeholder="Tipe Transaksi" />
+                  <SelectTrigger className="h-12 rounded-2xl bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/5 px-4 font-bold text-xs uppercase tracking-widest text-slate-600 dark:text-zinc-400">
+                    <SelectValue placeholder="TIPE TRANSAKSI" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Tipe</SelectItem>
-                    <SelectItem value="PURCHASE">Pembelian</SelectItem>
-                    <SelectItem value="SALE">Penjualan</SelectItem>
-                    <SelectItem value="ADJUSTMENT_IN">Penyesuaian Masuk</SelectItem>
-                    <SelectItem value="ADJUSTMENT_OUT">Penyesuaian Keluar</SelectItem>
+                  <SelectContent className="rounded-2xl p-2">
+                    <SelectItem value="all" className="rounded-xl">SEMUA TIPE</SelectItem>
+                    <SelectItem value="PURCHASE" className="rounded-xl">PEMBELIAN</SelectItem>
+                    <SelectItem value="SALE" className="rounded-xl">PENJUALAN</SelectItem>
+                    <SelectItem value="ADJUSTMENT_IN" className="rounded-xl">PENYESUAIAN MASUK</SelectItem>
+                    <SelectItem value="ADJUSTMENT_OUT" className="rounded-xl">PENYESUAIAN KELUAR</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select value={dateFilter} onValueChange={setDateFilter}>
-                  <SelectTrigger className="h-10 bg-slate-50 border-slate-200 font-semibold text-xs">
+                  <SelectTrigger className="h-12 rounded-2xl bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/5 px-4 font-bold text-xs uppercase tracking-widest text-slate-600 dark:text-zinc-400">
                     <Calendar className="mr-2 size-3 text-slate-400" />
-                    <SelectValue placeholder="Periode" />
+                    <SelectValue placeholder="PERIODE" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Waktu</SelectItem>
-                    <SelectItem value="today">Hari Ini</SelectItem>
-                    <SelectItem value="week">7 Hari Terakhir</SelectItem>
-                    <SelectItem value="month">30 Hari Terakhir</SelectItem>
+                  <SelectContent className="rounded-2xl p-2">
+                    <SelectItem value="all" className="rounded-xl">SEMUA WAKTU</SelectItem>
+                    <SelectItem value="today" className="rounded-xl">HARI INI</SelectItem>
+                    <SelectItem value="week" className="rounded-xl">7 HARI TERAKHIR</SelectItem>
+                    <SelectItem value="month" className="rounded-xl">30 HARI TERAKHIR</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -177,80 +179,100 @@ export default function StockMovementsPage() {
           </Card>
 
           {/* Table Area */}
-          <Card className="shadow-sm border-slate-200 overflow-hidden">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader className="bg-slate-50">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[80px] font-bold text-slate-700">Aksi</TableHead>
-                    <TableHead className="font-bold text-slate-700">Informasi Part</TableHead>
-                    <TableHead className="font-bold text-slate-700">Jenis</TableHead>
-                    <TableHead className="font-bold text-slate-700">Quantity</TableHead>
-                    <TableHead className="font-bold text-slate-700">Oleh</TableHead>
-                    <TableHead className="font-bold text-slate-700">Catatan</TableHead>
-                    <TableHead className="font-bold text-slate-700">Waktu</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-48 text-center">
-                        <div className="flex items-center justify-center">
-                          <Loader2 className="size-8 animate-spin text-slate-300" />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : movements.map((movement) => {
-                    const positive = isPositive(movement.movementType)
-                    return (
-                      <TableRow key={movement.id} className="hover:bg-slate-50/50 transition-colors">
-                        <TableCell>
-                          <div className={`flex size-9 items-center justify-center rounded-xl ${
-                            positive ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
-                          }`}>
-                            {positive ? (
-                              <ArrowDownRight className="size-4" />
-                            ) : (
-                              <ArrowUpRight className="size-4" />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-bold text-sm text-slate-900">{movement.sparepart?.name}</p>
-                            <p className="text-[10px] text-slate-500 font-mono tracking-tighter uppercase">{movement.sparepart?.code}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono text-[10px] border-slate-200 bg-white text-slate-600 font-bold px-2">
-                            {getMovementLabel(movement.movementType)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`text-sm font-black ${positive ? 'text-emerald-600' : 'text-blue-600'}`}>
-                            {positive ? '+' : '-'}{Math.abs(movement.quantity)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-xs font-semibold text-slate-600">{movement.createdBy?.name}</TableCell>
-                        <TableCell className="text-xs text-slate-400 max-w-[180px] truncate">
-                          {movement.notes || '-'}
-                        </TableCell>
-                        <TableCell className="text-[11px] font-bold text-slate-400">
-                          {formatDate(movement.createdAt)}
-                        </TableCell>
+          <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-[2rem] overflow-hidden">
+            <CardHeader className="p-8 pb-0 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Riwayat Aktivitas Gudang</CardTitle>
+              <Button variant="outline" size="sm" className="h-10 rounded-xl px-5 text-[10px] font-black uppercase tracking-widest border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5">
+                <Download className="mr-2 size-3" />
+                Export CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0 mt-6">
+              {isLoading ? (
+                <div className="p-8 space-y-4">
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-2xl" />
+                  <Skeleton className="h-20 w-full rounded-2xl" />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-slate-50 dark:bg-black/40">
+                      <TableRow className="hover:bg-transparent border-slate-100 dark:border-white/5 h-14">
+                        <TableHead className="w-[80px] font-black text-[10px] uppercase tracking-widest text-slate-500 pl-8">Aksi</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Informasi Part</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Kategori</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Qty</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Petugas</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500">Waktu</TableHead>
+                        <TableHead className="text-right font-black text-[10px] uppercase tracking-widest text-slate-500 pr-8">Catatan</TableHead>
                       </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-
-              {!isLoading && movements.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 bg-white">
-                  <div className="size-16 rounded-full bg-slate-50 flex items-center justify-center mb-4">
-                    <Package className="size-8 text-slate-200" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900">Data Kosong</h3>
-                  <p className="text-sm text-slate-500">Tidak ada pergerakan stok yang sesuai dengan filter Anda.</p>
+                    </TableHeader>
+                    <TableBody>
+                      {movements.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-64 text-center">
+                            <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
+                              <Package className="size-12" />
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em]">Tidak ada riwayat pergerakan</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : movements.map((movement) => {
+                        const positive = isPositive(movement.movementType)
+                        return (
+                          <TableRow key={movement.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors border-slate-100 dark:border-white/5 h-20 group">
+                            <TableCell className="pl-8">
+                              <div className={cn(
+                                "flex size-10 items-center justify-center rounded-xl border group-hover:scale-105 transition-transform",
+                                positive ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                              )}>
+                                {positive ? <ArrowDownRight className="size-5" /> : <ArrowUpRight className="size-5" />}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <p className="font-black text-slate-900 dark:text-white uppercase italic text-sm tracking-tight leading-none mb-1">{movement.sparepart?.name}</p>
+                                <p className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest">{movement.sparepart?.code}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-lg text-slate-500">
+                                {getMovementLabel(movement.movementType)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className={cn(
+                                "text-base font-black italic tracking-tighter",
+                                positive ? "text-emerald-500" : "text-rose-500"
+                              )}>
+                                {positive ? '+' : '-'}{Math.abs(movement.quantity)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="size-6 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-[10px] font-black uppercase">
+                                  {movement.createdBy?.name?.charAt(0) || 'U'}
+                                </div>
+                                <span className="text-[10px] font-black text-slate-700 dark:text-zinc-300 uppercase tracking-tight">{movement.createdBy?.name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <p className="text-[10px] font-black text-slate-900 dark:text-white leading-none mb-0.5">{formatDate(movement.createdAt).split(' ')[0]} {formatDate(movement.createdAt).split(' ')[1]}</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{formatDate(movement.createdAt).split(' ').slice(3).join(' ')}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right pr-8">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight max-w-[150px] ml-auto truncate italic">
+                                {movement.notes || 'Tanpa Catatan'}
+                              </p>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </CardContent>

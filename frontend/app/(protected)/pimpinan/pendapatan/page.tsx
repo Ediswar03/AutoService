@@ -213,16 +213,16 @@ export default function PimpinanPendapatanPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={dailyData || []}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
+                  <XAxis
+                    dataKey="date"
                     tickFormatter={(value) => format(new Date(value), 'dd')}
                     fontSize={12}
                   />
-                  <YAxis 
+                  <YAxis
                     tickFormatter={(value) => `${(value / 1000000).toFixed(0)}jt`}
                     fontSize={12}
                   />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
                     labelFormatter={(value) => format(new Date(value), 'dd MMMM yyyy', { locale: id })}
                   />
@@ -246,7 +246,7 @@ export default function PimpinanPendapatanPage() {
                 <AreaChart data={monthlyData || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" fontSize={12} />
-                  <YAxis 
+                  <YAxis
                     tickFormatter={(value) => `${(value / 1000000).toFixed(0)}jt`}
                     fontSize={12}
                   />
@@ -277,7 +277,7 @@ export default function PimpinanPendapatanPage() {
                 <BarChart data={monthlyData || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" fontSize={12} />
-                  <YAxis 
+                  <YAxis
                     tickFormatter={(value) => `${(value / 1000000).toFixed(0)}jt`}
                     fontSize={12}
                   />

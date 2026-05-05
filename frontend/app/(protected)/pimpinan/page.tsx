@@ -64,8 +64,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { PimpinanHeader } from "@/components/pimpinan/pimpinan-header"
 import useSWR from "swr"
-import { fetcher } from "@/lib/api-client"
+import { fetcher, apiClient } from "@/lib/api-client"
 import { useAuth } from "@/context/AuthContext"
+import { toast } from "sonner"
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:3001"
+
+function resolvePhotoUrl(photoUrl?: string | null): string | undefined {
+  if (!photoUrl) return undefined
+  if (photoUrl.startsWith("http")) return photoUrl
+  if (photoUrl.startsWith("local:")) {
+    const key = photoUrl.replace("local:", "")
+    return `${BACKEND_URL}/api/v1/uploads/${key}`
+  }
+  try {
+    const url = new URL(BACKEND_URL || "http://localhost:3001")
+    return `http://${url.hostname}:9000/autoservis/${photoUrl}`
+  } catch {
+    return `http://localhost:9000/autoservis/${photoUrl}`
+  }
+}
 
 const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"]
 
@@ -79,7 +97,7 @@ function formatRupiah(amount: number): string {
 }
 
 const chartConfig = {
-  target:    { label: "Target",    color: "#94a3b8" },
+  target: { label: "Target", color: "#94a3b8" },
   realisasi: { label: "Realisasi", color: "#3b82f6" },
 }
 
@@ -90,32 +108,58 @@ export default function PimpinanPage() {
   const m = String(now.getMonth() + 1).padStart(2, "0")
   const lastDay = new Date(y, now.getMonth() + 1, 0).getDate()
   const startDate = `${y}-${m}-01`
-  const endDate   = `${y}-${m}-${String(lastDay).padStart(2, "0")}`
+  const endDate = `${y}-${m}-${String(lastDay).padStart(2, "0")}`
 
   const { data: dashRaw, isLoading } = useSWR(
     `/reports/dashboard?startDate=${startDate}&endDate=${endDate}`,
     fetcher
   )
-  const { data: recentWO }      = useSWR("/work-orders?limit=5&sortBy=createdAt&sortOrder=desc", fetcher)
-  const { data: mechanicsRaw }  = useSWR(`/reports/mechanics?startDate=${startDate}&endDate=${endDate}`, fetcher)
+  const { data: recentWO } = useSWR("/work-orders?limit=5&sortBy=createdAt&sortOrder=desc", fetcher)
+  const { data: mechanicsRaw } = useSWR(`/reports/mechanics?startDate=${startDate}&endDate=${endDate}`, fetcher)
 
   const dash = dashRaw?.data || dashRaw || {}
+  const [isExporting, setIsExporting] = React.useState(false)
+
+  const handleExport = async (format: 'pdf' | 'excel') => {
+    setIsExporting(true)
+    try {
+      const response = await apiClient.get(
+        `/reports/export?type=dashboard&format=${format}`,
+        { responseType: 'blob' }
+      )
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `dashboard-summary-${new Date().toISOString().split('T')[0]}.${format === 'pdf' ? 'pdf' : 'xlsx'}`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      toast.success('Laporan dashboard berhasil diunduh')
+    } catch (error) {
+      toast.error('Gagal mengunduh laporan')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const recentTransactions: any[] = Array.isArray(recentWO?.data) ? recentWO.data : []
   const mechanicPerformance: any[] = Array.isArray(mechanicsRaw) ? mechanicsRaw : []
 
-  const totalRevenue    = Number(dash.totalRevenue   || dash.monthlyRevenue || 0)
+  const totalRevenue = Number(dash.totalRevenue || dash.monthlyRevenue || 0)
   const completedOrders = Number(dash.completedOrders || dash.totalCompleted || 0)
-  const activeOrders    = Number(dash.activeWorkOrders || 0)
-  const lowStock        = Number(dash.lowStockCount    || 0)
-  const pendingInvoices = Number(dash.pendingInvoices  || 0)
-  const avgRating       = Number(dash.avgRating      || 4.8)
+  const activeOrders = Number(dash.activeWorkOrders || 0)
+  const lowStock = Number(dash.lowStockCount || 0)
+  const pendingInvoices = Number(dash.pendingInvoices || 0)
+  const avgRating = Number(dash.avgRating || 4.8)
 
   const kpiData = [
     { title: "Pendapatan Bulan Ini", value: isLoading ? "..." : `Rp ${(totalRevenue / 1_000_000).toFixed(1)}jt`, changeType: "positive" as const, icon: DollarSign, color: "bg-blue-500" },
-    { title: "SPK Aktif",      value: isLoading ? "..." : activeOrders.toString(), changeType: "positive" as const, icon: FileText,  color: "bg-emerald-500" },
-    { title: "Invoice Pending", value: isLoading ? "..." : pendingInvoices.toString(), changeType: "negative" as const, icon: Clock,      color: "bg-amber-500" },
-    { title: "Stok Menipis",    value: isLoading ? "..." : lowStock.toString(),   changeType: "negative" as const, icon: AlertCircle, color: "bg-red-500" },
-    { title: "Rating Bengkel",  value: isLoading ? "..." : avgRating.toFixed(1),   changeType: "positive" as const, icon: Star,        color: "bg-purple-500" },
+    { title: "SPK Aktif", value: isLoading ? "..." : activeOrders.toString(), changeType: "positive" as const, icon: FileText, color: "bg-emerald-500" },
+    { title: "Invoice Pending", value: isLoading ? "..." : pendingInvoices.toString(), changeType: "negative" as const, icon: Clock, color: "bg-amber-500" },
+    { title: "Stok Menipis", value: isLoading ? "..." : lowStock.toString(), changeType: "negative" as const, icon: AlertCircle, color: "bg-red-500" },
+    { title: "Rating Bengkel", value: isLoading ? "..." : avgRating.toFixed(1), changeType: "positive" as const, icon: Star, color: "bg-purple-500" },
   ]
 
   const revenueChartData = Array.isArray(dash.monthlyRevenueStats) ? dash.monthlyRevenueStats : [
@@ -129,15 +173,15 @@ export default function PimpinanPage() {
 
   const serviceTypeData: { name: string; value: number; color: string }[] = Array.isArray(dash.serviceBreakdown)
     ? dash.serviceBreakdown.map((s: any, i: number) => ({
-        name: s.name, value: s.percentage || s.count || 0, color: CHART_COLORS[i % CHART_COLORS.length],
-      }))
+      name: s.name, value: s.percentage || s.count || 0, color: CHART_COLORS[i % CHART_COLORS.length],
+    }))
     : []
 
   return (
     <>
       <PimpinanHeader title="Dashboard Pimpinan" description="Monitor performa operasional bengkel" />
       <div className="flex-1 overflow-auto p-6 flex flex-col gap-6 bg-background/50 transition-colors duration-300">
-        
+
         {/* Welcome Card */}
         <Card className="bg-slate-900 text-white border-0 overflow-hidden relative group">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -161,9 +205,32 @@ export default function PimpinanPage() {
                     <SelectItem value="lastmonth">Bulan Lalu</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                  <Download className="size-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      disabled={isExporting}
+                    >
+                      {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 p-2 rounded-2xl bg-slate-900 border-white/10 text-white shadow-2xl">
+                    <DropdownMenuItem onClick={() => handleExport('excel')} className="flex items-center gap-3 px-4 h-12 rounded-xl focus:bg-white/20 cursor-pointer transition-all">
+                      <div className="size-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <FileText className="size-4" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-200">Excel (.xlsx)</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('pdf')} className="flex items-center gap-3 px-4 h-12 rounded-xl focus:bg-white/20 cursor-pointer transition-all">
+                      <div className="size-8 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-400">
+                        <FileText className="size-4" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-200">PDF Document (.pdf)</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </CardContent>
@@ -335,8 +402,8 @@ export default function PimpinanPage() {
                         <Badge className={cn(
                           "text-[10px] font-black uppercase italic border-none shadow-none px-2",
                           wo.status === "COMPLETED" ? "bg-emerald-500/10 text-emerald-500" :
-                          wo.status === "IN_PROGRESS" ? "bg-blue-500/10 text-blue-500" :
-                          "bg-muted text-muted-foreground"
+                            wo.status === "IN_PROGRESS" ? "bg-blue-500/10 text-blue-500" :
+                              "bg-muted text-muted-foreground"
                         )}>
                           {wo.status}
                         </Badge>
@@ -366,6 +433,7 @@ export default function PimpinanPage() {
                       idx === 0 ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-500"
                     )}>{idx + 1}</div>
                     <Avatar className="size-10 border-2 border-white shadow-sm">
+                      <AvatarImage src={resolvePhotoUrl(m.photoUrl)} alt={m.name} className="object-cover" />
                       <AvatarFallback className="bg-slate-200 text-slate-500 font-bold text-xs">{m.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">

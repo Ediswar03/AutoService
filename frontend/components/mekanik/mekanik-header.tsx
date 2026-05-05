@@ -64,103 +64,100 @@ export function MekanikHeader({ title, description }: MekanikHeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 border-b bg-white/80 backdrop-blur-md px-6 shadow-sm">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="h-6" />
+    <header className="sticky top-0 z-30 flex h-[72px] shrink-0 items-center gap-4 border-b border-slate-200 dark:border-white/5 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl px-6 transition-all duration-300">
+      <SidebarTrigger className="-ml-1 text-slate-500 hover:text-primary transition-all hover:scale-110" />
+      <Separator orientation="vertical" className="h-6 mx-2 bg-slate-200 dark:bg-white/10" />
 
       {title && (
-        <div className="flex flex-col">
-          <h1 className="text-lg font-bold text-slate-900 tracking-tight">{title}</h1>
+        <div className="flex flex-col ml-2">
+          <h1 className="text-xl font-black uppercase tracking-tighter text-slate-900 dark:text-white leading-none mb-1">{title}</h1>
           {description && (
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">
-              {description}
-            </p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none">{description}</p>
           )}
         </div>
       )}
 
-      <div className="ml-auto flex items-center gap-2 md:gap-4">
+      <div className="ml-auto flex items-center gap-6">
         {/* Status Indicator */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold mr-2">
-          <div className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-          System Online
+        <div className="hidden lg:flex items-center gap-3 px-4 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest">
+          <div className="size-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          Mekanik Online
         </div>
 
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-xl size-9 hover:bg-slate-50 transition-colors"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        >
-          <Sun className="size-[18px] dark:hidden text-slate-600" />
-          <Moon className="size-[18px] hidden dark:block text-slate-300" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11 rounded-2xl bg-slate-100/50 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <Sun className="size-5 dark:hidden text-slate-700" />
+            <Moon className="size-5 hidden dark:block text-slate-300" />
+          </Button>
 
-        {/* Notifications */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-xl size-9 hover:bg-slate-50 transition-colors"
-        >
-          <Bell className="size-[18px] text-slate-600" />
-          <Badge className="absolute top-1.5 right-1.5 size-4 rounded-full p-0 flex items-center justify-center bg-amber-500 text-slate-900 border-2 border-white font-bold text-[9px]">
-            2
-          </Badge>
-        </Button>
+          {/* Notifications */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative size-11 rounded-2xl bg-slate-100/50 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
+          >
+            <Bell className="size-5 text-slate-700 dark:text-slate-300" />
+            <span className="absolute top-2 right-2 flex size-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full size-4 bg-amber-500 text-[9px] font-black items-center justify-center text-white border border-white dark:border-zinc-950">
+                2
+              </span>
+            </span>
+          </Button>
+        </div>
 
-        <Separator orientation="vertical" className="h-6 hidden md:block" />
+        <Separator orientation="vertical" className="h-8 hidden md:block bg-slate-200 dark:bg-white/10" />
 
         {/* Profile Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="flex items-center gap-3 cursor-pointer select-none hover:bg-slate-50 p-1.5 rounded-lg transition-colors">
-              <Avatar className="size-9 border border-slate-200">
-                {isUploading ? (
-                  <div className="flex h-full w-full items-center justify-center bg-slate-100 rounded-full">
-                    <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                  </div>
-                ) : (
-                  <>
-                    {displayPhoto ? (
-                      <AvatarImage
-                        src={displayPhoto}
-                        alt={displayName}
-                        onError={(e) => {
-                          ;(e.currentTarget as HTMLImageElement).style.display = "none"
-                        }}
-                      />
-                    ) : null}
-                    <AvatarFallback className="bg-slate-900 text-white font-bold text-xs">
-                      {initials}
-                    </AvatarFallback>
-                  </>
-                )}
-              </Avatar>
-              <div className="hidden md:flex flex-col">
-                <span className="text-sm font-bold text-slate-900 leading-none">{displayName}</span>
-                <span className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest font-bold">
-                  {user?.role || "Mekanik"}
-                </span>
+            <div className="flex items-center gap-4 cursor-pointer select-none hover:bg-slate-50 dark:hover:bg-white/5 p-2 rounded-2xl transition-all group border border-transparent hover:border-slate-200 dark:hover:border-white/5">
+              <div className="relative">
+                <Avatar className="size-10 rounded-xl border-2 border-white dark:border-zinc-900 shadow-md group-hover:scale-105 transition-transform">
+                  {isUploading ? (
+                    <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-zinc-900 rounded-xl">
+                      <Loader2 className="size-4 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <>
+                      <AvatarImage src={displayPhoto} alt={displayName} className="object-cover" />
+                      <AvatarFallback className="bg-primary text-black font-black text-xs">{initials}</AvatarFallback>
+                    </>
+                  )}
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1 size-4 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 shadow-sm" />
               </div>
-              <ChevronDown className="size-4 text-slate-400 hidden md:block" />
+              <div className="hidden md:flex flex-col">
+                <span className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-1.5">{displayName}</span>
+                <Badge className="w-fit bg-primary/10 text-primary border-none text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-md leading-none">{user?.role || "MEKANIK"}</Badge>
+              </div>
+              <ChevronDown className="size-4 text-slate-400 group-hover:text-primary transition-colors" />
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent align="end" className="w-64 p-2 rounded-[2rem] border-none shadow-2xl bg-white dark:bg-zinc-950">
+            <DropdownMenuLabel className="p-4">
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Authenticated as</p>
+               <p className="text-xs font-black text-slate-900 dark:text-white uppercase">{user?.email}</p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5 mx-2" />
             <DropdownMenuItem
               onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer"
+              className="cursor-pointer h-12 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest"
             >
-              Ubah Foto Profil
+              Upload New Photo
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5 mx-2" />
             <DropdownMenuItem
               onClick={() => logout()}
-              className="cursor-pointer text-red-500"
+              className="cursor-pointer h-12 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-500 hover:text-white transition-all"
             >
-              Keluar
+              Sign Out Securely
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

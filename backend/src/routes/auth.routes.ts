@@ -47,8 +47,15 @@ router.put('/change-password', authMiddleware, (req, res, next) =>
   authController.changePassword(req, res, next)
 );
 
-// Update profile (name, phone, address) + optional photo
+// Update profile (name, phone, address, theme) + optional photo
 router.put(
+  '/profile',
+  authMiddleware,
+  upload.single('photo'),
+  (req, res, next) => authController.updateProfile(req, res, next)
+);
+
+router.patch(
   '/profile',
   authMiddleware,
   upload.single('photo'),

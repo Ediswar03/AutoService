@@ -41,13 +41,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [isUpdating, setIsUpdating] = useState(false)
   const [requestDialogOpen, setRequestDialogOpen] = useState(false)
   
-  const { data: woData, isLoading, error, mutate } = useSWR(`/work-orders/${id}`, fetcher)
-  const job = woData?.data
+  const { data: job, isLoading, error, mutate } = useSWR(`/work-orders/${id}`, fetcher)
 
   const handleUpdateStatus = async (status: string) => {
     setIsUpdating(true)
     try {
-      await apiClient.patch(`/work-orders/${id}/status`, { status })
+      await apiClient.put(`/work-orders/${id}/status`, { status })
       toast.success(`Status berhasil diubah ke ${status}`)
       mutate()
     } catch (err: any) {
@@ -105,12 +104,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       </div>
 
       <div className="flex items-center gap-4 text-[10px] font-mono text-slate-500 dark:text-zinc-500 uppercase tracking-widest border-y border-slate-200 dark:border-white/5 py-3 px-1">
-         <span className="flex items-center gap-1.5">
+         <span className="flex items-center gap-1.5" suppressHydrationWarning>
            <Clock className="h-3 w-3" /> 
            {format(new Date(job.createdAt), 'HH:mm', { locale: localeId })} WIB
          </span>
          <span className="h-3 w-px bg-slate-200 dark:bg-white/10" />
-         <span className="flex items-center gap-1.5">
+         <span className="flex items-center gap-1.5" suppressHydrationWarning>
            <Calendar className="h-3 w-3" /> 
            {format(new Date(job.createdAt), 'dd MMM yyyy', { locale: localeId })}
          </span>
@@ -170,7 +169,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <div className="bg-primary/10 px-6 py-4 border-b border-primary/20 dark:border-white/5 flex items-center justify-between">
               <span className="text-sm font-black text-primary uppercase italic tracking-tight">Main Complaint</span>
               {job.estimatedCompletion && (
-                <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest" suppressHydrationWarning>
                   Est. {format(new Date(job.estimatedCompletion), 'dd MMM')}
                 </span>
               )}
@@ -219,7 +218,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </Button>
         )}
 
-        {job.status === "IN_PROGRESS" && (
+        {(job.status === "IN_PROGRESS" || job.status === "WAITING_PARTS") && (
           <>
             <div className="grid grid-cols-1 gap-3">
               <Button 

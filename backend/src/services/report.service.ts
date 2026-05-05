@@ -131,6 +131,7 @@ export class ReportService {
       select: {
         id: true,
         name: true,
+        photoUrl: true,
         assignedWorkOrders: {
           where: {
             createdAt: { gte: startDate, lte: endDate },
@@ -147,6 +148,7 @@ export class ReportService {
     return mechanics.map((m) => ({
       id: m.id,
       name: m.name,
+      photoUrl: m.photoUrl,
       totalOrders: m.assignedWorkOrders.length,
       completed: m.assignedWorkOrders.filter(
         (wo) => wo.status === 'COMPLETED' || wo.status === 'INVOICED'
@@ -179,6 +181,23 @@ export class ReportService {
     });
 
     return { byStatus, byPriority };
+  }
+
+  async getInventoryReport() {
+    const items = await prisma.sparepart.findMany({
+      where: { isActive: true },
+      orderBy: { stockQuantity: 'asc' },
+    });
+
+    const lowStock = items.filter(i => i.stockQuantity <= i.minStock);
+    const criticalStock = items.filter(i => i.stockQuantity <= i.minStock * 0.5);
+
+    return {
+      totalItems: items.length,
+      items,
+      lowStockCount: lowStock.length,
+      criticalStockCount: criticalStock.length,
+    };
   }
 }
 

@@ -34,19 +34,19 @@ import { fetcher } from '@/lib/api-client'
 
 // ─── Schema matches backend createVehicleSchema ─────────────────────────────
 const vehicleSchema = z.object({
-  customerId:   z.string().min(1, 'Pelanggan wajib dipilih'),
+  customerId: z.string().min(1, 'Pelanggan wajib dipilih'),
   licensePlate: z.string().min(1, 'Nomor polisi wajib diisi').max(15),
-  brand:        z.string().min(1, 'Merk wajib diisi').max(50),
-  model:        z.string().min(1, 'Model wajib diisi').max(50),
-  vehicleType:  z.enum(['MOBIL', 'MOTOR', 'TRUCK', 'BUS', 'LAINNYA']).default('MOBIL'),
-  year:         z.number().int().min(1900).max(2100).nullable().optional(),
-  color:        z.string().optional().nullable(),
+  brand: z.string().min(1, 'Merk wajib diisi').max(50),
+  model: z.string().min(1, 'Model wajib diisi').max(50),
+  vehicleType: z.enum(['MOBIL', 'MOTOR', 'TRUCK', 'BUS', 'LAINNYA']).default('MOBIL'),
+  year: z.number().int().min(1900).max(2100).nullable().optional(),
+  color: z.string().optional().nullable(),
   transmission: z.string().optional().nullable(),
-  fuelType:     z.string().optional().nullable(),
-  vin:          z.string().optional().nullable(),
+  fuelType: z.string().optional().nullable(),
+  vin: z.string().optional().nullable(),
   engineNumber: z.string().optional().nullable(),
   lastOdometer: z.number().int().min(0).optional().nullable(),
-  notes:        z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 })
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>
@@ -72,8 +72,8 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
   const customers: any[] = Array.isArray(customersData?.data)
     ? customersData.data
     : Array.isArray(customersData)
-    ? customersData
-    : []
+      ? customersData
+      : []
 
   const {
     register,
@@ -84,19 +84,19 @@ export function VehicleForm({ initialData, onSubmit, isSubmitting }: VehicleForm
   } = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
-      customerId:   initialData?.customerId   ?? '',
+      customerId: initialData?.customerId ?? '',
       licensePlate: initialData?.licensePlate ?? '',
-      brand:        initialData?.brand        ?? '',
-      model:        initialData?.model        ?? '',
-      vehicleType:  initialData?.vehicleType  ?? 'MOBIL',
-      year:         initialData?.year         ?? new Date().getFullYear(),
-      color:        initialData?.color        ?? '',
+      brand: initialData?.brand ?? '',
+      model: initialData?.model ?? '',
+      vehicleType: initialData?.vehicleType ?? 'MOBIL',
+      year: initialData?.year ?? new Date().getFullYear(),
+      color: initialData?.color ?? '',
       transmission: initialData?.transmission ?? 'Manual',
-      fuelType:     initialData?.fuelType     ?? 'Bensin',
-      vin:          initialData?.vin          ?? '',
+      fuelType: initialData?.fuelType ?? 'Bensin',
+      vin: initialData?.vin ?? '',
       engineNumber: initialData?.engineNumber ?? '',
       lastOdometer: initialData?.lastOdometer ?? 0,
-      notes:        initialData?.notes        ?? '',
+      notes: initialData?.notes ?? '',
     },
   })
 

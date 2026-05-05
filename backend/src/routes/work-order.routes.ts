@@ -23,6 +23,12 @@ router.post(
   (req, res, next) => workOrderController.create(req, res, next)
 );
 
+router.patch(
+  '/:id',
+  roleMiddleware('ADMIN', 'MEKANIK'),
+  (req, res, next) => workOrderController.update(req, res, next)
+);
+
 router.put(
   '/:id/status',
   roleMiddleware('ADMIN', 'MEKANIK'),

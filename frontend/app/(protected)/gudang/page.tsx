@@ -15,6 +15,9 @@ import { CriticalStockAlert } from "@/components/gudang/critical-stock-alert"
 import useSWR from "swr"
 import { fetcher } from "@/lib/api-client"
 
+import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+
 export default function GudangDashboard() {
   const { data: sparepartsRaw, isLoading: loadingStock } = useSWR(
     "/inventory/spareparts?limit=500",
@@ -36,260 +39,276 @@ export default function GudangDashboard() {
   )
 
   const todayInbound = movements.filter((m: any) =>
-    m.type === "PURCHASE" || m.type === "INITIAL" || m.type === "ADJUSTMENT_IN"
+    ["PURCHASE", "INITIAL", "ADJUSTMENT_IN"].includes(m.movementType)
   ).reduce((sum: number, m: any) => sum + (m.quantity || 0), 0)
 
   const todayOutbound = movements.filter((m: any) =>
-    m.type === "SALE" || m.type === "ADJUSTMENT_OUT"
+    ["SALE", "ADJUSTMENT_OUT"].includes(m.movementType)
   ).reduce((sum: number, m: any) => sum + Math.abs(m.quantity || 0), 0)
 
   const recentMovements = movements.slice(0, 5)
 
   return (
     <>
-      <GudangHeader title="Dashboard" description="Ringkasan status inventori dan aktivitas gudang" />
+      <GudangHeader title="Overview Gudang" description="Monitoring real-time status inventori dan logistik" />
       <CriticalStockAlert />
 
-      <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
-        <div className="mx-auto max-w-7xl space-y-6">
+      <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-50/50 dark:bg-black/20">
+        <div className="mx-auto max-w-7xl space-y-8">
 
           {/* Stats Grid */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-500">Total Parts</CardTitle>
-                <div className="size-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                  <Package className="size-4 text-slate-600" />
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-2xl overflow-hidden group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 group-hover:scale-110 transition-transform">
+                  <Package className="size-6 text-blue-600 dark:text-blue-400" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loadingStock ? <Loader2 className="h-5 w-5 animate-spin" /> : allItems.length.toLocaleString()}
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total SKU</p>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-none">
+                    {loadingStock ? "..." : allItems.length.toLocaleString()}
+                  </h3>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Jenis suku cadang dalam stok</p>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm border-red-100 bg-red-50/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-red-600">Stok Kritis</CardTitle>
-                <div className="size-8 rounded-lg bg-red-100 flex items-center justify-center">
-                  <AlertTriangle className="size-4 text-red-600" />
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-2xl overflow-hidden group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center border border-rose-100 dark:border-rose-500/20 group-hover:scale-110 transition-transform">
+                  <AlertTriangle className={cn("size-6 text-rose-600 dark:text-rose-400", criticalItems.length > 0 && "animate-pulse")} />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {loadingStock ? "..." : criticalItems.length}
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Stok Kosong</p>
+                  <h3 className="text-2xl font-black text-rose-600 leading-none">
+                    {loadingStock ? "..." : criticalItems.length}
+                  </h3>
                 </div>
-                <p className="text-xs text-red-500/80 mt-1">Perlu restock segera!</p>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm border-amber-100 bg-amber-50/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-amber-600">Stok Minimum</CardTitle>
-                <div className="size-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <TrendingDown className="size-4 text-amber-600" />
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-2xl overflow-hidden group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center border border-amber-100 dark:border-amber-500/20 group-hover:scale-110 transition-transform">
+                  <TrendingDown className="size-6 text-amber-600 dark:text-amber-400" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-amber-600">
-                  {loadingStock ? "..." : minimumItems.length}
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Stok Menipis</p>
+                  <h3 className="text-2xl font-black text-amber-600 leading-none">
+                    {loadingStock ? "..." : minimumItems.length}
+                  </h3>
                 </div>
-                <p className="text-xs text-amber-500/80 mt-1">Mendekati batas minimum</p>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm border-blue-100 bg-blue-50/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-blue-600">Total Nilai Stok</CardTitle>
-                <div className="size-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <ClipboardCheck className="size-4 text-blue-600" />
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-2xl overflow-hidden group">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="size-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center border border-slate-200 dark:border-white/10 group-hover:scale-110 transition-transform">
+                  <ClipboardCheck className="size-6 text-slate-600 dark:text-slate-400" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {loadingStock ? "..." : `Rp ${(
-                    allItems.reduce((s: number, i: any) => s + Number(i.sellPrice || 0) * (i.stockQuantity || 0), 0) / 1_000_000
-                  ).toFixed(0)}jt`}
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nilai Inventori</p>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-none">
+                    {loadingStock ? "..." : `Rp ${(
+                      allItems.reduce((s: number, i: any) => s + Number(i.sellPrice || 0) * (i.stockQuantity || 0), 0) / 1_000_000
+                    ).toFixed(0)}Jt`}
+                  </h3>
                 </div>
-                <p className="text-xs text-blue-500/80 mt-1">Nilai total inventori aktif</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Secondary Stats */}
+          {/* Secondary Stats & Quick Info */}
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shrink-0">
-                <ArrowDownRight className="size-5" />
+            <div className="flex items-center gap-4 bg-white dark:bg-zinc-900/50 p-5 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm group">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 shrink-0 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                <ArrowDownRight className="size-6" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Inbound (Recent)</p>
-                <h4 className="text-lg font-bold text-slate-900">
-                  +{todayInbound} <span className="text-[10px] font-normal text-slate-400 ml-1">Unit</span>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Inbound</p>
+                <h4 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tighter">
+                  +{todayInbound} <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Units</span>
                 </h4>
               </div>
             </div>
-            <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="flex size-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 shrink-0">
-                <ArrowUpRight className="size-5" />
+            <div className="flex items-center gap-4 bg-white dark:bg-zinc-900/50 p-5 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm group">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500 shrink-0 border border-rose-500/20 group-hover:scale-110 transition-transform">
+                <ArrowUpRight className="size-6" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Outbound (Recent)</p>
-                <h4 className="text-lg font-bold text-slate-900">
-                  -{todayOutbound} <span className="text-[10px] font-normal text-slate-400 ml-1">Unit</span>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Outbound</p>
+                <h4 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tighter">
+                  -{todayOutbound} <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Units</span>
                 </h4>
               </div>
             </div>
-            <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <div className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 shrink-0">
-                <Clock className="size-5" />
+            <div className="flex items-center gap-4 bg-white dark:bg-zinc-900/50 p-5 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm group">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shrink-0 border border-primary/20 group-hover:scale-110 transition-transform">
+                <Clock className="size-6" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Pergerakan Stok</p>
-                <h4 className="text-lg font-bold text-slate-900">
-                  {movements.length} <span className="text-[10px] font-normal text-slate-400 ml-1">Transaksi</span>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Aktivitas</p>
+                <h4 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tighter">
+                  {movements.length} <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Entries</span>
                 </h4>
               </div>
             </div>
           </div>
 
-          {/* Charts */}
+          {/* Charts Area */}
           <DashboardCharts />
 
-          {/* Lists Section */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Critical Stock */}
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-50">
+          {/* Critical Lists & Recent Movements */}
+          <div className="grid gap-8 lg:grid-cols-2">
+            {/* Critical Stock List */}
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-[2.5rem] overflow-hidden">
+              <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between space-y-0">
                 <div>
-                  <CardTitle className="text-lg">Stok Perlu Perhatian</CardTitle>
-                  <CardDescription className="text-xs">Parts dengan stok kritis dan minimum</CardDescription>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">STOK KRITIS</p>
+                  <CardTitle className="text-xl font-black uppercase italic tracking-tighter">Priority Restock</CardTitle>
                 </div>
-                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 font-medium" asChild>
-                  <Link href="/gudang/inventory?status=critical">Lihat Semua <ChevronRight className="ml-1 size-4" /></Link>
+                <Button variant="ghost" size="sm" className="h-10 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest text-primary" asChild>
+                  <Link href="/gudang/inventory?status=critical">Lihat Semua <ChevronRight className="ml-2 size-4" /></Link>
                 </Button>
               </CardHeader>
-              <CardContent className="pt-4 px-3">
+              <CardContent className="p-8 pt-4 space-y-3">
                 {loadingStock ? (
-                  <div className="py-6 text-center text-slate-400">
-                    <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                    <p className="text-xs">Memuat data...</p>
+                  <div className="space-y-3">
+                    <Skeleton className="h-16 w-full rounded-2xl" />
+                    <Skeleton className="h-16 w-full rounded-2xl" />
+                  </div>
+                ) : [...criticalItems, ...minimumItems].length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 opacity-30">
+                    <ClipboardCheck className="size-12 mb-3" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Semua stok aman</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {[...criticalItems, ...minimumItems].slice(0, 5).map((item: any) => {
-                      const isCritical = item.stockQuantity <= 0
-                      return (
-                        <div key={item.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-3 hover:bg-white hover:border-amber-200 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className={`size-2.5 rounded-full ${isCritical ? "bg-red-500 animate-pulse" : "bg-amber-500"}`} />
-                            <div>
-                              <p className="font-bold text-sm text-slate-900">{item.name}</p>
-                              <p className="text-[11px] text-slate-500">{item.code} • {item.category}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className={`font-bold text-sm ${isCritical ? "text-red-500" : "text-amber-500"}`}>
-                              {item.stockQuantity} / {item.minStock ?? 5}
-                            </p>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-tighter">Stok / Min</p>
+                  [...criticalItems, ...minimumItems].slice(0, 4).map((item: any) => {
+                    const isCritical = item.stockQuantity <= 0
+                    return (
+                      <div key={item.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-black/20 border border-slate-100 dark:border-white/5 hover:border-amber-400 transition-all group">
+                        <div className="flex items-center gap-4">
+                          <div className={cn(
+                            "size-2.5 rounded-full",
+                            isCritical ? "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" : "bg-amber-500"
+                          )} />
+                          <div>
+                            <p className="font-black text-slate-900 dark:text-white uppercase italic text-sm tracking-tight leading-none mb-1.5">{item.name}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.code} • {item.category}</p>
                           </div>
                         </div>
-                      )
-                    })}
-                    {criticalItems.length === 0 && minimumItems.length === 0 && (
-                      <p className="text-center text-sm text-slate-400 py-4">Semua stok dalam kondisi aman ✓</p>
-                    )}
-                  </div>
+                        <div className="text-right">
+                          <p className={cn(
+                            "text-base font-black italic tracking-tighter leading-none mb-1",
+                            isCritical ? "text-rose-500" : "text-amber-500"
+                          )}>
+                            {item.stockQuantity} <span className="text-[10px] font-bold text-slate-400 opacity-50">/ {item.minStock ?? 5}</span>
+                          </p>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Qty / Min</p>
+                        </div>
+                      </div>
+                    )
+                  })
                 )}
               </CardContent>
             </Card>
 
-            {/* Recent Movements */}
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-50">
+            {/* Recent Activity List */}
+            <Card className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/5 shadow-sm rounded-[2.5rem] overflow-hidden">
+              <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between space-y-0">
                 <div>
-                  <CardTitle className="text-lg">Pergerakan Stok Terbaru</CardTitle>
-                  <CardDescription className="text-xs">Riwayat transaksi masuk dan keluar</CardDescription>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">LOG TERBARU</p>
+                  <CardTitle className="text-xl font-black uppercase italic tracking-tighter text-slate-900 dark:text-white">Recent Activities</CardTitle>
                 </div>
-                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 font-medium" asChild>
-                  <Link href="/gudang/stock-movements">Lihat Riwayat <ChevronRight className="ml-1 size-4" /></Link>
+                <Button variant="ghost" size="sm" className="h-10 rounded-xl px-4 text-[10px] font-black uppercase tracking-widest text-primary" asChild>
+                  <Link href="/gudang/stock-movements">Riwayat Log <ChevronRight className="ml-2 size-4" /></Link>
                 </Button>
               </CardHeader>
-              <CardContent className="pt-4 px-3">
+              <CardContent className="p-8 pt-4 space-y-3">
                 {loadingMovements ? (
-                  <div className="py-6 text-center text-slate-400">
-                    <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                    <p className="text-xs">Memuat data...</p>
+                  <div className="space-y-3">
+                    <Skeleton className="h-16 w-full rounded-2xl" />
+                    <Skeleton className="h-16 w-full rounded-2xl" />
                   </div>
                 ) : recentMovements.length === 0 ? (
-                  <p className="text-center text-sm text-slate-400 py-4">Belum ada pergerakan stok</p>
+                  <div className="flex flex-col items-center justify-center py-12 opacity-30">
+                    <Boxes className="size-12 mb-3" />
+                    <p className="text-[10px] font-black uppercase tracking-widest">Belum ada pergerakan</p>
+                  </div>
                 ) : (
-                  <div className="space-y-2">
-                    {recentMovements.map((movement: any) => {
-                      const isIn = ["PURCHASE", "INITIAL", "ADJUSTMENT_IN"].includes(movement.type)
-                      const date = movement.createdAt ? new Date(movement.createdAt) : null
-                      return (
-                        <div key={movement.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-3 hover:bg-white hover:border-slate-200 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className={`flex size-10 items-center justify-center rounded-lg ${isIn ? "bg-emerald-100 text-emerald-600" : "bg-blue-100 text-blue-600"}`}>
-                              {isIn ? <ArrowDownRight className="size-5" /> : <ArrowUpRight className="size-5" />}
-                            </div>
-                            <div>
-                              <p className="font-bold text-sm text-slate-900">
-                                {movement.sparepart?.name || "Part tidak diketahui"}
-                              </p>
-                              <p className="text-[11px] text-slate-500 font-mono">
-                                {movement.reference || movement.type} • {movement.performedBy?.name || "-"}
-                              </p>
-                            </div>
+                  recentMovements.slice(0, 4).map((movement: any) => {
+                    const isIn = ["PURCHASE", "INITIAL", "ADJUSTMENT_IN"].includes(movement.movementType)
+                    return (
+                      <div key={movement.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-black/20 border border-slate-100 dark:border-white/5 group hover:border-primary transition-all">
+                        <div className="flex items-center gap-4">
+                          <div className={cn(
+                            "flex size-10 items-center justify-center rounded-xl border group-hover:scale-105 transition-transform",
+                            isIn ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                          )}>
+                            {isIn ? <ArrowDownRight className="size-5" /> : <ArrowUpRight className="size-5" />}
                           </div>
-                          <div className="text-right">
-                            <p className={`font-bold text-sm ${isIn ? "text-emerald-600" : "text-blue-600"}`}>
-                              {isIn ? "+" : "-"}{Math.abs(movement.quantity || 0)}
+                          <div className="max-w-[200px]">
+                            <p className="font-black text-slate-900 dark:text-white uppercase italic text-sm tracking-tight leading-none mb-1.5 truncate">
+                              {movement.sparepart?.name || "PART UNKNOWN"}
                             </p>
-                            <p className="text-[10px] text-slate-400 font-medium">
-                              {date ? date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "-"}
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate">
+                              {movement.movementType} • {movement.createdBy?.name || "-"}
                             </p>
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
+                        <div className="text-right">
+                          <p className={cn(
+                            "text-base font-black italic tracking-tighter leading-none mb-1",
+                            isIn ? "text-emerald-500" : "text-rose-500"
+                          )}>
+                            {isIn ? "+" : "-"}{Math.abs(movement.quantity || 0)}
+                          </p>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            {movement.createdAt ? format(new Date(movement.createdAt), "dd MMM") : "-"}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Quick Actions Footer */}
-          <Card className="bg-slate-900 text-white overflow-hidden relative shadow-lg">
-            <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-amber-500/20 to-transparent pointer-events-none" />
-            <CardContent className="p-8 relative z-10">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="text-center md:text-left">
-                  <h3 className="text-2xl font-bold text-[#FFC107] mb-2">Butuh Kelola Data Cepat?</h3>
-                  <p className="text-slate-300 text-sm max-w-md">Akses menu utama untuk pengelolaan stok, supplier, dan laporan gudang secara instan.</p>
-                </div>
-                <div className="flex flex-wrap justify-center gap-3">
-                  <Button className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-5 rounded-xl transition-all hover:scale-105" asChild>
-                    <Link href="/gudang/inventory">
-                      <Boxes className="mr-2 size-5" />
-                      Data Inventori
-                    </Link>
-                  </Button>
-                  <Button variant="outline" className="border-slate-700 text-white hover:bg-slate-800 font-bold px-6 py-5 rounded-xl transition-all" asChild>
-                    <Link href="/gudang/approvals">
-                      Validasi Nota <ArrowRight className="ml-2 size-5" />
-                    </Link>
-                  </Button>
-                </div>
+          {/* Actions Banner */}
+          <div className="relative overflow-hidden rounded-[3rem] bg-[#0A0A0B] p-10 shadow-2xl">
+            <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12 pointer-events-none">
+              <Boxes className="size-64" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-transparent pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+              <div className="text-center md:text-left space-y-4">
+                <Badge className="bg-primary text-black border-none font-black text-[10px] uppercase tracking-widest px-3 py-1 rounded-lg">QUICK ACCESS</Badge>
+                <h3 className="text-[2.5rem] font-black text-white leading-none tracking-tighter uppercase italic">Optimalkan Stok Anda</h3>
+                <p className="text-slate-400 text-sm max-w-lg font-medium leading-relaxed">
+                  Gunakan modul inventori untuk update stok massal, atau setujui permintaan sparepart mekanik dalam hitungan detik.
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                <Button className="h-16 bg-orange-500 hover:bg-orange-600 text-white font-black uppercase tracking-widest text-xs px-10 rounded-[1.5rem] shadow-[0_4px_20px_rgba(249,115,22,0.3)] hover:scale-105 transition-all flex-1 md:flex-none" asChild>
+                  <Link href="/gudang/inventory">
+                    <Boxes className="mr-3 size-5" />
+                    Manajemen Stok
+                  </Link>
+                </Button>
+                <Button variant="outline" className="h-16 border-white/10 text-white hover:bg-white/5 font-black uppercase tracking-widest text-xs px-10 rounded-[1.5rem] hover:scale-105 transition-all flex-1 md:flex-none" asChild>
+                  <Link href="/gudang/approvals">
+                    Verifikasi Permintaan <ArrowRight className="ml-3 size-5" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
   )
 }
+
+import { format } from "date-fns"
+

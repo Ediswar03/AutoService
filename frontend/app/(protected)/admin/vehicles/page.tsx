@@ -218,8 +218,8 @@ export default function VehiclesPage() {
                           <TableCell className="text-sm text-muted-foreground">
                             {vehicle.createdAt
                               ? new Date(vehicle.createdAt).toLocaleDateString("id-ID", {
-                                  day: "2-digit", month: "short", year: "numeric",
-                                })
+                                day: "2-digit", month: "short", year: "numeric",
+                              })
                               : "-"}
                           </TableCell>
                           <TableCell>

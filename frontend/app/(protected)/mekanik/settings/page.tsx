@@ -6,8 +6,11 @@ import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
+import { Input } from "@/components/ui/input"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
+import { useAuth } from "@/hooks/useAuth"
+import { apiClient } from "@/lib/api-client"
 
 interface SettingToggleProps {
   label: string
@@ -40,49 +43,83 @@ function SettingToggle({ label, description, checked, onCheckedChange, icon: Ico
 }
 
 export default function SettingsPage() {
+  const { user, refreshUser, logout } = useAuth()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
-  // Local State for settings
+  // Local State for settings (some are local only, some synced)
   const [settings, setSettings] = useState({
     notifications: true,
     sound: true,
     vibration: false,
     biometric: false,
     showPhone: true,
-    language: "id" as "id" | "en"
+    language: "id" as "id" | "en",
+    // User profile data
+    name: "",
+    phone: "",
+    address: ""
   })
 
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  // Avoid hydration mismatch
+  // Sync with user data on mount
   useEffect(() => {
     setMounted(true)
-    const stored = localStorage.getItem("mekanik_settings")
+    if (user) {
+      setSettings(prev => ({
+        ...prev,
+        name: user.name || "",
+        phone: user.phone || "",
+        address: user.address || "",
+      }))
+    }
+    
+    const stored = localStorage.getItem("mekanik_local_settings")
     if (stored) {
       try {
-        setSettings(JSON.parse(stored))
+        const localData = JSON.parse(stored)
+        setSettings(prev => ({ ...prev, ...localData }))
       } catch (e) {
-        console.error("Failed to parse settings", e)
+        console.error("Failed to parse local settings", e)
       }
     }
-  }, [])
+  }, [user])
 
   const handleToggle = (key: keyof typeof settings) => (value: boolean | string) => {
     setSettings(prev => ({ ...prev, [key]: value }))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      localStorage.setItem("mekanik_settings", JSON.stringify(settings))
-      setIsSaving(false)
+    try {
+      // 1. Save profile to backend
+      await apiClient.patch('/auth/profile', {
+        name: settings.name,
+        phone: settings.phone,
+        address: settings.address,
+      })
+      
+      // 2. Save local-only settings to localStorage
+      const localOnly = {
+        notifications: settings.notifications,
+        sound: settings.sound,
+        vibration: settings.vibration,
+        biometric: settings.biometric,
+        language: settings.language,
+      }
+      localStorage.setItem("mekanik_local_settings", JSON.stringify(localOnly))
+      
+      await refreshUser()
       setSaved(true)
       toast.success("Pengaturan berhasil disimpan!")
       setTimeout(() => setSaved(false), 3000)
-    }, 800)
+    } catch (error) {
+      toast.error("Gagal menyimpan pengaturan")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   if (!mounted) return null
@@ -91,6 +128,44 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 pb-12 pt-2">
+      {/* Profil Saya */}
+      <div className="space-y-2">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2 px-1">
+          <Shield className="h-3 w-3 text-primary" /> Profil Saya
+        </h4>
+        <Card className="bg-white/80 dark:bg-zinc-900/60 border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+          <CardContent className="px-5 py-5 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 ml-1">Nama Lengkap</label>
+              <Input 
+                value={settings.name}
+                onChange={(e) => setSettings(prev => ({ ...prev, name: e.target.value }))}
+                className="bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-white/5 rounded-xl text-sm h-11"
+                placeholder="Nama Anda"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 ml-1">Nomor Telepon</label>
+              <Input 
+                value={settings.phone}
+                onChange={(e) => setSettings(prev => ({ ...prev, phone: e.target.value }))}
+                className="bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-white/5 rounded-xl text-sm h-11"
+                placeholder="0812..."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 ml-1">Alamat</label>
+              <Input 
+                value={settings.address}
+                onChange={(e) => setSettings(prev => ({ ...prev, address: e.target.value }))}
+                className="bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-white/5 rounded-xl text-sm h-11"
+                placeholder="Alamat Lengkap"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Notifikasi */}
       <div className="space-y-2">
         <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-600 flex items-center gap-2 px-1">
@@ -220,18 +295,30 @@ export default function SettingsPage() {
         <Card className="bg-white/80 dark:bg-zinc-900/60 border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
           <CardContent className="p-0">
             {[
-              { label: "Syarat & Ketentuan", href: "#" },
-              { label: "Kebijakan Privasi", href: "#" },
-              { label: "Tentang Aplikasi", href: "#" },
+              { label: "Bantuan & Dukungan", onClick: () => toast.info("Fitur bantuan segera hadir") },
+              { label: "Syarat & Ketentuan", onClick: () => toast.info("Syarat & Ketentuan") },
+              { label: "Kebijakan Privasi", onClick: () => toast.info("Kebijakan Privasi") },
             ].map((item) => (
               <button
                 key={item.label}
+                onClick={item.onClick}
                 className="w-full flex items-center justify-between px-5 py-4 text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5 transition-all border-b border-slate-100 dark:border-white/5 last:border-0 group"
               >
                 <span className="text-sm font-bold uppercase tracking-wide">{item.label}</span>
                 <ChevronRight className="h-4 w-4 text-slate-400 dark:text-zinc-600 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
               </button>
             ))}
+            
+            {/* Logout Button */}
+            <button
+              onClick={() => logout()}
+              className="w-full flex items-center justify-between px-5 py-4 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all group"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black uppercase tracking-widest">KELUAR AKUN</span>
+              </div>
+              <ChevronRight className="h-4 w-4 opacity-50 group-hover:translate-x-0.5 transition-all" />
+            </button>
           </CardContent>
         </Card>
       </div>

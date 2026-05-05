@@ -7,6 +7,7 @@ import {
   registerSchema,
   changePasswordSchema,
   refreshTokenSchema,
+  updateProfileSchema,
 } from '../schemas/auth.schema';
 import { sendSuccess, sendCreated } from '../utils/response.util';
 
@@ -76,20 +77,21 @@ export class AuthController {
 
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, phone, address } = req.body;
+      const { name, phone, address, theme } = updateProfileSchema.parse(req.body);
       let photoUrl: string | undefined;
 
       // If photo file was uploaded, save it
       if (req.file) {
         const { uploadService } = await import('../services/upload.service');
         const fileKey = await uploadService.uploadImage(req.file, 'avatars');
-        photoUrl = fileKey; // Save the raw key instead of the presigned URL
+        photoUrl = fileKey;
       }
 
       const updated = await authService.updateProfile(req.user!.userId, {
         name,
         phone,
         address,
+        theme,
         ...(photoUrl !== undefined && { photoUrl }),
       });
 

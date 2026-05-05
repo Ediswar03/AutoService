@@ -64,6 +64,7 @@ import { cn } from "@/lib/utils"
 import { PimpinanHeader } from "@/components/pimpinan/pimpinan-header"
 import useSWR from "swr"
 import { fetcher } from "@/lib/api-client"
+import { resolvePhotoUrl } from "@/lib/resolve-photo"
 
 const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444"]
 
@@ -77,7 +78,7 @@ function formatRupiah(amount: number): string {
 }
 
 const chartConfig = {
-  target:    { label: "Target",    color: "#94a3b8" },
+  target: { label: "Target", color: "#94a3b8" },
   realisasi: { label: "Realisasi", color: "#3b82f6" },
 }
 
@@ -87,31 +88,31 @@ export default function DashboardPage() {
   const m = String(now.getMonth() + 1).padStart(2, "0")
   const lastDay = new Date(y, now.getMonth() + 1, 0).getDate()
   const startDate = `${y}-${m}-01`
-  const endDate   = `${y}-${m}-${String(lastDay).padStart(2, "0")}`
+  const endDate = `${y}-${m}-${String(lastDay).padStart(2, "0")}`
 
   const { data: dashRaw, isLoading } = useSWR(
     `/reports/dashboard?startDate=${startDate}&endDate=${endDate}`,
     fetcher
   )
-  const { data: recentWO }      = useSWR("/work-orders?limit=5&sortBy=createdAt&sortOrder=desc", fetcher)
-  const { data: mechanicsRaw }  = useSWR(`/reports/mechanics?startDate=${startDate}&endDate=${endDate}`, fetcher)
+  const { data: recentWO } = useSWR("/work-orders?limit=5&sortBy=createdAt&sortOrder=desc", fetcher)
+  const { data: mechanicsRaw } = useSWR(`/reports/mechanics?startDate=${startDate}&endDate=${endDate}`, fetcher)
 
   const dash = dashRaw?.data || dashRaw || {}
   const recentTransactions: any[] = Array.isArray(recentWO?.data) ? recentWO.data : []
   const mechanicPerformance: any[] = Array.isArray(mechanicsRaw) ? mechanicsRaw : []
 
-  const totalRevenue    = Number(dash.totalRevenue   || dash.revenue        || 0)
+  const totalRevenue = Number(dash.totalRevenue || dash.revenue || 0)
   const completedOrders = Number(dash.completedOrders || dash.totalCompleted || 0)
-  const pendingOrders   = Number(dash.pendingOrders  || 0)
-  const avgRating       = Number(dash.avgRating      || 4.8)
+  const pendingOrders = Number(dash.pendingOrders || 0)
+  const avgRating = Number(dash.avgRating || 4.8)
   const activeMechanics = mechanicPerformance.filter((m: any) => m.isActive !== false).length
 
   const kpiData = [
-    { title: "Total Pendapatan", value: isLoading ? "..." : `Rp ${(totalRevenue / 1_000_000).toFixed(1)}M`, change: "+", changeType: "positive" as const, subtext: "bulan ini",  icon: DollarSign, color: "bg-blue-500" },
-    { title: "SPK Selesai",      value: isLoading ? "..." : completedOrders.toString(), change: "+", changeType: "positive" as const, subtext: "completed", icon: FileText,  color: "bg-emerald-500" },
-    { title: "SPK Pending",      value: isLoading ? "..." : pendingOrders.toString(),   change: "-", changeType: "negative" as const, subtext: "menunggu",  icon: Clock,      color: "bg-amber-500" },
-    { title: "Rating",           value: isLoading ? "..." : avgRating.toFixed(1),       change: "+0.2", changeType: "positive" as const, subtext: "dari 5.0",  icon: Star,  color: "bg-purple-500" },
-    { title: "Mekanik Aktif",    value: isLoading ? "..." : activeMechanics.toString(), change: "0",  changeType: "neutral" as const,  subtext: "on duty",   icon: Users,  color: "bg-slate-500" },
+    { title: "Total Pendapatan", value: isLoading ? "..." : `Rp ${(totalRevenue / 1_000_000).toFixed(1)}M`, change: "+", changeType: "positive" as const, subtext: "bulan ini", icon: DollarSign, color: "bg-blue-500" },
+    { title: "SPK Selesai", value: isLoading ? "..." : completedOrders.toString(), change: "+", changeType: "positive" as const, subtext: "completed", icon: FileText, color: "bg-emerald-500" },
+    { title: "SPK Pending", value: isLoading ? "..." : pendingOrders.toString(), change: "-", changeType: "negative" as const, subtext: "menunggu", icon: Clock, color: "bg-amber-500" },
+    { title: "Rating", value: isLoading ? "..." : avgRating.toFixed(1), change: "+0.2", changeType: "positive" as const, subtext: "dari 5.0", icon: Star, color: "bg-purple-500" },
+    { title: "Mekanik Aktif", value: isLoading ? "..." : activeMechanics.toString(), change: "0", changeType: "neutral" as const, subtext: "on duty", icon: Users, color: "bg-slate-500" },
   ]
 
   const revenueChartData = Array.isArray(dash.monthlyRevenue) ? dash.monthlyRevenue : [
@@ -125,8 +126,8 @@ export default function DashboardPage() {
 
   const serviceTypeData: { name: string; value: number; color: string }[] = Array.isArray(dash.serviceBreakdown)
     ? dash.serviceBreakdown.map((s: any, i: number) => ({
-        name: s.name, value: s.percentage || s.count || 0, color: CHART_COLORS[i % CHART_COLORS.length],
-      }))
+      name: s.name, value: s.percentage || s.count || 0, color: CHART_COLORS[i % CHART_COLORS.length],
+    }))
     : []
 
   return (
@@ -398,11 +399,11 @@ export default function DashboardPage() {
                 ) : mechanicPerformance.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-4">Tidak ada data mekanik</p>
                 ) : mechanicPerformance.slice(0, 5).map((mechanic: any, index: number) => {
-                  const name     = mechanic.mechanicName || mechanic.name || "-"
+                  const name = mechanic.mechanicName || mechanic.name || "-"
                   const initials = name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
-                  const spkDone  = Number(mechanic.totalOrders || mechanic.spkCompleted || 0)
-                  const rating   = Number(mechanic.avgRating || mechanic.rating || 4.5).toFixed(1)
-                  const maxSpk   = Math.max(...mechanicPerformance.map((m: any) => Number(m.totalOrders || m.spkCompleted || 1)))
+                  const spkDone = Number(mechanic.totalOrders || mechanic.spkCompleted || 0)
+                  const rating = Number(mechanic.avgRating || mechanic.rating || 4.5).toFixed(1)
+                  const maxSpk = Math.max(...mechanicPerformance.map((m: any) => Number(m.totalOrders || m.spkCompleted || 1)))
                   const progress = Math.round((spkDone / Math.max(maxSpk, 1)) * 100)
                   return (
                     <div key={mechanic.id || mechanic.mechanicId || index} className="flex items-center gap-4">
@@ -411,10 +412,10 @@ export default function DashboardPage() {
                         index === 0 && "bg-amber-100 text-amber-700",
                         index === 1 && "bg-slate-100 text-slate-700",
                         index === 2 && "bg-orange-100 text-orange-700",
-                        index > 2  && "bg-muted text-muted-foreground"
+                        index > 2 && "bg-muted text-muted-foreground"
                       )}>{index + 1}</div>
-                      <Avatar className="size-10">
-                        <AvatarImage src={mechanic.photoUrl || `https://i.pravatar.cc/40?u=${mechanic.mechanicId || index}`} />
+                      <Avatar className="size-10 bg-slate-100">
+                        <AvatarImage src={resolvePhotoUrl(mechanic.photoUrl)} />
                         <AvatarFallback className="bg-primary text-primary-foreground font-medium">{initials}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">

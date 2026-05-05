@@ -17,10 +17,10 @@ import { PartRequestDialog } from "@/components/mekanik/PartRequestDialog"
 type RequestStatus = "all" | "PENDING" | "APPROVED" | "REJECTED" | "RECEIVED"
 
 const statusConfig: Record<string, { label: string; icon: any; className: string }> = {
-  PENDING:  { label: "Menunggu",  icon: Clock,        className: "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-500/20" },
+  PENDING: { label: "Menunggu", icon: Clock, className: "bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-500/20" },
   APPROVED: { label: "Disetujui", icon: CheckCircle2, className: "bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 border-blue-200 dark:border-blue-500/20" },
-  RECEIVED: { label: "Diterima",  icon: CheckCircle2, className: "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-200 dark:border-emerald-500/20" },
-  REJECTED: { label: "Ditolak",   icon: XCircle,      className: "bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-500 border-red-200 dark:border-red-500/20" },
+  RECEIVED: { label: "Diterima", icon: CheckCircle2, className: "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border-emerald-200 dark:border-emerald-500/20" },
+  REJECTED: { label: "Ditolak", icon: XCircle, className: "bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-500 border-red-200 dark:border-red-500/20" },
 }
 
 export default function PartsRequestPage() {
@@ -29,32 +29,27 @@ export default function PartsRequestPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [requestDialogOpen, setRequestDialogOpen] = useState(false)
 
-  const { data: woData, isLoading, mutate } = useSWR(
-    user ? `/work-orders?assignedMechanicId=${user.id}&limit=100&sortBy=createdAt&sortOrder=desc` : null,
+  const { data: rawData, isLoading, mutate } = useSWR(
+    user ? `/gudang/part-requests?requestedById=${user.id}&limit=100` : null,
     fetcher
   )
 
-  const { data: realRequestsRaw, mutate: mutateReal } = useSWR(
-    '/gudang/part-requests?limit=100',
-    fetcher
-  )
-
-  const realRequests: any[] = Array.isArray(realRequestsRaw?.data) ? realRequestsRaw.data : []
+  const realRequests: any[] = Array.isArray(rawData?.data) ? rawData.data : []
 
   const partsRequests = realRequests.map((r: any) => {
+    // Backend status is already lowercase from mappedData
     let reqStatus = r.status.toUpperCase()
-    if (reqStatus === 'APPROVED') reqStatus = 'APPROVED'
-    if (reqStatus === 'REJECTED') reqStatus = 'REJECTED'
     if (reqStatus === 'FULFILLED') reqStatus = 'RECEIVED'
-    
+
     return {
       ...r,
       reqStatus,
-      orderNumber: r.orderNumber,
-      customer: { name: r.workOrder?.customer?.name || '-' },
-      vehicle: r.workOrder?.vehicle || { brand: '-', model: '-', licensePlate: '-' },
+      orderNumber: r.spk_number,
+      customer: { name: r.customer_name },
+      vehicle: { brand: r.vehicle_info, model: '', licensePlate: r.vehicle_plate },
       spareparts: r.items.map((i: any) => ({
-        name: i.sparepart.name,
+        name: i.sparepart_name,
+        code: i.sparepart_code,
         quantity: i.quantity,
       })),
     }
@@ -75,7 +70,7 @@ export default function PartsRequestPage() {
 
   const counts = {
     all: partsRequests.length,
-    PENDING:  partsRequests.filter((r: any) => r.reqStatus === "PENDING").length,
+    PENDING: partsRequests.filter((r: any) => r.reqStatus === "PENDING").length,
     APPROVED: partsRequests.filter((r: any) => r.reqStatus === "APPROVED").length,
     REJECTED: partsRequests.filter((r: any) => r.reqStatus === "REJECTED").length,
     RECEIVED: partsRequests.filter((r: any) => r.reqStatus === "RECEIVED").length,
@@ -102,12 +97,11 @@ export default function PartsRequestPage() {
         </Button>
       </div>
 
-      <PartRequestDialog 
-        open={requestDialogOpen} 
-        onOpenChange={setRequestDialogOpen} 
+      <PartRequestDialog
+        open={requestDialogOpen}
+        onOpenChange={setRequestDialogOpen}
         onSuccess={() => {
           mutate()
-          mutateReal()
         }}
       />
 

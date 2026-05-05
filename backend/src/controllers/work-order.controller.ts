@@ -40,6 +40,20 @@ export class WorkOrderController {
     }
   }
 
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      // For simplicity, we allow any field that matches the schema
+      const workOrder = await workOrderService.update(
+        (req.params.id as string),
+        req.body,
+        req.user!.userId
+      );
+      sendSuccess(res, workOrder, 'Work order updated');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const { status } = updateStatusSchema.parse(req.body);

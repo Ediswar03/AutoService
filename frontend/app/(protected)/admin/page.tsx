@@ -17,7 +17,6 @@ import {
   ArrowUpRight,
   Clock,
 } from "lucide-react"
-import SpecialPromo from "@/components/mekanik/SpecialPromo"
 import { PromoCarousel } from "@/components/admin/PromoCarousel"
 import Link from "next/link"
 import { AdminHeader } from "@/components/admin/AdminHeader"
@@ -49,6 +48,7 @@ import useSWR from 'swr'
 import { fetcher, formatCurrency } from '@/lib/api-client'
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { resolvePhotoUrl } from "@/lib/resolve-photo"
 
 export default function AdminDashboard() {
   const { data: dashboardData, isLoading: isDashboardLoading } = useSWR('/reports/dashboard', fetcher)
@@ -361,9 +361,11 @@ export default function AdminDashboard() {
                     topMechanics.map((mechanic: any, index: number) => (
                       <div key={mechanic.id} className="flex items-center gap-4">
                         <div className="relative">
-                          <Avatar className="size-12 border-2 border-white shadow-sm">
-                            <AvatarImage src={`https://i.pravatar.cc/150?u=${mechanic.id}`} />
-                            <AvatarFallback>{mechanic.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          <Avatar className="size-12 border-2 border-white shadow-sm bg-slate-100">
+                            <AvatarImage src={resolvePhotoUrl(mechanic.photoUrl)} />
+                            <AvatarFallback className="font-bold text-slate-600">
+                              {mechanic.name?.substring(0, 2).toUpperCase() || 'MK'}
+                            </AvatarFallback>
                           </Avatar>
                           <div className="absolute -bottom-1 -right-1 size-5 bg-amber-400 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white shadow-sm">
                             {index + 1}

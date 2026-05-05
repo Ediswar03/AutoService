@@ -107,6 +107,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         photoUrl: user.photoUrl,
+        theme: user.theme,
       },
     };
   }
@@ -196,6 +197,7 @@ export class AuthService {
         address: true,
         role: true,
         photoUrl: true,
+        theme: true,
         isActive: true,
         lastLoginAt: true,
         createdAt: true,
@@ -211,7 +213,7 @@ export class AuthService {
 
   async updateProfile(
     userId: string,
-    data: { name?: string; phone?: string; address?: string; photoUrl?: string }
+    data: { name?: string; phone?: string; address?: string; photoUrl?: string; theme?: string }
   ) {
     const user = await prisma.user.update({
       where: { id: userId },
@@ -220,6 +222,7 @@ export class AuthService {
         ...(data.phone     && { phone: data.phone }),
         ...(data.address   && { address: data.address }),
         ...(data.photoUrl !== undefined && { photoUrl: data.photoUrl }),
+        ...(data.theme     && { theme: data.theme }),
       },
       select: {
         id: true,
@@ -229,6 +232,7 @@ export class AuthService {
         address: true,
         role: true,
         photoUrl: true,
+        theme: true,
       },
     });
     return user;

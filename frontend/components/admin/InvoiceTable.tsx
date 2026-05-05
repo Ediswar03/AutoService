@@ -112,12 +112,12 @@ export function InvoiceTable({ invoices, isLoading, onView, onPayment, onPrint }
                     </div>
                   </TableCell>
                   <TableCell>
-                    {invoice.spk ? (
+                    {invoice.workOrder ? (
                       <Link 
-                        href={`/admin/spk/${invoice.spk_id ?? invoice.spkId}`}
+                        href={`/admin/spk/${invoice.workOrderId}`}
                         className="font-mono text-primary hover:underline"
                       >
-                        {invoice.spk.nomor_spk ?? invoice.spk.spkNumber ?? '-'}
+                        {invoice.workOrder.orderNumber ?? '-'}
                       </Link>
                     ) : (
                       '-'
@@ -127,7 +127,7 @@ export function InvoiceTable({ invoices, isLoading, onView, onPayment, onPrint }
                     {format(new Date(invoice.tanggal ?? invoice.createdAt ?? new Date()), 'dd MMM yyyy', { locale: id })}
                   </TableCell>
                   <TableCell>
-                    {invoice.spk?.customer?.nama ?? invoice.spk?.customer?.name ?? '-'}
+                    {invoice.customer?.name ?? invoice.customer?.nama ?? invoice.workOrder?.customer?.name ?? '-'}
                   </TableCell>
                   <TableCell>
                     <Badge variant={status.variant} className={status.className}>

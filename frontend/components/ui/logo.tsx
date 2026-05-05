@@ -35,7 +35,7 @@ export function Logo({
       </div>
       <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden select-none">
         <div className={cn(
-          "font-black tracking-tighter leading-tight whitespace-nowrap flex items-center italic",
+          "font-black tracking-tighter leading-tight whitespace-nowrap flex items-center",
           textSize,
           variant === 'white' ? "text-white" : "text-slate-900 dark:text-white"
         )}>

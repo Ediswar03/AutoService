@@ -19,9 +19,9 @@ interface InvoicePrintTemplateProps {
 export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTemplateProps>(
   function InvoicePrintTemplate({ invoice }, ref) {
     const inv = invoice as any
-    const spk = inv.spk
-    const customer = spk?.customer
-    const vehicle = spk?.vehicle
+    const wo = inv.workOrder
+    const customer = inv.customer ?? wo?.customer
+    const vehicle = wo?.vehicle
 
     return (
       <div ref={ref} className="p-8 bg-white text-black min-h-[297mm] w-[210mm] mx-auto">
@@ -47,7 +47,7 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
               <span className="text-gray-600">No. Invoice:</span> {inv.nomor_invoice ?? inv.invoiceNumber ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-gray-600">No. SPK:</span> {spk?.nomor_spk ?? spk?.spkNumber ?? "-"}
+              <span className="text-gray-600">No. SPK:</span> {wo?.orderNumber ?? "-"}
             </p>
             <p className="text-sm">
               <span className="text-gray-600">Tanggal:</span> {formatDate(inv.tanggal ?? inv.createdAt)}
@@ -73,7 +73,7 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
         )}
 
         {/* Services Table */}
-        {spk?.items && spk.items.filter((i: any) => i.tipe === 'jasa').length > 0 && (
+        {wo?.services && wo.services.length > 0 && (
           <div className="mb-6">
             <h3 className="font-bold mb-2">Layanan Servis</h3>
             <table className="w-full text-sm">
@@ -86,13 +86,13 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
                 </tr>
               </thead>
               <tbody>
-                {spk.items.filter((i: any) => i.tipe === 'jasa').map((item: any, idx: number) => (
+                {wo.services.map((item: any, idx: number) => (
                   <tr key={item.id ?? idx} className="border-b border-gray-200">
-                    <td className="py-2">{item.nama_item ?? item.itemName ?? '-'}</td>
+                    <td className="py-2">{item.service?.name ?? '-'}</td>
                     <td className="py-2 text-center">{item.quantity}</td>
-                    <td className="py-2 text-right">{formatCurrency(Number(item.harga_satuan ?? item.price ?? 0))}</td>
+                    <td className="py-2 text-right">{formatCurrency(Number(item.unitPrice ?? 0))}</td>
                     <td className="py-2 text-right">
-                      {formatCurrency(Number(item.subtotal ?? (item.quantity * (item.harga_satuan ?? item.price ?? 0))))}
+                      {formatCurrency(Number(item.totalPrice ?? (item.quantity * Number(item.unitPrice ?? 0))))}
                     </td>
                   </tr>
                 ))}
@@ -102,7 +102,7 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
         )}
 
         {/* Parts Table */}
-        {spk?.items && spk.items.filter((i: any) => i.tipe === 'sparepart').length > 0 && (
+        {wo?.spareparts && wo.spareparts.length > 0 && (
           <div className="mb-6">
             <h3 className="font-bold mb-2">Spare Parts</h3>
             <table className="w-full text-sm">
@@ -115,13 +115,13 @@ export const InvoicePrintTemplate = forwardRef<HTMLDivElement, InvoicePrintTempl
                 </tr>
               </thead>
               <tbody>
-                {spk.items.filter((i: any) => i.tipe === 'sparepart').map((item: any, idx: number) => (
+                {wo.spareparts.map((item: any, idx: number) => (
                   <tr key={item.id ?? idx} className="border-b border-gray-200">
-                    <td className="py-2">{item.nama_item ?? item.itemName ?? '-'}</td>
+                    <td className="py-2">{item.sparepart?.name ?? '-'}</td>
                     <td className="py-2 text-center">{item.quantity}</td>
-                    <td className="py-2 text-right">{formatCurrency(Number(item.harga_satuan ?? item.price ?? 0))}</td>
+                    <td className="py-2 text-right">{formatCurrency(Number(item.unitPrice ?? 0))}</td>
                     <td className="py-2 text-right">
-                      {formatCurrency(Number(item.subtotal ?? (item.quantity * (item.harga_satuan ?? item.price ?? 0))))}
+                      {formatCurrency(Number(item.totalPrice ?? (item.quantity * Number(item.unitPrice ?? 0))))}
                     </td>
                   </tr>
                 ))}

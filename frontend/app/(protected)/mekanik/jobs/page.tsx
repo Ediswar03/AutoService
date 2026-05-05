@@ -185,7 +185,7 @@ export default function JobsListPage() {
 
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5">
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest" suppressHydrationWarning>
                           <Clock className="h-3 w-3 text-primary" />
                           <span>{createdAt.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}</span>
                         </div>
@@ -218,12 +218,12 @@ export default function JobsListPage() {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-4 text-[10px] font-mono text-slate-500 dark:text-zinc-500 uppercase tracking-widest border-y border-slate-200 dark:border-white/5 py-3">
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1.5" suppressHydrationWarning>
                             <Clock className="h-3 w-3" />
                             {createdAt.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
                           </span>
                           <span className="h-3 w-px bg-slate-200 dark:bg-white/10" />
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1.5" suppressHydrationWarning>
                             <Calendar className="h-3 w-3" />
                             {createdAt.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                           </span>

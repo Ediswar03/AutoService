@@ -6,6 +6,17 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { PimpinanHeader } from "@/components/pimpinan/pimpinan-header"
+import { useState } from "react"
+import { apiClient } from "@/lib/api-client"
+import { toast } from "sonner"
+import { Loader2, Download, FileText, FileSpreadsheet, ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const mechanicData = [
   { name: "Andi Susanto", avatar: "AS", spkCompleted: 48, avgTime: 85, rating: 4.9, efficiency: 98, specialty: "Mesin & AC" },
@@ -16,13 +27,69 @@ const mechanicData = [
 ]
 
 export default function MekanikReportPage() {
+  const [isExporting, setIsExporting] = useState(false)
+
+  const handleExport = async (format: 'pdf' | 'excel') => {
+    setIsExporting(true)
+    try {
+      const response = await apiClient.get(
+        `/reports/export?type=mekanik&format=${format}`,
+        { responseType: 'blob' }
+      )
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `laporan-mekanik.${format === 'pdf' ? 'pdf' : 'xlsx'}`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      
+      toast.success('Laporan berhasil diunduh')
+    } catch (error) {
+      toast.error('Gagal mengunduh laporan')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <>
       <PimpinanHeader title="Laporan Mekanik" description="Performa dan produktivitas mekanik" />
       <div className="flex-1 overflow-auto p-6 flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Laporan Mekanik</h1>
-          <p className="text-muted-foreground mt-1">Performa dan produktivitas mekanik</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Laporan Mekanik</h1>
+            <p className="text-muted-foreground mt-1">Performa dan produktivitas mekanik</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  disabled={isExporting}
+                  className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest px-4 rounded-lg shadow-lg shadow-primary/20 text-[10px]"
+                >
+                  {isExporting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Download className="mr-2 size-4" />}
+                  Export Data
+                  <ChevronDown className="ml-2 size-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 p-2 rounded-2xl bg-zinc-950 border-white/10 text-white shadow-2xl">
+                <DropdownMenuItem onClick={() => handleExport('excel')} className="flex items-center gap-3 px-4 h-12 rounded-xl focus:bg-white/10 cursor-pointer transition-all">
+                  <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                    <FileSpreadsheet className="size-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Excel (.xlsx)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('pdf')} className="flex items-center gap-3 px-4 h-12 rounded-xl focus:bg-white/10 cursor-pointer transition-all">
+                  <div className="size-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+                    <FileText className="size-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">PDF Document (.pdf)</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Summary */}

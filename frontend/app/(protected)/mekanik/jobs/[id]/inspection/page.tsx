@@ -76,8 +76,7 @@ export default function InspectionPage({ params }: { params: Promise<{ id: strin
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Fetch actual work order data
-  const { data: woData, isLoading } = useSWR(`/work-orders/${id}`, fetcher)
-  const job = woData?.data
+  const { data: job, isLoading } = useSWR(`/work-orders/${id}`, fetcher)
 
   const progress = (currentStep / steps.length) * 100
 

@@ -8,8 +8,9 @@ import {
   CheckSquare,
   Settings,
   LogOut,
-  TrendingUp,
-  ChevronDown
+  ChevronDown,
+  User,
+  Settings as SettingsIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -18,6 +19,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -31,14 +33,26 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "@/components/ui/logo"
+import { useAuth } from "@/context/AuthContext"
+import useSWR from "swr"
+import { fetcher } from "@/lib/api-client"
+import { resolvePhotoUrl } from "@/lib/resolve-photo"
 
 const navItems = [
   { title: "Dashboard", href: "/pimpinan", icon: LayoutDashboard },
   { title: "Approval", href: "/pimpinan/approvals", icon: CheckSquare },
-  { 
-    title: "Laporan", 
-    href: "/pimpinan/reports", 
+  {
+    title: "Laporan",
+    href: "/pimpinan/reports",
     icon: BarChart3,
     items: [
       { title: "Laporan Inventory", href: "/pimpinan/reports/inventory" },
@@ -51,6 +65,16 @@ const navItems = [
 
 export function PimpinanSidebar() {
   const pathname = usePathname()
+  const { user, logout } = useAuth()
+
+  // Fetch fresh profile from API
+  const { data: profileData } = useSWR(user ? "/auth/me" : null, fetcher)
+  const profile = profileData?.data || profileData || user
+
+  const rawPhoto = profile?.photoUrl || user?.photoUrl
+  const displayPhoto = resolvePhotoUrl(rawPhoto)
+  const displayName = profile?.name || user?.name || "Pimpinan"
+  const initials = displayName.substring(0, 2).toUpperCase()
 
   const isActive = (href: string) => {
     if (href === "/pimpinan") return pathname === "/pimpinan"
@@ -58,17 +82,20 @@ export function PimpinanSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border overflow-x-hidden">
-      <SidebarHeader className="p-4">
-        <Link href="/pimpinan">
-          <Logo subtitle="Pimpinan" variant="white" />
+    <Sidebar variant="sidebar" collapsible="icon" className="border-r border-sidebar-border bg-[#0A0A0B] overflow-x-hidden">
+      <SidebarHeader className="p-6">
+        <Link href="/pimpinan" className="flex items-center gap-3 group">
+          <Logo subtitle="Executive" variant="white" />
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="overflow-x-hidden pt-4">
+      <SidebarContent className="overflow-x-hidden pt-4 px-2">
         <SidebarGroup>
+          <SidebarGroupLabel className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 group-data-[collapsible=icon]:hidden">
+            EXECUTIVE CONTROL
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               {navItems.map((item) => {
                 if (!item.items) {
                   return (
@@ -78,20 +105,20 @@ export function PimpinanSidebar() {
                         isActive={isActive(item.href)}
                         tooltip={item.title}
                         className={cn(
-                          "relative transition-all duration-200 group/btn px-4 h-10 rounded-lg my-1",
+                          "relative transition-all duration-300 group/btn px-4 h-10 rounded-xl",
                           isActive(item.href)
-                            ? "bg-primary/10 text-primary font-bold" 
+                            ? "bg-primary/10 text-primary"
                             : "text-slate-400 hover:bg-white/5 hover:text-white"
                         )}
                       >
-                        <Link href={item.href} className="flex items-center gap-3">
+                        <Link href={item.href} className="flex items-center gap-4">
                           <item.icon className={cn(
-                            "h-4.5 w-4.5 transition-all", 
+                            "size-5 transition-all",
                             isActive(item.href) ? "text-primary scale-110" : "group-hover/btn:text-white"
                           )} />
-                          <span className="font-medium">{item.title}</span>
+                          <span className="font-black text-xs uppercase tracking-widest">{item.title}</span>
                           {isActive(item.href) && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-1 bg-primary rounded-r-full shadow-[0_0_10px_rgba(var(--primary),0.6)]" />
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full shadow-[0_0_15px_rgba(249,115,22,0.8)]" />
                           )}
                         </Link>
                       </SidebarMenuButton>
@@ -110,40 +137,39 @@ export function PimpinanSidebar() {
                   >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
-                        <SidebarMenuButton 
+                        <SidebarMenuButton
                           tooltip={item.title}
-                          isActive={hasActiveChild}
                           className={cn(
-                            "group/btn transition-all duration-200 px-4 h-10 rounded-lg my-1",
+                            "group/btn transition-all duration-300 px-4 h-10 rounded-xl",
                             hasActiveChild
-                              ? "bg-primary/10 text-primary font-bold" 
+                              ? "bg-primary/10 text-primary"
                               : "text-slate-400 hover:bg-white/5 hover:text-white"
                           )}
                         >
                           <item.icon className={cn(
-                            "h-4.5 w-4.5 transition-all", 
+                            "size-5 transition-all",
                             hasActiveChild ? "text-primary" : "group-hover/btn:text-white"
                           )} />
-                          <span className="font-medium">{item.title}</span>
-                          <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                          <span className="font-black text-xs uppercase tracking-widest">{item.title}</span>
+                          <ChevronDown className="ml-auto size-4 transition-transform duration-300 group-data-[state=open]/collapsible:rotate-180" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub className="border-l border-white/5 ml-6 pl-2 space-y-1 mt-1">
+                        <SidebarMenuSub className="border-l border-white/5 ml-6 pl-3 space-y-0.5 mt-1 mb-1">
                           {item.items.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.href}>
-                              <SidebarMenuSubButton 
-                                asChild 
+                              <SidebarMenuSubButton
+                                asChild
                                 isActive={pathname === subItem.href}
                                 className={cn(
-                                  "transition-all h-9 rounded-md px-3",
-                                  pathname === subItem.href 
-                                    ? "text-primary bg-primary/5 font-bold" 
+                                  "transition-all h-9 rounded-xl px-4",
+                                  pathname === subItem.href
+                                    ? "text-primary bg-primary/5"
                                     : "text-slate-500 hover:text-white hover:bg-white/5"
                                 )}
                               >
                                 <Link href={subItem.href}>
-                                  <span className="text-sm">{subItem.title}</span>
+                                  <span className="text-[11px] font-black uppercase tracking-widest">{subItem.title}</span>
                                 </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -159,15 +185,50 @@ export function PimpinanSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 pt-2 flex flex-col gap-2">
+      <SidebarFooter className="p-4 border-t border-white/5 bg-black/20">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="hover:bg-white/5 transition-colors text-sidebar-foreground py-3.5 px-3 rounded-lg group/btn">
-              <Link href="/login" className="flex items-center gap-3">
-                <LogOut className="h-4.5 w-4.5 text-slate-400 group-hover/btn:text-white transition-colors" />
-                <span className="font-semibold text-[14px] tracking-wide text-slate-400 group-hover/btn:text-white">Keluar</span>
-              </Link>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-white/5 data-[state=open]:text-white rounded-[1.5rem] h-16 transition-all border border-transparent hover:border-white/5"
+                >
+                  <Avatar className="h-10 w-10 rounded-xl border-2 border-white/10">
+                    <AvatarImage src={displayPhoto} alt={displayName} className="object-cover" />
+                    <AvatarFallback className="rounded-xl bg-slate-800 text-primary font-black text-xs">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden ml-3">
+                    <span className="truncate font-black text-white uppercase italic tracking-tighter text-sm">{displayName}</span>
+                    <span className="truncate text-[9px] text-slate-500 uppercase tracking-widest font-black mt-1">System {user?.role || 'Pimpinan'}</span>
+                  </div>
+                  <ChevronDown className="ml-auto size-4 text-slate-500 group-data-[collapsible=icon]:hidden" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-64 p-2 rounded-[2rem] bg-zinc-950 border-white/10 text-white shadow-2xl"
+                side="top"
+                align="end"
+                sideOffset={12}
+              >
+                <DropdownMenuItem asChild className="focus:bg-white/10 focus:text-white rounded-xl h-12 px-4 cursor-pointer">
+                  <Link href="/pimpinan/settings" className="flex items-center gap-3">
+                    <SettingsIcon className="size-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Executive Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/5 mx-2" />
+                <DropdownMenuItem
+                  className="text-rose-500 focus:bg-rose-500 focus:text-white rounded-xl h-12 px-4 cursor-pointer"
+                  onClick={() => logout()}
+                >
+                  <LogOut className="mr-3 size-4" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Terminate Session</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

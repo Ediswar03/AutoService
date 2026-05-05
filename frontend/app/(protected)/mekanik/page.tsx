@@ -7,11 +7,13 @@ import { cn } from "@/lib/utils"
 import useSWR from 'swr'
 import { fetcher } from '@/lib/api-client'
 import { useAuth } from '@/context/AuthContext'
+import { useUI } from '@/context/UIContext'
 import { Loader2 } from "lucide-react"
 import { ClipboardList, Package, Star, Clock, CheckCircle2, AlertCircle, ChevronRight, Wrench, Car } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { format } from "date-fns"
 import { 
   Sheet, 
   SheetContent, 
@@ -20,15 +22,15 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet"
 import { User, Phone, Calendar, X } from "lucide-react"
-import SpecialPromo from "@/components/mekanik/SpecialPromo"
+import { PromoCarousel } from "@/components/admin/PromoCarousel"
 
 const mockTodayJobs: any[] = []
 
 function getGreeting() {
   const hour = new Date().getHours()
-  if (hour < 12) return "Selamat Pagi"
-  if (hour < 15) return "Selamat Siang"
-  if (hour < 18) return "Selamat Sore"
+  if (hour >= 4 && hour < 10) return "Selamat Pagi"
+  if (hour >= 10 && hour < 15) return "Selamat Siang"
+  if (hour >= 15 && hour < 18) return "Selamat Sore"
   return "Selamat Malam"
 }
 
@@ -47,15 +49,23 @@ const priorityConfig: Record<string, any> = {
   URGENT: { label: "Urgent", className: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400" },
 }
 
+
 export default function MekanikDashboard() {
   const [greeting, setGreeting] = useState("")
   const { user } = useAuth()
+  const { selectedDate } = useUI()
   
   const mechanicName = user?.name || "Mekanik"
   const firstName = mechanicName.split(' ')[0]
   const lastName = mechanicName.split(' ').slice(1).join(' ')
   
-  const { data: woData, isLoading } = useSWR(user ? `/work-orders?assignedMechanicId=${user.id}&limit=10&sortBy=createdAt&sortOrder=desc` : null, fetcher)
+  // Format date for API (YYYY-MM-DD)
+  const dateStr = format(selectedDate, 'yyyy-MM-dd')
+
+  const { data: woData, isLoading } = useSWR(
+    user ? `/work-orders?assignedMechanicId=${user.id}&date=${dateStr}&limit=10&sortBy=createdAt&sortOrder=desc` : null, 
+    fetcher
+  )
   
   const jobs = woData?.data || mockTodayJobs
 
@@ -70,44 +80,58 @@ export default function MekanikDashboard() {
   }, [])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* Greeting Card */}
       <div className="relative group">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/30 to-transparent rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-700 ease-out"></div>
-        <Card className="bg-white/80 dark:bg-zinc-900/90 backdrop-blur-2xl border-slate-200 dark:border-white/5 overflow-hidden relative rounded-2xl shadow-xl transition-colors duration-300">
-          <div className="absolute top-0 right-0 p-6 opacity-5 dark:opacity-5">
-            <Wrench className="h-24 w-24 text-slate-900 dark:text-white rotate-12" />
+        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-primary/5 to-transparent rounded-[2rem] blur-xl opacity-50 group-hover:opacity-75 transition duration-1000"></div>
+        <Card className="bg-[#0A0A0B] border-white/5 overflow-hidden relative rounded-[2rem] shadow-2xl transition-all duration-500 hover:shadow-primary/5 border">
+          {/* Animated Background Elements */}
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-700 group-hover:rotate-12 transform-gpu">
+            <Wrench className="h-32 w-32 text-white" />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-40" />
-          <CardContent className="pt-8 pb-8 px-6 relative z-10">
-            <p className="text-primary text-[10px] font-black tracking-[0.2em] uppercase mb-1">{greeting || "Selamat Datang"},</p>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase italic leading-none transition-colors duration-300">
-              {firstName}<span className="text-slate-400 dark:text-zinc-500"> {lastName}</span>
-            </h2>
-            <div className="h-1 w-12 bg-primary mt-4 rounded-full" />
-            <p className="text-slate-400 dark:text-zinc-500 text-[11px] mt-4 font-bold italic tracking-wide uppercase transition-colors duration-300">Performance Mechanic</p>
+          
+          {/* Glass Gradients */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-60" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-[80px]" />
+          
+          <CardContent className="pt-7 pb-7 px-6 relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_rgba(var(--primary),0.8)] animate-pulse" />
+              <p className="text-primary text-[11px] font-black tracking-[0.3em] uppercase drop-shadow-sm">{greeting || "Selamat Datang"},</p>
+            </div>
+            
+            <div className="space-y-1">
+              <h2 className="text-[2.75rem] font-black tracking-tighter text-white uppercase italic leading-[0.9] flex flex-wrap gap-x-3">
+                <span className="drop-shadow-[0_2px_10px_rgba(255,255,255,0.1)]">{firstName}</span>
+                <span className="text-white/30">{lastName}</span>
+              </h2>
+            </div>
+            
+            <div className="flex items-center gap-4 mt-6">
+              <div className="h-[1px] w-8 bg-white/20" />
+              <p className="text-white/40 text-[10px] font-black italic tracking-[0.2em] uppercase">Professional Mechanic Dashboard</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <SpecialPromo />
+      <PromoCarousel viewAllHref="/mekanik/promo" />
 
 
       {/* Status Summary */}
-      <div className="grid grid-cols-3 gap-2.5 sm:gap-4 px-0.5">
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Pending", value: stats.pending, icon: AlertCircle, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-500/10", border: "border-amber-200 dark:border-amber-500/20" },
-          { label: "Progres", value: stats.inProgress, icon: Wrench, color: "text-primary", bg: "bg-orange-50 dark:bg-primary/10", border: "border-primary/20" },
-          { label: "Selesai", value: stats.completed, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10", border: "border-emerald-200 dark:border-emerald-500/20" },
+          { label: "Pending", value: stats.pending, icon: AlertCircle, color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+          { label: "Progres", value: stats.inProgress, icon: Wrench, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
+          { label: "Selesai", value: stats.completed, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
         ].map((item) => (
-          <Card key={item.label} className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-zinc-800/80 transition-all duration-300 cursor-pointer rounded-2xl group relative overflow-hidden active:scale-[0.97] shadow-sm dark:shadow-none">
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-white/10 to-transparent" />
-            <CardContent className="pt-4 pb-4 text-center px-1">
-              <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-2 border transition-colors duration-300", item.bg, item.border, "group-hover:border-opacity-50")}>
+          <Card key={item.label} className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl border-slate-200 dark:border-white/5 hover:bg-white dark:hover:bg-zinc-900 transition-all duration-300 rounded-2xl shadow-sm dark:shadow-none group">
+            <CardContent className="p-3 text-center">
+              <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center mx-auto mb-1.5 border transition-all duration-500 group-hover:scale-110", item.bg, item.border)}>
                 <item.icon className={cn("h-5 w-5", item.color)} />
               </div>
-              <p className="text-2xl font-black italic text-slate-900 dark:text-zinc-100 transition-colors duration-300">{item.value}</p>
-              <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-zinc-500 mt-0.5 transition-colors duration-300">{item.label}</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-zinc-100">{item.value}</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-zinc-500 mt-0.5">{item.label}</p>
             </CardContent>
           </Card>
         ))}
@@ -118,7 +142,7 @@ export default function MekanikDashboard() {
         <Link href="/mekanik/jobs" className="outline-none group active:scale-[0.98] transition-transform">
           <Card className="bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border-slate-200 dark:border-white/5 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-white dark:hover:bg-zinc-900/80 transition-all duration-300 relative overflow-hidden rounded-2xl h-full shadow-sm dark:shadow-lg">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardContent className="p-4 flex items-center gap-3 relative z-10">
+            <CardContent className="p-3.5 flex items-center gap-3 relative z-10">
               <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-white/5 flex items-center justify-center group-hover:bg-primary transition-all duration-300 shrink-0">
                 <ClipboardList className="h-5 w-5 text-slate-500 dark:text-zinc-400 group-hover:text-white dark:group-hover:text-black transition-colors duration-300" />
               </div>
@@ -132,7 +156,7 @@ export default function MekanikDashboard() {
         <Link href="/mekanik/parts-request" className="outline-none group active:scale-[0.98] transition-transform">
           <Card className="bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border-slate-200 dark:border-white/5 hover:border-primary/40 dark:hover:border-primary/40 hover:bg-white dark:hover:bg-zinc-900/80 transition-all duration-300 relative overflow-hidden rounded-2xl h-full shadow-sm dark:shadow-lg">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <CardContent className="p-4 flex items-center gap-3 relative z-10">
+            <CardContent className="p-3.5 flex items-center gap-3 relative z-10">
               <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-white/5 flex items-center justify-center group-hover:bg-primary transition-all duration-300 shrink-0">
                 <Package className="h-5 w-5 text-slate-500 dark:text-zinc-400 group-hover:text-white dark:group-hover:text-black transition-colors duration-300" />
               </div>
@@ -172,34 +196,39 @@ export default function MekanikDashboard() {
             <Sheet key={job.id}>
               <SheetTrigger asChild>
                 <div className="block outline-none group cursor-pointer">
-                  <Card className="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border-slate-200 dark:border-white/5 hover:border-primary/30 dark:hover:border-primary/30 hover:bg-white dark:hover:bg-zinc-900 transition-all duration-300 overflow-hidden rounded-2xl shadow-sm hover:shadow-lg dark:shadow-none">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-primary transition-colors duration-300" />
-                    <CardContent className="p-5 relative">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-md border border-primary/20 shadow-inner">
+                  <Card className="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-md border-slate-200 dark:border-white/5 hover:border-primary/50 hover:bg-white dark:hover:bg-zinc-900 transition-all duration-300 overflow-hidden rounded-[24px] shadow-sm hover:shadow-xl group">
+                    <CardContent className="p-0 relative">
+                      <div className="flex">
+                        <div className="w-1 bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
+                        <div className="flex-1 p-4">
+                          <div className="flex items-center justify-between mb-2.5">
+                            <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                               {job.orderNumber || job.spkNumber}
                             </span>
-                            <Badge variant="outline" className={cn("text-[9px] uppercase font-black tracking-wider border-0 h-6 px-2", priorityConfig[job.priority || 'NORMAL']?.className)}>
+                            <Badge variant="outline" className={cn("text-[9px] uppercase font-black tracking-widest border-0", priorityConfig[job.priority || 'NORMAL']?.className)}>
                               {priorityConfig[job.priority || 'NORMAL']?.label}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-2 text-sm sm:text-base font-black text-slate-800 dark:text-zinc-100 mb-1.5 uppercase italic tracking-tight group-hover:text-slate-950 dark:group-hover:text-white transition-colors">
-                            <Car className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 dark:text-zinc-500 group-hover:text-primary transition-colors" />
-                            <span className="truncate">
-                              {job.vehicle?.brand} {job.vehicle?.model}
-                            </span>
+                          <div className="flex items-center gap-2.5 mb-1.5">
+                            <div className="h-9 w-9 rounded-xl bg-slate-100 dark:bg-black/40 flex items-center justify-center shrink-0 border border-slate-200 dark:border-white/5">
+                              <Car className="h-4.5 w-4.5 text-slate-500 group-hover:text-primary transition-colors" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight truncate leading-tight">
+                                {job.vehicle?.brand} {job.vehicle?.model}
+                              </p>
+                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{job.vehicle?.licensePlate || job.vehicle?.plateNumber}</p>
+                            </div>
                           </div>
-                          <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                            <span className="text-slate-600 dark:text-zinc-400">{job.vehicle?.licensePlate || job.vehicle?.plateNumber}</span>
-                            <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
-                            <span className="truncate">{job.customerComplaints || job.serviceType || 'Cek Kendaraan'}</span>
-                          </p>
+                          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 dark:border-white/5">
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest truncate max-w-[150px]">
+                              {job.customerComplaints || job.serviceType || 'Cek Kendaraan'}
+                            </p>
+                            <Badge variant="outline" className={cn("text-[9px] font-black uppercase italic border-0", statusConfig[job.status]?.className || statusConfig['PENDING'].className)}>
+                              {statusConfig[job.status]?.label || 'Pending'}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge variant="outline" className={cn("text-[10px] font-black uppercase italic border-0 h-7 px-3 shadow-inner whitespace-nowrap", statusConfig[job.status]?.className || statusConfig['PENDING'].className)}>
-                          {statusConfig[job.status]?.label || 'Pending'}
-                        </Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -225,9 +254,9 @@ export default function MekanikDashboard() {
                          </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-[10px] font-mono text-slate-500 dark:text-zinc-500 uppercase tracking-widest border-y border-slate-200 dark:border-white/5 py-3">
-                         <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {new Date(job.createdAt || Date.now()).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                         <span className="flex items-center gap-1.5" suppressHydrationWarning><Clock className="h-3 w-3" /> {new Date(job.createdAt || Date.now()).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
                          <span className="h-3 w-px bg-slate-200 dark:bg-white/10" />
-                         <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> {new Date(job.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                         <span className="flex items-center gap-1.5" suppressHydrationWarning><Calendar className="h-3 w-3" /> {new Date(job.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </SheetHeader>
 
@@ -311,25 +340,21 @@ export default function MekanikDashboard() {
 
       {/* Rating Widget */}
       <Link href="/mekanik/profile" className="block outline-none">
-        <Card className="bg-primary border-0 overflow-hidden relative group cursor-pointer rounded-[1.25rem] shadow-[0_8px_20px_-8px_rgba(var(--primary),0.5)] hover:-translate-y-0.5 transition-transform duration-300 active:scale-[0.98]">
+        <Card className="bg-primary border-0 overflow-hidden relative group cursor-pointer rounded-xl shadow-[0_4px_12px_-4px_rgba(var(--primary),0.5)] hover:-translate-y-0.5 transition-transform duration-300 active:scale-[0.98]">
           <div className="absolute inset-0 bg-white/5 dark:bg-black/5 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-          <div className="absolute -right-4 -top-4 w-20 h-20 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <CardContent className="p-4 relative z-10">
+          <CardContent className="p-2 relative z-10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3.5">
-              <div className="h-11 w-11 rounded-xl bg-white/10 dark:bg-black/15 flex items-center justify-center border border-white/20 dark:border-black/10 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
-                <Star className="h-5 w-5 text-white dark:text-black fill-white dark:fill-black" />
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-white/10 dark:bg-black/15 flex items-center justify-center border border-white/20 dark:border-black/10 shadow-inner group-hover:scale-105 transition-transform duration-300 shrink-0">
+                <Star className="h-3.5 w-3.5 text-white dark:text-black fill-white dark:fill-black" />
               </div>
               <div className="flex flex-col justify-center">
-                <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-white/80 dark:text-black/70 mb-0.5">Rating Mekanik</p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-black italic text-white dark:text-black leading-none drop-shadow-sm">{user?.rating || "5.0"}</span>
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-white/70 dark:text-black/60">Prof. Score</span>
-                </div>
+                <p className="text-[8px] font-extrabold uppercase tracking-[0.1em] text-white/80 dark:text-black/70 leading-none mb-0.5">Rating</p>
+                <span className="text-lg font-black italic text-white dark:text-black leading-none drop-shadow-sm">{user?.rating || "5.0"}</span>
               </div>
             </div>
-            <div className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/5 group-hover:bg-white/20 dark:group-hover:bg-black/10 transition-colors duration-300 shrink-0">
-              <ChevronRight className="h-4 w-4 text-white dark:text-black group-hover:translate-x-0.5 transition-transform" />
+            <div className="h-6 w-6 flex items-center justify-center rounded-full bg-white/10 dark:bg-black/5 group-hover:bg-white/20 dark:group-hover:bg-black/10 transition-colors duration-300 shrink-0">
+              <ChevronRight className="h-3 w-3 text-white dark:text-black group-hover:translate-x-0.5 transition-transform" />
             </div>
           </div>
         </CardContent>

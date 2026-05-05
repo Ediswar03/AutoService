@@ -150,11 +150,11 @@ export { apiClient }
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<{ message?: string; errors?: Record<string, string[]> }>
-    
+
     if (axiosError.response?.data?.message) {
       return axiosError.response.data.message
     }
-    
+
     if (axiosError.response?.data?.errors) {
       const errors = axiosError.response.data.errors
       return Object.values(errors).flat().join(', ')

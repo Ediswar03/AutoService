@@ -136,6 +136,21 @@
 }
 
 @layer utilities {
+  @keyframes fade-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.99);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-page-entry {
+    animation: fade-slide-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }

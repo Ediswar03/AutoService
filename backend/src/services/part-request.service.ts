@@ -16,12 +16,15 @@ export enum PartRequestStatus {
 }
 
 export class PartRequestService {
-  async findAll(query: PaginationQuery & { status?: string }) {
+  async findAll(query: PaginationQuery & { status?: string; requestedById?: string }) {
     const { page, limit, skip, sortBy, sortOrder } = parsePagination(query);
 
     const where: any = {};
     if (query.status) {
       where.status = query.status;
+    }
+    if (query.requestedById) {
+      where.requestedById = query.requestedById;
     }
 
     if (query.search) {
@@ -42,6 +45,7 @@ export class PartRequestService {
           workOrder: {
             include: {
               vehicle: { select: { licensePlate: true, brand: true, model: true } },
+              customer: { select: { name: true } },
             },
           },
           requestedBy: { select: { id: true, name: true } },
@@ -59,6 +63,7 @@ export class PartRequestService {
     const mappedData = data.map((request: any) => ({
       id: request.id,
       spk_number: request.workOrder?.orderNumber || request.orderNumber,
+      customer_name: request.workOrder?.customer?.name || '-',
       vehicle_plate: request.workOrder?.vehicle?.licensePlate || '-',
       vehicle_info: request.workOrder?.vehicle ? `${request.workOrder.vehicle.brand} ${request.workOrder.vehicle.model}` : '-',
       mekanik_name: request.requestedBy.name,

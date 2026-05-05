@@ -16,6 +16,7 @@ model User {
   address            String?
   role               UserRole           @default(MEKANIK)
   photoUrl           String?            @map("photo_url")
+  theme              String             @default("light")
   isActive           Boolean            @default(true) @map("is_active")
   lastLoginAt        DateTime?          @map("last_login_at")
   createdAt          DateTime           @default(now()) @map("created_at")

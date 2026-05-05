@@ -16,7 +16,7 @@ export class PartRequestController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user.id;
+      const userId = req.user!.userId;
       const result = await partRequestService.create({
         ...req.body,
         userId,
@@ -38,7 +38,7 @@ export class PartRequestController {
 
   async approve(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user.id;
+      const userId = req.user!.userId;
       const result = await partRequestService.approve(req.params.id as string, userId);
       sendSuccess(res, result, 'Request approved successfully');
     } catch (error) {
@@ -48,7 +48,7 @@ export class PartRequestController {
 
   async reject(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user.id;
+      const userId = req.user!.userId;
       const { reason } = req.body;
       const result = await partRequestService.reject(req.params.id as string, userId, reason);
       sendSuccess(res, result, 'Request rejected successfully');

@@ -51,6 +51,7 @@ export interface User {
   created_at?: string
   updated_at?: string
   photoUrl?: string | null
+  theme?: string
 }
 
 export interface AuthTokens {

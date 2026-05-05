@@ -41,6 +41,7 @@ import {
   Trash2,
   TrendingDown,
   ArrowUpDown,
+  X,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -159,22 +160,27 @@ function SparepartForm({
 
   const field = (label: string, key: string, props: any = {}) => (
     <div className="space-y-1">
-      <label className="text-sm font-medium">{label}</label>
-      <Input value={(form as any)[key]} onChange={(e) => set(key, e.target.value)} {...props} />
+      <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-zinc-400">{label}</label>
+      <Input 
+        value={(form as any)[key]} 
+        onChange={(e) => set(key, e.target.value)} 
+        className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/10 rounded-xl h-11"
+        {...props} 
+      />
     </div>
   )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {field("Kode *", "code", { placeholder: "SP-001" })}
         {field("Nama Sparepart *", "name", { placeholder: "Oli Mesin Shell Helix" })}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-sm font-medium">Kategori *</label>
+          <label className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-zinc-400">Kategori *</label>
           <Select value={form.category} onValueChange={(v) => set("category", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="bg-white dark:bg-zinc-900 border-slate-200 dark:border-white/10 rounded-xl h-11"><SelectValue /></SelectTrigger>
             <SelectContent>
               {Object.entries(categoryLabels).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v}</SelectItem>
@@ -197,9 +203,9 @@ function SparepartForm({
         {field("Lokasi Rak", "location", { placeholder: "A1, B2..." })}
         {field("Deskripsi", "description", { placeholder: "Keterangan tambahan" })}
       </div>
-      <div className="flex gap-2 pt-2">
-        <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={loading}>Batal</Button>
-        <Button type="submit" className="flex-1" disabled={loading}>
+      <div className="flex gap-2 pt-4">
+        <Button type="button" variant="outline" className="flex-1 rounded-xl" onClick={onClose} disabled={loading}>Batal</Button>
+        <Button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm" disabled={loading}>
           {loading ? <><Loader2 className="mr-2 size-4 animate-spin" />Menyimpan...</> : "Simpan"}
         </Button>
       </div>
@@ -268,7 +274,7 @@ function AdjustStockForm({
       </div>
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={loading}>Batal</Button>
-        <Button type="submit" className="flex-1" disabled={loading}>
+        <Button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white" disabled={loading}>
           {loading ? <><Loader2 className="mr-2 size-4 animate-spin" />Memproses...</> : "Konfirmasi"}
         </Button>
       </div>
@@ -284,6 +290,7 @@ export default function SparePartsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [selected, setSelected] = useState<Sparepart | null>(null)
+  const [isClosing, setIsClosing] = useState(false)
 
   const { data, isLoading, mutate } = useSWR(
     "/inventory/spareparts?limit=500&sortBy=name&sortOrder=asc",
@@ -326,6 +333,15 @@ export default function SparePartsPage() {
   const openAdjust = (s: Sparepart) => { setSelected(s); setAdjustOpen(true) }
   const openCreate = () => { setSelected(null); setFormOpen(true) }
 
+  const handleClose = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setFormOpen(false)
+      setIsClosing(false)
+      setSelected(null)
+    }, 450)
+  }
+
   return (
     <>
       <AdminHeader title="Manajemen Sparepart" description="Kelola stok dan data sparepart bengkel" />
@@ -361,24 +377,24 @@ export default function SparePartsPage() {
                   <CardTitle>Daftar Sparepart</CardTitle>
                   <CardDescription>{filtered.length} sparepart ditemukan</CardDescription>
                 </div>
-                <Button id="add-sparepart-btn" className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm" onClick={openCreate}>
+                <Button id="add-sparepart-btn" className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm rounded-xl" onClick={openCreate}>
                   <Plus className="mr-2 size-4" /> Tambah Sparepart
                 </Button>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center pt-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="sparepart-search" placeholder="Cari nama, kode, atau merk..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                  <Input id="sparepart-search" placeholder="Cari nama, kode, atau merk..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-white rounded-xl" />
                 </div>
                 <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as any)}>
-                  <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="Kategori" /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-44 bg-white rounded-xl"><SelectValue placeholder="Kategori" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Kategori</SelectItem>
                     {Object.entries(categoryLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={stockFilter} onValueChange={(v) => setStockFilter(v as any)}>
-                  <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Stok" /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-36 bg-white rounded-xl"><SelectValue placeholder="Stok" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Stok</SelectItem>
                     <SelectItem value="low">⚠ Stok Kritis</SelectItem>
@@ -394,7 +410,7 @@ export default function SparePartsPage() {
                 <div className="flex flex-col items-center justify-center py-16 gap-3">
                   <Package className="size-12 text-muted-foreground/40" />
                   <p className="text-muted-foreground">Tidak ada sparepart ditemukan</p>
-                  <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-50" onClick={openCreate}><Plus className="mr-2 size-4" />Tambah Sparepart</Button>
+                  <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-50 rounded-xl" onClick={openCreate}><Plus className="mr-2 size-4" />Tambah Sparepart</Button>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -426,7 +442,7 @@ export default function SparePartsPage() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline" className="text-xs">{categoryLabels[s.category] ?? s.category}</Badge>
+                              <Badge variant="outline" className="text-xs rounded-full">{categoryLabels[s.category] ?? s.category}</Badge>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{s.brand ?? "-"}</TableCell>
                             <TableCell className="text-right text-sm font-medium">{formatCurrency(s.sellPrice)}</TableCell>
@@ -441,13 +457,13 @@ export default function SparePartsPage() {
                             <TableCell className="text-sm text-muted-foreground">{s.location ?? "-"}</TableCell>
                             <TableCell>
                               <div className="flex items-center justify-center gap-1">
-                                <Button size="icon" variant="ghost" className="size-7" onClick={() => openAdjust(s)} title="Adjust Stok">
+                                <Button size="icon" variant="ghost" className="size-7 rounded-full" onClick={() => openAdjust(s)} title="Adjust Stok">
                                   <ArrowUpDown className="size-3.5" />
                                 </Button>
-                                <Button size="icon" variant="ghost" className="size-7" onClick={() => openEdit(s)} title="Edit">
+                                <Button size="icon" variant="ghost" className="size-7 rounded-full" onClick={() => openEdit(s)} title="Edit">
                                   <Pencil className="size-3.5" />
                                 </Button>
-                                <Button size="icon" variant="ghost" className="size-7 text-destructive hover:text-destructive" onClick={() => handleDelete(s)} title="Hapus">
+                                <Button size="icon" variant="ghost" className="size-7 text-destructive hover:text-destructive rounded-full" onClick={() => handleDelete(s)} title="Hapus">
                                   <Trash2 className="size-3.5" />
                                 </Button>
                               </div>
@@ -464,20 +480,49 @@ export default function SparePartsPage() {
         </div>
       </div>
 
-      {/* Form Dialog */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selected ? "Edit Sparepart" : "Tambah Sparepart"}</DialogTitle>
-            <DialogDescription>{selected ? `Edit data untuk ${selected.name}` : "Tambahkan sparepart baru ke inventori"}</DialogDescription>
-          </DialogHeader>
-          <SparepartForm initial={selected} onClose={() => setFormOpen(false)} onSuccess={() => mutate()} />
-        </DialogContent>
-      </Dialog>
+      {/* Drawer Implementation */}
+      {formOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end overflow-hidden">
+          {/* Backdrop */}
+          <div 
+            className={`absolute inset-0 bg-slate-950/20 backdrop-blur-md transition-opacity duration-500 ${isClosing ? "opacity-0" : "animate-in fade-in"}`}
+            onClick={handleClose}
+          />
+          
+          {/* Drawer Content */}
+          <div className={`relative w-full max-w-xl bg-white dark:bg-zinc-900 h-full shadow-2xl border-l border-white/10 flex flex-col transition-transform duration-500 ease-in-out ${isClosing ? "translate-x-full" : "animate-in slide-in-from-right"}`}>
+            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-black tracking-tighter uppercase italic">
+                      {selected ? "Edit" : "Tambah"} <span className="text-primary">Sparepart</span>
+                    </h2>
+                    <p className="text-slate-500 text-sm font-medium">
+                      {selected ? `Perbarui data untuk ${selected.name}` : "Tambahkan sparepart baru ke inventori."}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="icon" className="rounded-full hover:bg-red-500/10 hover:text-red-500 border-slate-200 dark:border-white/10" onClick={handleClose}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-zinc-950 p-6 rounded-3xl border border-slate-100 dark:border-white/5">
+                  <SparepartForm 
+                    initial={selected} 
+                    onClose={handleClose} 
+                    onSuccess={() => mutate()} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Adjust Stock Dialog */}
       <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl border-none">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><ArrowUpDown className="size-5" />Adjust Stok</DialogTitle>
             <DialogDescription>Sesuaikan jumlah stok sparepart</DialogDescription>

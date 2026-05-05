@@ -17,11 +17,18 @@ const navItems = [
 import { useAuth } from "@/context/AuthContext"
 import { useUI } from "@/context/UIContext"
 import { ChatBot } from "@/components/admin/chatbot"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { Calendar as CalendarIcon, ChevronDown } from "lucide-react"
+import { useState } from "react"
+import { Logo } from "@/components/ui/logo"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { resolvePhotoUrl } from "@/lib/resolve-photo"
 
 function MekanikHeader() {
   const pathname = usePathname()
   const { user } = useAuth()
-  const { toggleChat } = useUI()
+  const { toggleChat, selectedDate, setSelectedDate } = useUI()
   const isSubPage = pathname.split("/").filter(Boolean).length > 2
 
   const getTitle = () => {
@@ -33,6 +40,7 @@ function MekanikHeader() {
     if (pathname.includes("/history")) return "Riwayat"
     if (pathname.includes("/settings")) return "Pengaturan"
     if (pathname.includes("/certifications")) return "Sertifikasi"
+    if (pathname.includes("/promo")) return "Daftar Promo"
     if (pathname.includes("/profile")) return "Profil"
     return "AutoServis"
   }
@@ -46,19 +54,35 @@ function MekanikHeader() {
           </Link>
         ) : (
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center shadow-[0_2px_10px_rgba(var(--primary),0.4)]">
-              <Wrench className="h-4 w-4 text-white" />
-            </div>
-            <div className="hidden sm:flex flex-col -gap-1">
-              <span className="text-[12px] font-black uppercase tracking-widest text-slate-900 dark:text-white leading-none">Auto</span>
-              <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] leading-none">Servis</span>
-            </div>
+            <Logo iconSize={20} textSize="text-xs" subtitle="MEKANIK" className="gap-2" />
             <div className="h-5 w-[1px] bg-slate-200 dark:bg-white/10 ml-1 hidden sm:block" />
           </div>
         )}
-        <h1 className="font-extrabold text-[15px] tracking-[0.05em] uppercase italic text-slate-900 dark:text-zinc-100 flex items-center gap-1.5 transition-colors duration-300">
-          {getTitle()}
-        </h1>
+        
+        {pathname === "/mekanik" ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-all outline-none" suppressHydrationWarning>
+                <h1 className="font-extrabold text-[15px] tracking-[0.05em] uppercase italic text-slate-900 dark:text-zinc-100 transition-colors duration-300">
+                  {selectedDate?.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                </h1>
+                <ChevronDown className="h-3 w-3 text-slate-400" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <h1 className="font-extrabold text-[15px] tracking-[0.05em] uppercase italic text-slate-900 dark:text-zinc-100 flex items-center gap-1.5 transition-colors duration-300">
+            {getTitle()}
+          </h1>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <button 
@@ -71,14 +95,13 @@ function MekanikHeader() {
           <Bell className="h-5 w-5 text-slate-500 dark:text-zinc-400 group-hover:text-primary transition-colors" />
           <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full ring-2 ring-white dark:ring-black shadow-[0_0_10px_rgba(var(--primary),0.8)]" />
         </button>
-        <Link href="/mekanik/profile" className="h-9 w-9 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-white/5 flex items-center justify-center hover:border-primary/50 hover:bg-slate-200 dark:hover:bg-white/5 transition-all duration-300 active:scale-95 overflow-hidden group shadow-inner">
-          {user ? (
-            <span className="text-xs font-black text-slate-700 dark:text-zinc-300 uppercase tracking-widest group-hover:text-primary transition-colors">
-              {user.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2)}
-            </span>
-          ) : (
-            <User className="h-4 w-4 text-slate-500 dark:text-zinc-400 group-hover:text-primary transition-colors" />
-          )}
+        <Link href="/mekanik/profile" className="active:scale-95 transition-transform">
+          <Avatar className="h-9 w-9 rounded-xl border border-slate-200 dark:border-white/5 shadow-inner">
+            <AvatarImage src={resolvePhotoUrl(user?.photoUrl)} alt={user?.name} className="object-cover" />
+            <AvatarFallback className="bg-slate-100 dark:bg-zinc-900 text-[10px] font-black text-slate-700 dark:text-zinc-300 uppercase tracking-widest">
+              {user?.name?.split(" ").map((n: string) => n[0]).join("").substring(0, 2) || "MK"}
+            </AvatarFallback>
+          </Avatar>
         </Link>
       </div>
     </header>
@@ -94,7 +117,7 @@ function BottomNav() {
   }
 
   return (
-    <nav className="z-50 w-full bg-white/90 dark:bg-black/90 backdrop-blur-3xl border-t border-slate-200 dark:border-white/5 h-16 px-4 relative transition-colors duration-300 shrink-0 pb-safe">
+    <nav className="z-50 w-full bg-white/90 dark:bg-black/90 backdrop-blur-3xl border-t border-slate-200 dark:border-white/5 h-14 px-4 relative transition-colors duration-300 shrink-0 pb-safe">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent"></div>
       <div className="flex items-center justify-between h-full max-w-md mx-auto">
         {navItems.map((item) => {
@@ -105,7 +128,7 @@ function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full gap-1.5 transition-all duration-300 relative group outline-none active:scale-90",
+                "flex flex-col items-center justify-center w-full h-full gap-1 transition-all duration-300 relative group outline-none active:scale-90",
                 active ? "text-primary" : "text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300"
               )}
             >
@@ -149,7 +172,7 @@ export default function MekanikLayout({ children }: { children: React.ReactNode 
 
       <div className="relative z-10 flex flex-col h-full max-w-md mx-auto border-x border-slate-200 dark:border-white/5 bg-white/40 dark:bg-zinc-950/40 shadow-xl dark:shadow-2xl backdrop-blur-xl transition-colors duration-300">
         <MekanikHeader />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pt-4 pb-8 px-4">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pt-3 pb-6 px-3">
           {children}
         </main>
         <ChatBot isOpen={isChatOpen} onClose={closeChat} />

@@ -34,7 +34,7 @@ export default function SettingsPage() {
   return (
     <>
       <PimpinanHeader title="Pengaturan" description="Konfigurasi sistem dan preferensi" />
-      <div className="flex-1 overflow-auto p-6 flex flex-col gap-6">
+      <div className="flex-1 overflow-auto p-6 flex flex-col gap-6 bg-background">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -46,7 +46,7 @@ export default function SettingsPage() {
               <Button variant="outline" onClick={() => setHasChanges(false)}>
                 <RotateCcw className="mr-2 size-4" /> Reset
               </Button>
-              <Button onClick={() => setHasChanges(false)}>
+              <Button onClick={() => setHasChanges(false)} className="bg-orange-500 hover:bg-orange-600 text-white">
                 <Save className="mr-2 size-4" /> Simpan Perubahan
               </Button>
             </div>
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                   ].map((user, index) => (
                     <div key={index} className="flex items-center justify-between rounded-lg border p-4">
                       <div className="flex items-center gap-4">
-                        <div className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <div className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">
                           {user.name.split(" ").map((n) => n[0]).join("")}
                         </div>
                         <div>

@@ -1,7 +1,20 @@
 "use client"
 
 import * as React from "react"
-import { DollarSign, TrendingUp, TrendingDown, Download, Calendar, ArrowUpRight } from "lucide-react"
+import { 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown, 
+  Download, 
+  Calendar, 
+  ArrowUpRight,
+  ArrowDownRight,
+  Loader2,
+  Plus,
+  ChevronDown,
+  FileText,
+  FileSpreadsheet
+} from "lucide-react"
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts"
 
 import { Button } from "@/components/ui/button"
@@ -11,6 +24,15 @@ import { ChartContainer } from "@/components/ui/chart"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { PimpinanHeader } from "@/components/pimpinan/pimpinan-header"
+import { apiClient, fetcher } from "@/lib/api-client"
+import { toast } from "sonner"
+import useSWR from "swr"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const monthlyRevenue = [
   { month: "Jan", pendapatan: 95000000, pengeluaran: 45000000, profit: 50000000 },
@@ -45,6 +67,33 @@ function formatShort(amount: number): string {
 }
 
 export default function PendapatanReportPage() {
+  const [isExporting, setIsExporting] = React.useState(false)
+  const [period, setPeriod] = React.useState("this_month")
+
+  const handleExport = async (format: 'pdf' | 'excel') => {
+    setIsExporting(true)
+    try {
+      const response = await apiClient.get(
+        `/reports/export?type=revenue&format=${format}`,
+        { responseType: 'blob' }
+      )
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `laporan-pendapatan-${period}.${format === 'pdf' ? 'pdf' : 'xlsx'}`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      
+      toast.success('Laporan berhasil diunduh')
+    } catch (error) {
+      toast.error('Gagal mengunduh laporan')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <>
       <PimpinanHeader title="Laporan Pendapatan" description="Analisis pendapatan dan keuangan" />
@@ -59,7 +108,32 @@ export default function PendapatanReportPage() {
               <SelectTrigger className="w-[130px]"><Calendar className="mr-2 size-4" /><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="2024">2024</SelectItem><SelectItem value="2023">2023</SelectItem></SelectContent>
             </Select>
-            <Button><Download className="mr-2 size-4" /> Export</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  disabled={isExporting}
+                  className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest px-4 rounded-lg shadow-lg shadow-primary/20 text-[10px]"
+                >
+                  {isExporting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Download className="mr-2 size-4" />}
+                  Export Data
+                  <ChevronDown className="ml-2 size-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 p-2 rounded-2xl bg-zinc-950 border-white/10 text-white shadow-2xl">
+                <DropdownMenuItem onClick={() => handleExport('excel')} className="flex items-center gap-3 px-4 h-12 rounded-xl focus:bg-white/10 cursor-pointer transition-all">
+                  <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                    <FileSpreadsheet className="size-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Excel (.xlsx)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('pdf')} className="flex items-center gap-3 px-4 h-12 rounded-xl focus:bg-white/10 cursor-pointer transition-all">
+                  <div className="size-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+                    <FileText className="size-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">PDF Document (.pdf)</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
