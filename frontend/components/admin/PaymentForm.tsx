@@ -29,7 +29,10 @@ import type { Invoice, PaymentFormData, PaymentMethod } from '@/types'
 const paymentSchema = z.object({
   invoiceId: z.string(),
   paymentDate: z.string().min(1, 'Tanggal wajib diisi'),
-  amount: z.number().min(1, 'Jumlah pembayaran wajib diisi'),
+  amount: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(Number(val))) ? 0 : Number(val),
+    z.number().min(1, 'Jumlah pembayaran wajib diisi')
+  ),
   paymentMethod: z.enum(['CASH', 'TRANSFER', 'DEBIT_CARD', 'CREDIT_CARD', 'QRIS', 'E_WALLET', 'CREDIT']),
   referenceNumber: z.string().optional(),
   notes: z.string().optional(),

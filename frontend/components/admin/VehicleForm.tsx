@@ -39,13 +39,19 @@ const vehicleSchema = z.object({
   brand: z.string().min(1, 'Merk wajib diisi').max(50),
   model: z.string().min(1, 'Model wajib diisi').max(50),
   vehicleType: z.enum(['MOBIL', 'MOTOR', 'TRUCK', 'BUS', 'LAINNYA']).default('MOBIL'),
-  year: z.number().int().min(1900).max(2100).nullable().optional(),
+  year: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(Number(val))) ? null : Number(val),
+    z.number().int().min(1900).max(2100).nullable().optional()
+  ),
   color: z.string().optional().nullable(),
   transmission: z.string().optional().nullable(),
   fuelType: z.string().optional().nullable(),
   vin: z.string().optional().nullable(),
   engineNumber: z.string().optional().nullable(),
-  lastOdometer: z.number().int().min(0).optional().nullable(),
+  lastOdometer: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(Number(val))) ? null : Number(val),
+    z.number().int().min(0).nullable().optional()
+  ),
   notes: z.string().optional().nullable(),
 })
 

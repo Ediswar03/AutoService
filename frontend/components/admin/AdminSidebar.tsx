@@ -14,6 +14,7 @@ import {
   Wrench,
   ChevronDown,
   Gift,
+  ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
@@ -70,6 +71,11 @@ const mainMenuItems = [
     title: 'Mekanik',
     url: '/admin/mechanics',
     icon: Wrench,
+  },
+  {
+    title: 'Manajemen Tim',
+    url: '/admin/team',
+    icon: ShieldCheck,
   },
   {
     title: 'Promo',

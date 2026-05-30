@@ -49,9 +49,15 @@ import type { SPK, SPKFormData, Customer, Vehicle, Service, Sparepart, User } fr
 const spkItemSchema = z.object({
   tipe: z.enum(['jasa', 'sparepart']),
   item_id: z.string().min(1, 'Item wajib dipilih'),
-  quantity: z.number().min(1, 'Quantity minimal 1'),
+  quantity: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(Number(val))) ? 1 : Number(val),
+    z.number().min(1, 'Quantity minimal 1')
+  ),
   harga_satuan: z.number().min(0, 'Harga tidak valid'),
-  diskon: z.number().min(0).max(100, 'Diskon maksimal 100%'),
+  diskon: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(Number(val))) ? 0 : Number(val),
+    z.number().min(0).max(100, 'Diskon maksimal 100%')
+  ),
   catatan: z.string().optional(),
 })
 
@@ -62,7 +68,10 @@ const spkSchema = z.object({
   customerComplaints: z.string().min(1, 'Keluhan wajib diisi'),
   internalNotes: z.string().optional().nullable(),
   priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'),
-  odometerIn: z.number().int().min(0).optional().nullable(),
+  odometerIn: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || Number.isNaN(Number(val))) ? null : Number(val),
+    z.number().int().min(0).nullable().optional()
+  ),
   fuelLevel: z.string().optional().nullable(),
   estimatedCompletion: z.string().optional().nullable(),
   items: z.array(spkItemSchema).min(1, 'Minimal 1 item harus ditambahkan'),
