@@ -22,9 +22,9 @@ export class InventoryService {
     }
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { code: { contains: query.search, mode: 'insensitive' } },
-        { brand: { contains: query.search, mode: 'insensitive' } },
+        { name: { contains: query.search } },
+        { code: { contains: query.search } },
+        { brand: { contains: query.search } },
       ];
     }
 
@@ -218,9 +218,9 @@ export class InventoryService {
 
     if (query.search) {
       where.OR = [
-        { sparepart: { name: { contains: query.search, mode: 'insensitive' } } },
-        { sparepart: { code: { contains: query.search, mode: 'insensitive' } } },
-        { notes: { contains: query.search, mode: 'insensitive' } },
+        { sparepart: { name: { contains: query.search } } },
+        { sparepart: { code: { contains: query.search } } },
+        { notes: { contains: query.search } },
       ];
     }
 
@@ -253,8 +253,8 @@ export class InventoryService {
     const where: any = {};
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { code: { contains: query.search, mode: 'insensitive' } },
+        { name: { contains: query.search } },
+        { code: { contains: query.search } },
       ];
     }
 

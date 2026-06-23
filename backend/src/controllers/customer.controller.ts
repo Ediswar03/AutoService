@@ -26,19 +26,16 @@ export class CustomerController {
           {
             name: {
               contains: (req.query.search as string) as string,
-              mode: 'insensitive',
             },
           },
           {
             phone: {
               contains: (req.query.search as string) as string,
-              mode: 'insensitive',
             },
           },
           {
             email: {
               contains: (req.query.search as string) as string,
-              mode: 'insensitive',
             },
           },
         ];

@@ -55,15 +55,15 @@ export class WorkOrderService {
     }
     if (query.search) {
       where.OR = [
-        { orderNumber: { contains: query.search, mode: 'insensitive' } },
+        { orderNumber: { contains: query.search } },
         {
           customer: {
-            name: { contains: query.search, mode: 'insensitive' },
+            name: { contains: query.search },
           },
         },
         {
           vehicle: {
-            licensePlate: { contains: query.search, mode: 'insensitive' },
+            licensePlate: { contains: query.search },
           },
         },
       ];

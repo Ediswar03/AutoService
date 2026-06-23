@@ -41,7 +41,7 @@ const router = Router();
  *               password:
  *                 type: string
  *                 format: password
- *                 example: password123
+ *                 example: admin123
  *     responses:
  *       200:
  *         description: Login successful

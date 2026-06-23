@@ -11,6 +11,7 @@ import routes from './routes';
 import { errorMiddleware } from './middleware/error.middleware';
 import { apiLimiter } from './middleware/rate-limit.middleware';
 import { ensureBucket } from './config/s3.config';
+import path from 'path';
 
 const app: Express = express();
 const port = process.env.PORT || 3001;
@@ -39,7 +40,10 @@ const swaggerOptions = {
       },
     },
   },
-  apis: ['./src/routes/*.ts'],
+  apis: [
+    path.join(process.cwd(), 'src', 'routes', '*.ts'),
+    path.join(process.cwd(), 'src', 'routes', '*.js'),
+  ],
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
@@ -51,7 +55,7 @@ app.use(cors({
     const allowed = (process.env.CORS_ORIGIN || 'http://localhost:3000')
       .split(',')
       .map(o => o.trim())
-      .concat(['http://localhost:3000', 'http://localhost:3001']);
+      .concat(['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002']);
     if (!origin || allowed.includes(origin)) {
       callback(null, true);
     } else {
@@ -117,6 +121,8 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
 export default app;

@@ -29,9 +29,9 @@ export class PartRequestService {
 
     if (query.search) {
       where.OR = [
-        { orderNumber: { contains: query.search, mode: 'insensitive' } },
-        { workOrder: { orderNumber: { contains: query.search, mode: 'insensitive' } } },
-        { workOrder: { vehicle: { licensePlate: { contains: query.search, mode: 'insensitive' } } } },
+        { orderNumber: { contains: query.search } },
+        { workOrder: { orderNumber: { contains: query.search } } },
+        { workOrder: { vehicle: { licensePlate: { contains: query.search } } } },
       ];
     }
 

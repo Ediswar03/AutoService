@@ -26,19 +26,16 @@ export class VehicleController {
           {
             licensePlate: {
               contains: (req.query.search as string) as string,
-              mode: 'insensitive',
             },
           },
           {
             brand: {
               contains: (req.query.search as string) as string,
-              mode: 'insensitive',
             },
           },
           {
             model: {
               contains: (req.query.search as string) as string,
-              mode: 'insensitive',
             },
           },
         ];

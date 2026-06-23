@@ -29,13 +29,11 @@ export class ServiceController {
           {
             name: {
               contains: (req.query.search as string) as string,
-              mode: 'insensitive',
             },
           },
           {
             code: {
               contains: (req.query.search as string) as string,
-              mode: 'insensitive',
             },
           },
         ];

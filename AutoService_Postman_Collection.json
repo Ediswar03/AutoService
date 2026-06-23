@@ -1,0 +1,1603 @@
+{
+  "info": {
+    "_postman_id": "autoservice-api-collection-v1",
+    "name": "AutoService API",
+    "description": "Koleksi lengkap endpoint AutoService Backend API v1\n\n## Cara Penggunaan\n1. Import collection & environment ini ke Postman\n2. Pilih environment 'AutoService Local'\n3. Jalankan request **[Auth] Login** terlebih dahulu\n4. Token akan tersimpan otomatis ke variabel `access_token`\n5. Semua request lain akan otomatis menggunakan token tersebut\n\n## Base URL\nhttp://localhost:3001/api/v1\n\n## Roles\n- ADMIN: Akses penuh\n- MEKANIK: Bisa buat/update WO, Customer, Vehicle\n- GUDANG: Bisa kelola inventory & approve part request\n- PIMPINAN: Bisa lihat laporan & invoice",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3002/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "description": "Endpoint autentikasi - Login, Register, Profil, Logout",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data) {",
+                  "    pm.collectionVariables.set('access_token', json.data.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', json.data.refreshToken);",
+                  "    console.log('✅ Token tersimpan otomatis!');",
+                  "    pm.test('Login berhasil - status 200', () => pm.response.to.have.status(200));",
+                  "    pm.test('Access token ada', () => pm.expect(json.data.accessToken).to.be.a('string'));",
+                  "} else {",
+                  "    pm.test('Login gagal', () => pm.response.to.have.status(200));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@autoservis.com\",\n  \"password\": \"admin123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login dan dapatkan JWT token. Token akan disimpan otomatis ke variabel `access_token`."
+          }
+        },
+        {
+          "name": "Get My Profile (me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response berhasil', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Dapatkan profil user yang sedang login. Memerlukan Bearer Token."
+          }
+        },
+        {
+          "name": "Register User Baru (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nama Mekanik\",\n  \"email\": \"mekanik@autoservis.com\",\n  \"password\": \"password123\",\n  \"role\": \"MEKANIK\",\n  \"phone\": \"081234567890\",\n  \"address\": \"Jl. Contoh No. 1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Daftarkan user baru. Hanya ADMIN yang bisa akses.\nRole yang tersedia: ADMIN, MEKANIK, GUDANG, PIMPINAN"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.success && json.data) {",
+                  "    pm.collectionVariables.set('access_token', json.data.accessToken);",
+                  "    console.log('✅ Access token diperbarui!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Perbarui access token menggunakan refresh token."
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "change-password"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Nama Baru", "type": "text" },
+                { "key": "phone", "value": "081234567890", "type": "text" },
+                { "key": "address", "value": "Jl. Baru No. 10", "type": "text" },
+                { "key": "theme", "value": "dark", "type": "text" },
+                { "key": "photo", "type": "file", "src": "", "disabled": true, "description": "Optional: upload foto profil (max 5MB, hanya gambar)" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Update profil user yang sedang login. Gunakan form-data untuk upload foto."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Users",
+      "description": "Manajemen user sistem (Admin only)",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/:id",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":id"],
+              "variable": [
+                { "key": "id", "value": "USER_UUID_DISINI", "description": "UUID user" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create User (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"User Baru\",\n  \"email\": \"user.baru@autoservis.com\",\n  \"password\": \"password123\",\n  \"role\": \"MEKANIK\",\n  \"phone\": \"081234567890\",\n  \"address\": \"Jl. Contoh No. 1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            },
+            "description": "Role tersedia: ADMIN | MEKANIK | GUDANG | PIMPINAN"
+          }
+        },
+        {
+          "name": "Update User (Admin only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nama Diperbarui\",\n  \"phone\": \"089876543210\",\n  \"role\": \"GUDANG\",\n  \"isActive\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/:id",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":id"],
+              "variable": [
+                { "key": "id", "value": "USER_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete User (Admin only)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/:id",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":id"],
+              "variable": [
+                { "key": "id", "value": "USER_UUID_DISINI" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Customers",
+      "description": "Manajemen data pelanggan",
+      "item": [
+        {
+          "name": "Get All Customers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Data array', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers?page=1&limit=10&search=",
+              "host": ["{{base_url}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "page", "value": "1", "description": "Halaman (default: 1)" },
+                { "key": "limit", "value": "10", "description": "Jumlah per halaman (default: 10)" },
+                { "key": "search", "value": "", "description": "Cari berdasarkan nama / telepon" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/:id",
+              "host": ["{{base_url}}"],
+              "path": ["customers", ":id"],
+              "variable": [
+                { "key": "id", "value": "CUSTOMER_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Customer (Admin/Mekanik)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('last_customer_id', json.data.id);",
+                  "    console.log('Customer ID:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Budi Santoso\",\n  \"phone\": \"081234567890\",\n  \"email\": \"budi@example.com\",\n  \"address\": \"Jl. Merdeka No. 10, Jakarta\",\n  \"type\": \"PRIBADI\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": ["{{base_url}}"],
+              "path": ["customers"]
+            },
+            "description": "type harus: PRIBADI atau KORPORAT"
+          }
+        },
+        {
+          "name": "Update Customer (Admin/Mekanik)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Budi Santoso Updated\",\n  \"phone\": \"089876543210\",\n  \"email\": \"budi.baru@example.com\",\n  \"address\": \"Jl. Baru No. 20, Jakarta\",\n  \"type\": \"KORPORAT\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/:id",
+              "host": ["{{base_url}}"],
+              "path": ["customers", ":id"],
+              "variable": [
+                { "key": "id", "value": "CUSTOMER_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Customer (Admin only)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/:id",
+              "host": ["{{base_url}}"],
+              "path": ["customers", ":id"],
+              "variable": [
+                { "key": "id", "value": "CUSTOMER_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/:id/vehicles",
+              "host": ["{{base_url}}"],
+              "path": ["customers", ":id", "vehicles"],
+              "variable": [
+                { "key": "id", "value": "CUSTOMER_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/:id/history",
+              "host": ["{{base_url}}"],
+              "path": ["customers", ":id", "history"],
+              "variable": [
+                { "key": "id", "value": "CUSTOMER_UUID_DISINI" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚗 Vehicles",
+      "description": "Manajemen data kendaraan pelanggan",
+      "item": [
+        {
+          "name": "Get All Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles?page=1&limit=10&search=",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "search", "value": "", "description": "Cari berdasarkan plat nomor / merek" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/:id",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", ":id"],
+              "variable": [
+                { "key": "id", "value": "VEHICLE_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Vehicle (Admin/Mekanik)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('last_vehicle_id', json.data.id);",
+                  "    console.log('Vehicle ID:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"licensePlate\": \"B 1234 ABC\",\n  \"brand\": \"Toyota\",\n  \"model\": \"Avanza\",\n  \"year\": 2022,\n  \"color\": \"Putih\",\n  \"engineNumber\": \"EN123456\",\n  \"chassisNumber\": \"CH789012\",\n  \"customerId\": \"CUSTOMER_UUID_DISINI\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles"]
+            }
+          }
+        },
+        {
+          "name": "Update Vehicle (Admin/Mekanik)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand\": \"Toyota\",\n  \"model\": \"Innova\",\n  \"year\": 2023,\n  \"color\": \"Hitam\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicles/:id",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", ":id"],
+              "variable": [
+                { "key": "id", "value": "VEHICLE_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Vehicle (Admin only)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/:id",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", ":id"],
+              "variable": [
+                { "key": "id", "value": "VEHICLE_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Service History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehicles/:id/history",
+              "host": ["{{base_url}}"],
+              "path": ["vehicles", ":id", "history"],
+              "variable": [
+                { "key": "id", "value": "VEHICLE_UUID_DISINI" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔧 Services (Jenis Layanan)",
+      "description": "Manajemen jenis layanan/servis yang tersedia",
+      "item": [
+        {
+          "name": "Get All Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/services",
+              "host": ["{{base_url}}"],
+              "path": ["services"]
+            }
+          }
+        },
+        {
+          "name": "Get Service Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/services/categories",
+              "host": ["{{base_url}}"],
+              "path": ["services", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Service by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/services/:id",
+              "host": ["{{base_url}}"],
+              "path": ["services", ":id"],
+              "variable": [
+                { "key": "id", "value": "SERVICE_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Service (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ganti Oli Mesin\",\n  \"category\": \"PERAWATAN\",\n  \"price\": 150000,\n  \"estimatedDuration\": 60,\n  \"description\": \"Penggantian oli mesin standar\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/services",
+              "host": ["{{base_url}}"],
+              "path": ["services"]
+            }
+          }
+        },
+        {
+          "name": "Update Service (Admin only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ganti Oli Mesin Premium\",\n  \"price\": 200000,\n  \"estimatedDuration\": 90\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/services/:id",
+              "host": ["{{base_url}}"],
+              "path": ["services", ":id"],
+              "variable": [
+                { "key": "id", "value": "SERVICE_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Service (Admin only)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/services/:id",
+              "host": ["{{base_url}}"],
+              "path": ["services", ":id"],
+              "variable": [
+                { "key": "id", "value": "SERVICE_UUID_DISINI" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Work Orders",
+      "description": "Manajemen work order servis kendaraan",
+      "item": [
+        {
+          "name": "Get All Work Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/work-orders?page=1&limit=10&status=&search=",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "", "description": "Filter: DRAFT | IN_PROGRESS | COMPLETED | CANCELLED" },
+                { "key": "search", "value": "", "description": "Cari berdasarkan nomor WO / nama pelanggan" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Work Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/work-orders/:id",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders", ":id"],
+              "variable": [
+                { "key": "id", "value": "WO_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Work Order (Admin/Mekanik)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('last_wo_id', json.data.id);",
+                  "    console.log('Work Order ID:', json.data.id);",
+                  "    console.log('Nomor WO:', json.data.orderNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"VEHICLE_UUID_DISINI\",\n  \"customerId\": \"CUSTOMER_UUID_DISINI\",\n  \"description\": \"Ganti oli + tune up\",\n  \"estimatedCost\": 500000,\n  \"serviceIds\": [\"SERVICE_UUID_1\", \"SERVICE_UUID_2\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/work-orders",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders"]
+            }
+          }
+        },
+        {
+          "name": "Update Work Order (Admin/Mekanik)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Ganti oli + tune up + cek rem\",\n  \"estimatedCost\": 750000,\n  \"notes\": \"Kondisi rem sudah aus\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/work-orders/:id",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders", ":id"],
+              "variable": [
+                { "key": "id", "value": "WO_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update WO Status (Admin/Mekanik)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/work-orders/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders", ":id", "status"],
+              "variable": [
+                { "key": "id", "value": "WO_UUID_DISINI" }
+              ]
+            },
+            "description": "Status yang tersedia:\n- DRAFT\n- IN_PROGRESS\n- COMPLETED\n- CANCELLED"
+          }
+        },
+        {
+          "name": "Assign Mechanic to WO (Admin only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mechanicId\": \"USER_UUID_MEKANIK_DISINI\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/work-orders/:id/assign",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders", ":id", "assign"],
+              "variable": [
+                { "key": "id", "value": "WO_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Service to WO (Admin/Mekanik)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceId\": \"SERVICE_UUID_DISINI\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/work-orders/:id/services",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders", ":id", "services"],
+              "variable": [
+                { "key": "id", "value": "WO_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Service from WO (Admin/Mekanik)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/work-orders/:id/services/:serviceId",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders", ":id", "services", ":serviceId"],
+              "variable": [
+                { "key": "id", "value": "WO_UUID_DISINI" },
+                { "key": "serviceId", "value": "SERVICE_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Sparepart to WO (Admin/Mekanik)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sparepartId\": \"SPAREPART_UUID_DISINI\",\n  \"quantity\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/work-orders/:id/spareparts",
+              "host": ["{{base_url}}"],
+              "path": ["work-orders", ":id", "spareparts"],
+              "variable": [
+                { "key": "id", "value": "WO_UUID_DISINI" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Inventory",
+      "description": "Manajemen sparepart dan supplier",
+      "item": [
+        {
+          "name": "--- SPAREPARTS ---",
+          "item": [
+            {
+              "name": "Get All Spareparts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/spareparts?page=1&limit=10&search=",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "spareparts"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "10" },
+                    { "key": "search", "value": "" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Low Stock Spareparts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/spareparts/low-stock",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "spareparts", "low-stock"]
+                }
+              }
+            },
+            {
+              "name": "Get Sparepart by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/spareparts/:id",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "spareparts", ":id"],
+                  "variable": [
+                    { "key": "id", "value": "SPAREPART_UUID_DISINI" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create Sparepart (Admin/Gudang)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Filter Oli Mesin\",\n  \"partNumber\": \"FO-001\",\n  \"brand\": \"ACDelco\",\n  \"category\": \"Filter\",\n  \"unit\": \"pcs\",\n  \"purchasePrice\": 45000,\n  \"sellingPrice\": 75000,\n  \"currentStock\": 50,\n  \"minimumStock\": 10,\n  \"supplierId\": \"SUPPLIER_UUID_DISINI\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/inventory/spareparts",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "spareparts"]
+                }
+              }
+            },
+            {
+              "name": "Update Sparepart (Admin/Gudang)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sellingPrice\": 80000,\n  \"minimumStock\": 15\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/inventory/spareparts/:id",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "spareparts", ":id"],
+                  "variable": [
+                    { "key": "id", "value": "SPAREPART_UUID_DISINI" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete Sparepart (Admin only)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/spareparts/:id",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "spareparts", ":id"],
+                  "variable": [
+                    { "key": "id", "value": "SPAREPART_UUID_DISINI" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Adjust Stock (Admin/Gudang)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"IN\",\n  \"quantity\": 20,\n  \"notes\": \"Restock dari supplier\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/inventory/spareparts/:id/adjust",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "spareparts", ":id", "adjust"],
+                  "variable": [
+                    { "key": "id", "value": "SPAREPART_UUID_DISINI" }
+                  ]
+                },
+                "description": "type: IN (masuk) atau OUT (keluar)"
+              }
+            },
+            {
+              "name": "Get Sparepart Stock Movements",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/spareparts/:id/movements",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "spareparts", ":id", "movements"],
+                  "variable": [
+                    { "key": "id", "value": "SPAREPART_UUID_DISINI" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get All Stock Movements",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/stock-movements",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "stock-movements"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "--- SUPPLIERS ---",
+          "item": [
+            {
+              "name": "Get All Suppliers",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/suppliers",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "suppliers"]
+                }
+              }
+            },
+            {
+              "name": "Get Supplier by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/suppliers/:id",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "suppliers", ":id"],
+                  "variable": [
+                    { "key": "id", "value": "SUPPLIER_UUID_DISINI" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create Supplier (Admin/Gudang)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"PT. Sumber Sparepart\",\n  \"contactName\": \"Pak Suwito\",\n  \"phone\": \"021-12345678\",\n  \"email\": \"suwito@sumberpart.com\",\n  \"address\": \"Jl. Industri No. 5, Tangerang\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/inventory/suppliers",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "suppliers"]
+                }
+              }
+            },
+            {
+              "name": "Update Supplier (Admin/Gudang)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"021-87654321\",\n  \"email\": \"baru@sumberpart.com\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{base_url}}/inventory/suppliers/:id",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "suppliers", ":id"],
+                  "variable": [
+                    { "key": "id", "value": "SUPPLIER_UUID_DISINI" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete Supplier (Admin only)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/inventory/suppliers/:id",
+                  "host": ["{{base_url}}"],
+                  "path": ["inventory", "suppliers", ":id"],
+                  "variable": [
+                    { "key": "id", "value": "SUPPLIER_UUID_DISINI" }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🧾 Invoices",
+      "description": "Manajemen invoice & pembayaran (Admin/Pimpinan)",
+      "item": [
+        {
+          "name": "Get All Invoices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/invoices?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["invoices"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Overdue Invoices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/invoices/overdue",
+              "host": ["{{base_url}}"],
+              "path": ["invoices", "overdue"]
+            }
+          }
+        },
+        {
+          "name": "Get Invoice by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/invoices/:id",
+              "host": ["{{base_url}}"],
+              "path": ["invoices", ":id"],
+              "variable": [
+                { "key": "id", "value": "INVOICE_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Invoice from Work Order (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workOrderId\": \"WO_UUID_DISINI\",\n  \"dueDate\": \"2026-07-01T00:00:00Z\",\n  \"notes\": \"Mohon segera dilunasi\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["invoices"]
+            }
+          }
+        },
+        {
+          "name": "Record Payment (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceId\": \"INVOICE_UUID_DISINI\",\n  \"amount\": 500000,\n  \"paymentMethod\": \"CASH\",\n  \"notes\": \"Pembayaran tunai\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/invoices/payments",
+              "host": ["{{base_url}}"],
+              "path": ["invoices", "payments"]
+            },
+            "description": "paymentMethod: CASH | TRANSFER | DEBIT | CREDIT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Reports",
+      "description": "Laporan & statistik (Admin/Pimpinan)",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get Revenue Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/revenue?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "revenue"],
+              "query": [
+                { "key": "startDate", "value": "2026-01-01", "description": "Format: YYYY-MM-DD" },
+                { "key": "endDate", "value": "2026-12-31", "description": "Format: YYYY-MM-DD" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Revenue Time Series",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/revenue-timeseries?period=monthly&year=2026",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "revenue-timeseries"],
+              "query": [
+                { "key": "period", "value": "monthly", "description": "daily | weekly | monthly" },
+                { "key": "year", "value": "2026" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Mechanic Performance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/mechanics?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "mechanics"],
+              "query": [
+                { "key": "startDate", "value": "2026-01-01" },
+                { "key": "endDate", "value": "2026-12-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Work Order Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/work-orders",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "work-orders"]
+            }
+          }
+        },
+        {
+          "name": "Export Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/export?type=revenue&format=pdf&startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "export"],
+              "query": [
+                { "key": "type", "value": "revenue", "description": "revenue | work-orders | mechanics" },
+                { "key": "format", "value": "pdf", "description": "pdf | excel" },
+                { "key": "startDate", "value": "2026-01-01" },
+                { "key": "endDate", "value": "2026-12-31" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏭 Part Requests (Gudang)",
+      "description": "Permintaan sparepart dari mekanik ke gudang",
+      "item": [
+        {
+          "name": "Get All Part Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/gudang/part-requests",
+              "host": ["{{base_url}}"],
+              "path": ["gudang", "part-requests"]
+            }
+          }
+        },
+        {
+          "name": "Create Part Request (Admin/Mekanik)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workOrderId\": \"WO_UUID_DISINI\",\n  \"sparepartId\": \"SPAREPART_UUID_DISINI\",\n  \"quantity\": 2,\n  \"notes\": \"Dibutuhkan segera untuk WO hari ini\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/gudang/part-requests",
+              "host": ["{{base_url}}"],
+              "path": ["gudang", "part-requests"]
+            }
+          }
+        },
+        {
+          "name": "Get Part Request by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/gudang/part-requests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["gudang", "part-requests", ":id"],
+              "variable": [
+                { "key": "id", "value": "PARTREQ_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Part Request (Admin/Gudang)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Disetujui, stok tersedia\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/gudang/part-requests/:id/approve",
+              "host": ["{{base_url}}"],
+              "path": ["gudang", "part-requests", ":id", "approve"],
+              "variable": [
+                { "key": "id", "value": "PARTREQ_UUID_DISINI" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Part Request (Admin/Gudang)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Stok habis, sedang dalam proses reorder\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/gudang/part-requests/:id/reject",
+              "host": ["{{base_url}}"],
+              "path": ["gudang", "part-requests", ":id", "reject"],
+              "variable": [
+                { "key": "id", "value": "PARTREQ_UUID_DISINI" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚙️ Settings",
+      "description": "Pengaturan sistem (Admin only)",
+      "item": [
+        {
+          "name": "Get All Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/settings",
+              "host": ["{{base_url}}"],
+              "path": ["settings"]
+            }
+          }
+        },
+        {
+          "name": "Get Settings by Group",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/settings/group/:group",
+              "host": ["{{base_url}}"],
+              "path": ["settings", "group", ":group"],
+              "variable": [
+                { "key": "group", "value": "general", "description": "Nama grup setting" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Setting (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"workshop_name\",\n  \"value\": \"Bengkel AutoServis Jaya\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/settings",
+              "host": ["{{base_url}}"],
+              "path": ["settings"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Update Settings (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"settings\": [\n    { \"key\": \"workshop_name\", \"value\": \"Bengkel AutoServis\" },\n    { \"key\": \"workshop_phone\", \"value\": \"021-12345678\" },\n    { \"key\": \"workshop_address\", \"value\": \"Jl. Bengkel No. 1\" }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/settings/bulk",
+              "host": ["{{base_url}}"],
+              "path": ["settings", "bulk"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔔 Notifications",
+      "description": "Notifikasi untuk user yang sedang login",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/:id/read",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", ":id", "read"],
+              "variable": [
+                { "key": "id", "value": "NOTIF_UUID_DISINI" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 Health Check",
+      "description": "Cek status server (tanpa token)",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Server aktif - Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status OK', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('OK');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["health"]
+            },
+            "description": "Cek apakah server backend sedang berjalan"
+          }
+        },
+        {
+          "name": "API Root Info",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": [""]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

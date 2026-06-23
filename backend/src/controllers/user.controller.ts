@@ -34,7 +34,7 @@ export class UserController {
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await userService.update(req.params.id, req.body);
+      const user = await userService.update(req.params.id as string, req.body);
       sendSuccess(res, user, 'User updated successfully');
     } catch (error) {
       next(error);
@@ -43,7 +43,7 @@ export class UserController {
 
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
-      await userService.delete(req.params.id);
+      await userService.delete(req.params.id as string);
       sendSuccess(res, null, 'User deleted successfully');
     } catch (error) {
       next(error);
